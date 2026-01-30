@@ -1,0 +1,11 @@
+# Chặn file rác của Windows/Mac
+.DS_Store
+Thumbs.db
+
+# Chặn file cấu hình riêng của VS Code
+.vscode/
+
+# Chặn file cấu hình riêng của IntelliJ / Android Studio
+.idea/
+*.iml
+local.properties
