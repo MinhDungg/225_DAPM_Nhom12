@@ -1,11 +1,17 @@
-# Chặn file rác của Windows/Mac
+# --- Rác hệ điều hành ---
 .DS_Store
 Thumbs.db
 
-# Chặn file cấu hình riêng của VS Code
+# --- Rác IDE ---
 .vscode/
-
-# Chặn file cấu hình riêng của IntelliJ / Android Studio
 .idea/
-*.iml
-local.properties
+
+# --- BACKEND (.NET 8) ---
+BE/[Bb]in/
+BE/[Oo]bj/
+BE/appsettings.Development.json
+
+# --- FRONTEND (React) ---
+FE/node_modules/
+FE/dist/
+FE/.env
