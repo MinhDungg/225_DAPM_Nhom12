@@ -4,24 +4,6 @@
 Tài liệu này hướng dẫn các thành viên trong nhóm cách dọn dẹp các file mẫu mặc định của .NET/React và nắm bắt cấu trúc thư mục chuẩn của dự án.
 
 ---
-
-## PHẦN 1: DỌN DẸP FILE MẶC ĐỊNH (CLEANUP)
-
-Khi khởi tạo dự án tự động, framework sẽ sinh ra một số file ví dụ không cần thiết. Các thành viên cần xóa/sửa các file này trước khi bắt đầu code.
-
-### 1.1. Backend (.NET 8 Web API)
-Xóa các file ví dụ về dự báo thời tiết (WeatherForecast):
-- 🗑️ **Xóa file:** `BE/WeatherForecast.cs`
-- 🗑️ **Xóa file:** `BE/Controllers/WeatherForecastController.cs`
-- 🗑️ **Xóa file:** `BE/BE.http` (File test API nhanh, chúng ta sẽ dùng Postman hoặc Swagger thay thế).
-
-### 1.2. Frontend (React 18 + Vite)
-Dọn dẹp trang web đếm số (counter) mặc định của Vite:
-- 🗑️ **Xóa file:** `FE/src/App.css`
-- 🗑️ **Xóa file:** `FE/src/assets/react.svg`
-- 🧹 **Sửa file:** `FE/src/index.css` $\rightarrow$ Xóa trắng toàn bộ nội dung bên trong (để sau này tự viết CSS hoặc cấu hình Tailwind).
-- 🧹 **Sửa file:** `FE/src/App.jsx` $\rightarrow$ Xóa hết nội dung cũ và thay bằng đoạn code khung dưới đây:
-
 ```jsx
 import React from 'react';
 
