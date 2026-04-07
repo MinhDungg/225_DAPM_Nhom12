@@ -1,17 +1,14 @@
+# --- Môi trường làm việc của AI (KHÔNG PUSH LÊN GIT) ---
+ai-workspace/
+
 # --- Rác hệ điều hành ---
 .DS_Store
 Thumbs.db
+ehthumbs.db
+desktop.ini
 
-# --- Rác IDE ---
+# --- Rác cấu hình IDE/Editor ---
 .vscode/
 .idea/
-
-# --- BACKEND (.NET 8) ---
-BE/[Bb]in/
-BE/[Oo]bj/
-BE/appsettings.Development.json
-
-# --- FRONTEND (React) ---
-FE/node_modules/
-FE/dist/
-FE/.env
+*.suo
+*.user

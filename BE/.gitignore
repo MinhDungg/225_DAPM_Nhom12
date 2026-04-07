@@ -1,0 +1,12 @@
+# --- Thư mục Build và file tạm ---
+[Bb]in/
+[Oo]bj/
+TestResults/
+
+# --- File chứa thông tin nhạy cảm (Local Database, API Keys) ---
+appsettings.Development.json
+appsettings.*.json
+!appsettings.json
+
+# --- Log files ---
+*.log
