@@ -68,3 +68,4 @@ Dự án được chia làm 2 phần chính: **BE** (Backend - .NET 8 Web API) v
 ├── .gitignore                  # Khai báo chặn các file/thư mục rác không đẩy lên Git
 ├── guide.md                    # Hướng dẫn quy trình khởi tạo và dọn dẹp mã nguồn
 └── README.md                   # File giới thiệu tổng quan đồ án trên GitHub
+
