@@ -4,7 +4,7 @@ Tài liệu này định nghĩa 3 chặng phát triển cốt lõi cho Backend (
 
 ---
 
-## CHẶNG 2: MODULE XÁC THỰC & CỐT LÕI
+## CHẶNG 2: MODULE XÁC THỰC & CỐT LÕI (đã hoàn thành)
 - **Tên nhánh (Branch):** `feature/auth`
 - **Mô tả ngắn:** Xây dựng hàng rào bảo mật và luồng đăng nhập chung cho toàn bộ hệ thống. Thiết lập các hàm cơ bản để khởi tạo một đợt xét học bổng mới.
 - **Tác nhân tham gia:** Tất cả 7 tác nhân (Sinh viên, Khoa, Hội đồng, CTSV, Đào tạo, KH-TC, Hiệu trưởng).
@@ -15,26 +15,37 @@ Tài liệu này định nghĩa 3 chặng phát triển cốt lõi cho Backend (
 
 ---
 
-## CHẶNG 3: MODULE NỘP HỒ SƠ & XÉT DUYỆT CẤP KHOA
-- **Tên nhánh (Branch):** `feature/khoa-approval`
-- **Mô tả ngắn:** Xử lý luồng dữ liệu đầu vào, quy trình nộp đơn của sinh viên và việc xét duyệt tại cấp cơ sở (Khoa). Có tích hợp tự động hóa xếp hạng.
-- **Tác nhân tham gia:** Phòng Đào tạo, Sinh Viên, Khoa, Phòng KH-TC.
-- **Nhiệm vụ (Các API cần xây dựng):**
-  - API `POST /api/diem`: Nạp dữ liệu đầu vào (GPA từ Đào tạo, Điểm rèn luyện từ CTSV).
-  - API `POST /api/hoso`: Sinh viên nộp đơn đăng ký xét học bổng (Trạng thái hồ sơ: `ChoXet`).
-  - API `GET /api/khoa/danhsach`: Lọc và xuất danh sách hồ sơ nộp vào thuộc quản lý của Khoa.
-  - API `POST /api/khoa/xephang`: Logic nghiệp vụ lõi: Tự động xếp hạng sinh viên (Ưu tiên Điểm học tập -> Điểm rèn luyện) đối chiếu với mức ngân sách được cấp.
-  - API `PUT /api/khoa/dexuat`: Khoa chốt danh sách nội bộ và đẩy đề xuất lên cấp Trường.
+# LỘ TRÌNH PHÁT TRIỂN BACKEND: CÁC CHẶNG NGHIỆP VỤ (CORE API)
+
+Tài liệu này định nghĩa các chặng phát triển cốt lõi cho Backend (.NET 8). Lộ trình bám sát 100% theo Điều 7 - Quy định cấp học bổng UTE 2025.
 
 ---
 
-## CHẶNG 4: MODULE THẨM ĐỊNH TOÀN TRƯỜNG & RA QUYẾT ĐỊNH
+## CHẶNG 3: MODULE ĐẦU VÀO & XÉT DUYỆT CẤP KHOA
+- **Tên nhánh (Branch):** `feature/khoa-approval`
+- **Tác nhân tham gia:** Phòng Đào tạo, Phòng CTSV, Khoa.
+- **Nhiệm vụ (Các API Cốt lõi):**
+  - **1. Nạp dữ liệu:**
+    - API `POST /api/diem/import`: Nạp dữ liệu đầu vào theo học kỳ (GPA từ Đào tạo, Điểm rèn luyện từ CTSV).
+  - **2. Tự động hóa ứng viên:**
+    - API `POST /api/dothocbong/{maDot}/tu-dong-quet`: Quét bảng điểm, lọc sinh viên thỏa điều kiện và tự động tạo bản ghi vào `HOSOXETHOCBONG` (Trạng thái: `ChoXet`).
+  - **3. Cấp Khoa xử lý (Bước 4 - Quy định):**
+    - API `GET /api/khoa/danhsach`: Khoa lấy danh sách hồ sơ.
+    - API `POST /api/khoa/xephang`: Tự động xếp hạng (GPA -> ĐRL) và phân bổ ngân sách.
+    - API `PUT /api/khoa/dexuat`: Khoa chốt danh sách, đổi trạng thái hồ sơ sang `KhoaDeXuat` và gửi lên Trường.
+
+---
+
+## CHẶNG 4: MODULE HỘI ĐỒNG THẨM ĐỊNH, KHIẾU NẠI & PHÊ DUYỆT
 - **Tên nhánh (Branch):** `feature/final-decision`
-- **Mô tả ngắn:** Giai đoạn chốt sổ. Xử lý tổng hợp toàn trường, công khai danh sách dự kiến, giải quyết khiếu nại sinh viên và chốt danh sách chính thức.
-- **Tác nhân tham gia:** Phòng CTSV, Sinh viên, Hội đồng, Hiệu trưởng.
-- **Nhiệm vụ (Các API cần xây dựng):**
-  - API `GET /api/ctsv/tonghop`: CTSV tổng hợp đề xuất từ tất cả các Khoa, chuyển thành "Danh sách dự kiến" và public.
-  - API `POST /api/khieunai`: Sinh viên nộp khiếu nại (Giới hạn trong 10 ngày).
-  - API `PUT /api/khieunai/{id}/xuly`: CTSV tiếp nhận, xem xét minh chứng và xử lý khiếu nại.
-  - API `GET /api/hoidong/thamdinh`: Hội đồng xem xét và thẩm định danh sách lần cuối.
-  - API `PUT /api/hieutruong/pheduyet`: Hiệu trưởng ký quyết định. (Kích hoạt logic: Đổi trạng thái đợt xét thành `CHINH_THUC` và snapshot dữ liệu sang bảng `DSHocBong`).
+- **Tác nhân tham gia:** Phòng CTSV, Hội đồng, Sinh viên, Hiệu trưởng.
+- **Nhiệm vụ (Các API Cốt lõi):**
+  - **1. Hội đồng họp xét chọn (Bước 5):**
+    - API `GET /api/ctsv/tonghop`: CTSV tổng hợp `KhoaDeXuat` trình Hội đồng.
+    - API `PUT /api/hoidong/xetchon`: Hội đồng duyệt danh sách lần 1. Đổi trạng thái các hồ sơ được chọn sang `DanhSachDuKien`.
+  - **2. Công bố & Xử lý khiếu nại (Bước 6):**
+    - API `GET /api/sinhvien/tracuu`: Sinh viên tra cứu xem mình có trong `DanhSachDuKien` không.
+    - API `POST /api/khieunai`: Sinh viên gửi khiếu nại (Trong 10 ngày).
+    - API `PUT /api/khieunai/{id}/xuly`: CTSV xử lý khiếu nại và cập nhật lại trạng thái hồ sơ nếu có sai sót.
+  - **3. Hiệu trưởng phê duyệt (Bước 7):**
+    - API `PUT /api/hieutruong/pheduyet`: CTSV trình Hiệu trưởng ký. Kích hoạt logic: Đổi trạng thái đợt xét thành `ChinhThuc` và copy sinh viên đạt vào bảng `DSHOCBONG`.

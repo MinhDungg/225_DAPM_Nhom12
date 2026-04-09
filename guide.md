@@ -69,3 +69,40 @@ Dự án được chia làm 2 phần chính: **BE** (Backend - .NET 8 Web API) v
 ├── guide.md                    # Hướng dẫn quy trình khởi tạo và dọn dẹp mã nguồn
 └── README.md                   # File giới thiệu tổng quan đồ án trên GitHub
 
+## 🛠️ I. QUY TRÌNH LÀM VIỆC TRÊN GIT (BẮT BUỘC)
+
+Tuyệt đối **KHÔNG** code trực tiếp trên nhánh `develop` hay `main`. Mọi thao tác đều phải rẽ nhánh.
+
+## Bước 1: Lấy code mới nhất về máy**
+  ```bash
+  git checkout develop
+  git pull origin develop
+  ```
+  
+## Bước 2: Tạo nhánh làm việc của riêng bạn (Tên nhánh xem ở phần phân công)
+git checkout -b feature/ten-nhanh-cua-ban
+Đã có vài nhánh được tạo sẵn rồi, nếu chưa có thì hãy tạo với nguồn là nhanh develop
+
+## Bước 3: Code và Kiểm thử
+Viết code tuân thủ kiến trúc hệ thống.
+Test API bằng Swagger/Postman (Dùng các tài khoản DB đã Seed để lấy Token JWT).
+
+## Bước 4: Lưu và Đẩy code lên git 
+git add .
+git commit -m "Hoan thanh API [Ten_API]"
+git push origin feature/ten-nhanh-cua-ban
+
+## II: Quy tắc viết code
+Kiến trúc N-Tier: - Controller chỉ nhận Request và gọi Service. TUYỆT ĐỐI không viết vòng lặp hay logic tính toán, gọi DB ở Controller.
+
+Mọi thao tác đọc/ghi Database phải thông qua Repository.
+
+Định dạng kết quả (Response Format): - Mọi API trả về cho Frontend BẮT BUỘC phải được bọc trong class BaseResponse<T>.
+
+(Xem ví dụ cách dùng ở file AuthController.cs). (nhánh feature/auth vì chưa merge lên dev)
+
+Bảo mật & Phân quyền (Authorization): - Mọi API nghiệp vụ đều phải gắn thẻ chặn quyền dựa trên JWT Token.
+
+Ví dụ: [Authorize(Roles = "Khoa,CTSV")] (Chỉ Khoa và CTSV mới được gọi hàm này).
+
+
