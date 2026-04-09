@@ -1,9 +1,11 @@
 // src/App.jsx
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Layout from "./components/layout/Layout.jsx";
 
-// Import các trang từ packet pages
+// CHÚ Ý DÒNG NÀY: Khớp 100% với cây thư mục trong ảnh của bạn
+import Layout from './components/layout/Layout.jsx';
+
+// Import từ file index.js trong thư mục pages
 import {
   Login,
   StudentDashboard,
