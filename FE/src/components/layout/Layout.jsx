@@ -1,9 +1,10 @@
 import React from 'react';
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
-    Home, FileText, Bell, User, LogOut, Award, ChevronDown,
+    Home, FileText, Bell, User, LogOut, ChevronDown,
     Database, Users, ShieldCheck, Landmark, FileCheck,
-    ClipboardList, CheckSquare, MessageSquareWarning
+    ClipboardList, CheckSquare, MessageSquareWarning,
+    GraduationCap, LifeBuoy
 } from 'lucide-react';
 
 const Layout = ({ role }) => {
@@ -20,7 +21,6 @@ const Layout = ({ role }) => {
     else if (location.pathname.includes('/tai-chinh')) activeRole = 'KHTC';
     else if (location.pathname.includes('/hieu-truong')) activeRole = 'HieuTruong';
 
-    // 1. TỪ ĐIỂN ĐỔI TÊN VAI TRÒ
     const roleDisplayNames = {
         'SinhVien': 'Sinh Viên',
         'CTSV': 'Phòng CTSV',
@@ -31,7 +31,6 @@ const Layout = ({ role }) => {
         'HieuTruong': 'Ban Giám Hiệu'
     };
 
-    // 2. CẤU HÌNH MENU RIÊNG CHO TỪNG TÁC NHÂN
     const menuConfig = {
         'SinhVien': [
             { path: '/sinh-vien', icon: Home, label: 'Trang chủ Dashboard' },
@@ -69,7 +68,6 @@ const Layout = ({ role }) => {
         ]
     };
 
-    // ĐÃ SỬA: Lấy danh sách menu theo activeRole
     const currentMenus = menuConfig[activeRole] || [];
 
     const handleLogout = () => {
@@ -78,86 +76,115 @@ const Layout = ({ role }) => {
 
     return (
         <div className="flex h-screen bg-slate-50 font-sans">
-            <aside className="w-64 bg-gradient-to-b from-blue-900 to-blue-800 text-white flex flex-col shadow-xl z-20">
-                <div className="p-5 border-b border-blue-700/50 flex items-center gap-3">
-                    <div className="bg-white/10 p-2 rounded-xl backdrop-blur-sm border border-white/10">
-                        <Award className="text-white w-8 h-8" />
+            {/* Tối ưu hóa Sidebar: Đổi màu nền sang Midnight Blue mượt mà hơn */}
+            <aside className="w-72 bg-[#0A192F] text-white flex flex-col shadow-2xl z-20 relative overflow-hidden">
+                {/* Hiệu ứng ánh sáng nền mờ */}
+                <div className="absolute top-0 left-0 w-full h-40 bg-blue-600/20 blur-3xl pointer-events-none"></div>
+
+                {/* Logo Area */}
+                <div className="p-6 border-b border-slate-800/80 flex items-center gap-4 relative z-10">
+                    <div className="bg-gradient-to-tr from-blue-500 to-cyan-400 p-2.5 rounded-xl shadow-lg shadow-blue-500/20">
+                        <GraduationCap className="text-white w-7 h-7" />
                     </div>
-                    <div>
-                        <h1 className="font-extrabold text-xl tracking-tight">UTE SCHOLAR</h1>
-                        {/* ĐÃ SỬA: Hiển thị tên Role cực xịn theo activeRole */}
-                        <p className="text-[10px] text-blue-200 uppercase tracking-widest font-bold">
+                    <div className="flex flex-col">
+                        <h1 className="font-black text-xl tracking-wider text-white leading-tight">HỌC BỔNG UTE</h1>
+                        <p className="text-[10px] text-cyan-400 uppercase tracking-[0.2em] font-bold mt-1">
                             {roleDisplayNames[activeRole] || activeRole}
                         </p>
                     </div>
                 </div>
 
-                <nav className="flex-1 py-6 overflow-y-auto custom-scrollbar">
-                    <ul className="space-y-1.5 px-3">
+                {/* Navigation Menus */}
+                <nav className="flex-1 py-6 overflow-y-auto custom-scrollbar relative z-10 flex flex-col">
+                    <p className="px-8 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Menu Chính</p>
+                    <ul className="space-y-2">
                         {currentMenus.map((menu, index) => {
                             const Icon = menu.icon;
-                            // ĐÃ SỬA: Thêm logic kiểm tra xem Menu nào đang được chọn để làm sáng lên
                             const isActive = location.pathname.includes(menu.path);
 
                             return (
-                                <li key={index}>
+                                <li key={index} className="relative">
+                                    {/* Dấu gạch dọc phát sáng khi Active */}
+                                    {isActive && (
+                                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-8 bg-cyan-400 rounded-r-full shadow-[0_0_12px_rgba(34,211,238,0.6)]"></div>
+                                    )}
                                     <Link
                                         to={menu.path}
-                                        className={`flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all duration-300 group ${isActive ? 'bg-white/15 text-white shadow-inner font-bold' : 'text-blue-100 hover:bg-white/10 hover:text-white font-medium'}`}
+                                        className={`flex items-center gap-4 px-6 py-3.5 mx-4 rounded-xl transition-all duration-300 group ${isActive
+                                                ? 'bg-blue-900/40 text-white font-bold border border-blue-700/50 shadow-inner'
+                                                : 'text-slate-400 hover:bg-slate-800/50 hover:text-white font-medium'
+                                            }`}
                                     >
-                                        <Icon size={20} className={`transition-transform ${isActive ? '' : 'group-hover:scale-110'}`} />
-                                        <span className="text-sm">{menu.label}</span>
+                                        <Icon size={20} className={`transition-transform duration-300 ${isActive ? 'text-cyan-400' : 'group-hover:scale-110 group-hover:text-cyan-300'}`} />
+                                        <span className="text-sm tracking-wide">{menu.label}</span>
                                     </Link>
                                 </li>
                             );
                         })}
                     </ul>
+
+                    {/* Thẻ Support lấp khoảng trống phía dưới (Rất tinh tế) */}
+                    <div className="mx-6 mt-auto mb-4 bg-gradient-to-br from-slate-800/80 to-slate-900 border border-slate-700/50 p-5 rounded-2xl relative overflow-hidden group">
+                        <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-blue-500/10 rounded-full blur-2xl group-hover:bg-cyan-400/20 transition-all duration-500"></div>
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="bg-slate-700/50 p-2 rounded-lg">
+                                <LifeBuoy size={18} className="text-cyan-400" />
+                            </div>
+                            <p className="font-bold text-sm text-white">Cần hỗ trợ?</p>
+                        </div>
+                        <p className="text-xs text-slate-400 leading-relaxed mb-4">
+                            Hệ thống quản lý học bổng UTE. Liên hệ kỹ thuật nếu gặp sự cố.
+                        </p>
+                        <button className="w-full py-2.5 bg-slate-700/50 hover:bg-cyan-500 hover:text-white border border-slate-600 hover:border-cyan-400 rounded-xl text-xs font-bold text-slate-300 transition-all shadow-sm">
+                            Gửi yêu cầu hỗ trợ
+                        </button>
+                    </div>
                 </nav>
 
-                <div className="p-4 border-t border-blue-700/50 bg-blue-950/30">
+                {/* Nút Đăng xuất */}
+                <div className="p-5 border-t border-slate-800/80 bg-[#071324] relative z-10">
                     <button
                         onClick={handleLogout}
-                        className="flex items-center gap-3.5 px-4 py-2.5 w-full rounded-lg text-blue-100 hover:bg-red-500 hover:text-white transition-all duration-300 group"
+                        className="flex items-center justify-center gap-3 px-4 py-3 w-full rounded-xl text-slate-400 hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30 border border-transparent transition-all duration-300 group"
                     >
                         <LogOut size={20} className="group-hover:-translate-x-1 transition-transform" />
-                        <span className="font-medium">Đăng xuất</span>
+                        <span className="font-bold text-sm">Đăng xuất hệ thống</span>
                     </button>
                 </div>
             </aside>
 
             {/* Main Content */}
             <div className="flex-1 flex flex-col overflow-hidden">
-                <header className="h-20 bg-white border-b border-gray-100 flex items-center justify-between px-8 shadow-sm relative z-10">
+                <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-10 shadow-sm relative z-10">
                     <div className="flex flex-col">
-                        <h2 className="text-2xl font-bold text-gray-900">Cổng thông tin Học bổng</h2>
-                        <p className="text-xs text-gray-400 mt-1">Hệ thống quản lý và xét duyệt trực tuyến</p>
+                        <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Hệ thống Quản lý Học bổng</h2>
+                        <p className="text-xs text-slate-500 mt-1 font-medium">Trường Đại học Sư phạm Kỹ thuật - ĐHĐN</p>
                     </div>
 
                     <div className="flex items-center gap-6">
-                        <div className="relative">
-                            <Bell className="text-gray-400 cursor-pointer hover:text-blue-600 transition-colors" size={24} />
-                            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">3</span>
+                        <div className="relative group cursor-pointer">
+                            <div className="p-2 bg-slate-50 rounded-full group-hover:bg-blue-50 transition-colors">
+                                <Bell className="text-slate-500 group-hover:text-blue-600 transition-colors" size={22} />
+                            </div>
+                            <span className="absolute top-0 right-0 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold border-2 border-white">3</span>
                         </div>
 
-                        <div className="flex items-center gap-3 border-l pl-6 border-gray-100 cursor-pointer group">
-                            {/* ĐÃ SỬA: Icon Avatar cập nhật theo activeRole */}
-                            <div className="w-10 h-10 rounded-xl bg-blue-100 border border-blue-200 flex items-center justify-center text-blue-800 font-extrabold shadow-inner">
+                        <div className="flex items-center gap-3 border-l pl-6 border-slate-200 cursor-pointer group">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-100 to-blue-50 border border-blue-200 flex items-center justify-center text-blue-700 font-black shadow-sm group-hover:shadow-md transition-all">
                                 {activeRole === 'SinhVien' ? 'SV' : 'CB'}
                             </div>
                             <div className="flex flex-col">
-                                {/* ĐÃ SỬA: Tên người dùng góc phải cập nhật theo activeRole */}
-                                <span className="text-sm font-semibold text-gray-800 group-hover:text-blue-700 transition-colors">
+                                <span className="text-sm font-bold text-slate-700 group-hover:text-blue-700 transition-colors">
                                     {activeRole === 'SinhVien' ? 'Huỳnh Minh Dũng' : 'Cán bộ Hệ thống'}
                                 </span>
-                                {/* ĐÃ SỬA: Chức vụ góc phải cập nhật theo activeRole */}
-                                <span className="text-xs text-gray-500">{roleDisplayNames[activeRole]}</span>
+                                <span className="text-xs text-slate-500 font-medium">{roleDisplayNames[activeRole]}</span>
                             </div>
-                            <ChevronDown className="text-gray-400 w-5 h-5 group-hover:text-blue-600 transition-colors" />
+                            <ChevronDown className="text-slate-400 w-5 h-5 group-hover:text-blue-600 transition-colors ml-2" />
                         </div>
                     </div>
                 </header>
 
-                <main className="flex-1 overflow-y-auto p-10 bg-slate-50/50">
+                <main className="flex-1 overflow-y-auto p-10 bg-[#F8FAFC]">
                     <div className="max-w-7xl mx-auto">
                         <Outlet />
                     </div>
