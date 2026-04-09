@@ -18,7 +18,7 @@ public class DotHocBongController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize]
+    [Authorize (Roles = "CTSV")]
     public async Task<IActionResult> Create([FromBody] DotHocBongCreateDTO request)
     {
         if (request == null || string.IsNullOrWhiteSpace(request.LoaiDot) || string.IsNullOrWhiteSpace(request.NamHoc))
