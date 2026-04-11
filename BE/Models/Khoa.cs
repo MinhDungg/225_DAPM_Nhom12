@@ -6,4 +6,5 @@ public class Khoa
     public string TenKhoa { get; set; } = null!;
 
     public ICollection<Lop> Lops { get; set; } = new List<Lop>();
+    public ICollection<CanBo> CanBos { get; set; } = new List<CanBo>();
 }

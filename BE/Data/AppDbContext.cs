@@ -87,6 +87,10 @@ public class AppDbContext : DbContext
             entity.HasOne(e => e.PhongBan)
                 .WithMany(e => e.CanBos)
                 .HasForeignKey(e => e.MaPhong);
+
+            entity.HasOne(e => e.Khoa)
+                .WithMany(e => e.CanBos)
+                .HasForeignKey(e => e.MaKhoa);
         });
 
         modelBuilder.Entity<Khoa>(entity =>

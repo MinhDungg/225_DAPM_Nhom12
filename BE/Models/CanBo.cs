@@ -7,9 +7,11 @@ public class CanBo
     public string Email { get; set; } = null!;
     public string? ChucVu { get; set; }
     public int? MaPhong { get; set; }
+    public int? MaKhoa { get; set; }
     public int? MaTK { get; set; }
 
     public PhongBan? PhongBan { get; set; }
+    public Khoa? Khoa { get; set; }
     public TaiKhoan? TaiKhoan { get; set; }
 
     public ICollection<KetQuaHocTap> KetQuaHocTaps { get; set; } = new List<KetQuaHocTap>();
