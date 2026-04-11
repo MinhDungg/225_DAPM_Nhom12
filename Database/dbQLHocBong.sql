@@ -52,6 +52,7 @@ CREATE TABLE [CANBO] (
   [Email] varchar(100) NOT NULL,
   [ChucVu] nvarchar(100),
   [MaPhong] int,
+  [MaKhoa] int,
   [MaTK] int UNIQUE
 );
 GO
@@ -180,6 +181,7 @@ GO
 
 -- Khóa ngoại bảng Cán bộ
 ALTER TABLE [CANBO] ADD FOREIGN KEY ([MaPhong]) REFERENCES [PHONGBAN] ([MaPhong]);
+ALTER TABLE [CANBO] ADD FOREIGN KEY ([MaKhoa]) REFERENCES [KHOA] ([MaKhoa]);
 ALTER TABLE [CANBO] ADD FOREIGN KEY ([MaTK]) REFERENCES [TAIKHOAN] ([MaTK]);
 
 -- Khóa ngoại bảng Lớp
@@ -302,3 +304,61 @@ INSERT INTO [SINHVIEN] (MaSV, HoTen, NgaySinh, Email, SDT, MaLop, MaTK) VALUES
 ('23115053122108', N'Đỗ Sinh Viên 08', '2005-08-08', 'sv08@sv.ute.edu.vn', '0901000008', 2, (SELECT MaTK FROM TAIKHOAN WHERE TenDangNhap = '23115053122108')),
 ('23115053122109', N'Hồ Sinh Viên 09', '2005-09-19', 'sv09@sv.ute.edu.vn', '0901000009', 2, (SELECT MaTK FROM TAIKHOAN WHERE TenDangNhap = '23115053122109')),
 ('23115053122110', N'Ngô Sinh Viên 10', '2005-10-30', 'sv10@sv.ute.edu.vn', '0901000010', 2, (SELECT MaTK FROM TAIKHOAN WHERE TenDangNhap = '23115053122110'));
+
+-- Thêm cột MaKhoa vào bảng CANBO
+ALTER TABLE [CANBO] 
+ADD [MaKhoa] int NULL;
+GO
+
+-- Tạo foreign key constraint
+ALTER TABLE [CANBO] 
+ADD CONSTRAINT FK_CANBO_KHOA 
+FOREIGN KEY ([MaKhoa]) REFERENCES [KHOA]([MaKhoa]);
+GO
+
+-- Update dữ liệu mẫu: Gán cán bộ Khoa CNTT vào Khoa có MaKhoa = 1
+UPDATE [CANBO] 
+SET [MaKhoa] = 1 
+WHERE [ChucVu] = N'Trưởng Khoa';
+GO
+
+-- Tạo đợt học bổng mẫu
+INSERT INTO [DOTHOCBONG] (LoaiDot, HocKy, NamHoc, TrangThai) 
+VALUES (N'Học bổng khuyến khích học tập', 1, '2023-2024', 'DangXetDuyet');
+GO
+
+-- Lấy MaDot vừa tạo
+DECLARE @MaDot int = SCOPE_IDENTITY();
+
+-- Thêm điểm rèn luyện cho sinh viên
+INSERT INTO [DIEMRENLUYEN] (MaSV, HocKy, NamHoc, DiemSo, MaCB_Nhap)
+VALUES 
+('23115053122101', 1, '2023-2024', 85, 2), -- Cán bộ CTSV nhập
+('23115053122102', 1, '2023-2024', 90, 2),
+('23115053122103', 1, '2023-2024', 80, 2),
+('23115053122104', 1, '2023-2024', 88, 2),
+('23115053122105', 1, '2023-2024', 92, 2);
+GO
+
+-- Thêm kết quả học tập cho sinh viên
+INSERT INTO [KETQUAHOCTAP] (MaSV, HocKy, NamHoc, GPA, SoTC, MaCB_Nhap)
+VALUES 
+('23115053122101', 1, '2023-2024', 3.5, 20, 1), -- Cán bộ Đào tạo nhập
+('23115053122102', 1, '2023-2024', 3.8, 20, 1),
+('23115053122103', 1, '2023-2024', 3.2, 20, 1),
+('23115053122104', 1, '2023-2024', 3.6, 20, 1),
+('23115053122105', 1, '2023-2024', 3.9, 20, 1);
+GO
+
+-- Thêm hồ sơ xét học bổng (trạng thái ChoXet)
+-- Lấy MaDot đầu tiên
+DECLARE @MaDotTest int = (SELECT TOP 1 MaDot FROM DOTHOCBONG ORDER BY MaDot DESC);
+
+INSERT INTO [HOSOXETHOCBONG] (MaSV, MaDot, NgayNop, GPA, DiemNCKH, DiemHDCD, XepLoaiHB, TrangThai, MaCB_Duyet)
+VALUES 
+('23115053122101', @MaDotTest, GETDATE(), 3.5, 5, 3, NULL, 'ChoXet', NULL),
+('23115053122102', @MaDotTest, GETDATE(), 3.8, 8, 5, NULL, 'ChoXet', NULL),
+('23115053122103', @MaDotTest, GETDATE(), 3.2, 2, 1, NULL, 'ChoXet', NULL),
+('23115053122104', @MaDotTest, GETDATE(), 3.6, 6, 4, NULL, 'ChoXet', NULL),
+('23115053122105', @MaDotTest, GETDATE(), 3.9, 10, 7, NULL, 'ChoXet', NULL);
+GO
