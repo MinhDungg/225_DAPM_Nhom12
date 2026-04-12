@@ -55,9 +55,19 @@ TemporaryDependencyNodeTargetIdentifier=net8.0
 /warnaserror+:NU1605,SYSLIB0011
 
 [sourceFiles]
-Controllers/FinalDecisionController.cs
+Controllers/
+ AuthController.cs
+ DotHocBongController.cs
+ FinalDecisionController.cs
 Data/AppDbContext.cs
-DTOs/BaseResponse.cs
+DTOs/Request/
+ DotHocBongCreateDTO.cs
+ LoginRequestDTO.cs
+DTOs/Response/
+ BaseResponse.cs
+ DotHocBongResponseDTO.cs
+ LoginResponseDTO.cs
+ LoginUserInfoDTO.cs
 Models/
  CanBo.cs
  ChiTra.cs
@@ -77,7 +87,20 @@ obj/Debug/net8.0/
  BE.AssemblyInfo.cs
  BE.GlobalUsings.g.cs
 Program.cs
-Services/IFinalDecisionService.cs
+Repositories/Implementations/
+ DotHocBongRepository.cs
+ TaiKhoanRepository.cs
+Repositories/Interfaces/
+ IDotHocBongRepository.cs
+ ITaiKhoanRepository.cs
+Services/
+ IFinalDecisionService.cs
+ Implementations/
+  AuthService.cs
+  DotHocBongService.cs
+ Interfaces/
+  IAuthService.cs
+  IDotHocBongService.cs
 
 [metadataReferences]
 <NUGET>/
@@ -222,6 +245,7 @@ Services/IFinalDecisionService.cs
   System.IO.Pipelines.dll
   System.Security.Cryptography.Xml.dll
   System.Threading.RateLimiting.dll
+ microsoft.aspnetcore.authentication.jwtbearer/8.0.4/lib/net8.0/Microsoft.AspNetCore.Authentication.JwtBearer.dll
  microsoft.bcl.asyncinterfaces/6.0.0/lib/netstandard2.1/Microsoft.Bcl.AsyncInterfaces.dll
  microsoft.data.sqlclient/5.1.5/ref/net6.0/Microsoft.Data.SqlClient.dll
  microsoft.entityframeworkcore.abstractions/8.0.4/lib/net8.0/Microsoft.EntityFrameworkCore.Abstractions.dll
@@ -230,12 +254,12 @@ Services/IFinalDecisionService.cs
  microsoft.entityframeworkcore/8.0.4/lib/net8.0/Microsoft.EntityFrameworkCore.dll
  microsoft.identity.client.extensions.msal/4.56.0/lib/netstandard2.0/Microsoft.Identity.Client.Extensions.Msal.dll
  microsoft.identity.client/4.56.0/lib/net6.0/Microsoft.Identity.Client.dll
- microsoft.identitymodel.abstractions/6.35.0/lib/net6.0/Microsoft.IdentityModel.Abstractions.dll
- microsoft.identitymodel.jsonwebtokens/6.35.0/lib/net6.0/Microsoft.IdentityModel.JsonWebTokens.dll
- microsoft.identitymodel.logging/6.35.0/lib/net6.0/Microsoft.IdentityModel.Logging.dll
- microsoft.identitymodel.protocols.openidconnect/6.35.0/lib/net6.0/Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
- microsoft.identitymodel.protocols/6.35.0/lib/net6.0/Microsoft.IdentityModel.Protocols.dll
- microsoft.identitymodel.tokens/6.35.0/lib/net6.0/Microsoft.IdentityModel.Tokens.dll
+ microsoft.identitymodel.abstractions/7.1.2/lib/net8.0/Microsoft.IdentityModel.Abstractions.dll
+ microsoft.identitymodel.jsonwebtokens/7.1.2/lib/net8.0/Microsoft.IdentityModel.JsonWebTokens.dll
+ microsoft.identitymodel.logging/7.1.2/lib/net8.0/Microsoft.IdentityModel.Logging.dll
+ microsoft.identitymodel.protocols.openidconnect/7.1.2/lib/net8.0/Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
+ microsoft.identitymodel.protocols/7.1.2/lib/net8.0/Microsoft.IdentityModel.Protocols.dll
+ microsoft.identitymodel.tokens/7.1.2/lib/net8.0/Microsoft.IdentityModel.Tokens.dll
  microsoft.netcore.app.ref/8.0.25/ref/net8.0/
   Microsoft.CSharp.dll
   Microsoft.VisualBasic.Core.dll
@@ -405,7 +429,7 @@ Services/IFinalDecisionService.cs
  swashbuckle.aspnetcore.swagger/6.6.2/lib/net8.0/Swashbuckle.AspNetCore.Swagger.dll
  swashbuckle.aspnetcore.swaggergen/6.6.2/lib/net8.0/Swashbuckle.AspNetCore.SwaggerGen.dll
  swashbuckle.aspnetcore.swaggerui/6.6.2/lib/net8.0/Swashbuckle.AspNetCore.SwaggerUI.dll
- system.identitymodel.tokens.jwt/6.35.0/lib/net6.0/System.IdentityModel.Tokens.Jwt.dll
+ system.identitymodel.tokens.jwt/7.1.2/lib/net8.0/System.IdentityModel.Tokens.Jwt.dll
  system.memory.data/1.0.2/lib/netstandard2.0/System.Memory.Data.dll
  system.security.cryptography.protecteddata/6.0.0/lib/net6.0/System.Security.Cryptography.ProtectedData.dll
 

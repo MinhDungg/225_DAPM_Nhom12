@@ -166,6 +166,15 @@ CREATE TABLE [CHITRA] (
 );
 GO
 
+-- Bảng Phân bổ kinh phí (Lưu trữ ngân sách học bổng được cấp cho từng Khoa trong mỗi Đợt)
+CREATE TABLE [PHANBOKINHPHI] (
+  [MaPhanBo] int PRIMARY KEY IDENTITY(1,1),
+  [MaDot] int NOT NULL,
+  [MaKhoa] int NOT NULL,
+  [KinhPhi] decimal(18,2) NOT NULL,
+  [MucHBLoaiKha] decimal(18,2) NOT NULL
+);
+GO
 
 -- 3. TẠO KHÓA NGOẠI (FOREIGN KEYS)
 
@@ -206,3 +215,90 @@ ALTER TABLE [DSHOCBONG] ADD FOREIGN KEY ([MaCB_PheDuyet]) REFERENCES [CANBO] ([M
 ALTER TABLE [CHITRA] ADD FOREIGN KEY ([MaHoSo]) REFERENCES [HOSOXETHOCBONG] ([MaHoSo]);
 ALTER TABLE [CHITRA] ADD FOREIGN KEY ([MaCB_GiaiNgan]) REFERENCES [CANBO] ([MaCB]);
 GO
+
+-- Khóa ngoại bảng Phân bổ kinh phí
+ALTER TABLE [PHANBOKINHPHI] ADD FOREIGN KEY ([MaDot]) REFERENCES [DOTHOCBONG] ([MaDot]);
+ALTER TABLE [PHANBOKINHPHI] ADD FOREIGN KEY ([MaKhoa]) REFERENCES [KHOA] ([MaKhoa]);
+GO
+
+USE dbQLHocBong;
+GO
+
+-- =================================================================================
+-- 1. THÊM DỮ LIỆU DANH MỤC (PHÒNG BAN, KHOA, LỚP)
+-- =================================================================================
+
+-- Thêm Phòng ban
+INSERT INTO [PHONGBAN] (TenPhong) VALUES 
+(N'Phòng Đào tạo'),             -- ID: 1
+(N'Phòng Công tác Sinh viên'),  -- ID: 2
+(N'Phòng Kế hoạch Tài chính'),  -- ID: 3
+(N'Ban Giám Hiệu');             -- ID: 4
+
+-- Thêm Khoa
+INSERT INTO [KHOA] (TenKhoa) VALUES 
+(N'Khoa Công nghệ Thông tin');  -- ID: 1
+
+-- Thêm Lớp (Chia làm 2 lớp thuộc Khoa CNTT)
+INSERT INTO [LOP] (TenLop, MaKhoa) VALUES 
+('23T1', 1), -- ID: 1
+('23T2', 1); -- ID: 2
+
+-- =================================================================================
+-- 2. THÊM TÀI KHOẢN & CÁN BỘ CHO 6 TÁC NHÂN (KHÔNG CÓ ADMIN)
+-- =================================================================================
+
+-- 1. Tác nhân: Đào Tạo
+INSERT INTO [TAIKHOAN] (TenDangNhap, MatKhau, VaiTro, TrangThai) VALUES ('daotao', '123456', 'DaoTao', 1);
+INSERT INTO [CANBO] (HoTen, Email, ChucVu, MaPhong, MaTK) VALUES (N'Phạm Thị Đào Tạo', 'daotao@ute.edu.vn', N'Chuyên viên Đào tạo', 1, IDENT_CURRENT('TAIKHOAN'));
+
+-- 2. Tác nhân: CTSV
+INSERT INTO [TAIKHOAN] (TenDangNhap, MatKhau, VaiTro, TrangThai) VALUES ('ctsv', '123456', 'CTSV', 1);
+INSERT INTO [CANBO] (HoTen, Email, ChucVu, MaPhong, MaTK) VALUES (N'Trần Thị CTSV', 'ctsv@ute.edu.vn', N'Chuyên viên CTSV', 2, IDENT_CURRENT('TAIKHOAN'));
+
+-- 3. Tác nhân: KHTC
+INSERT INTO [TAIKHOAN] (TenDangNhap, MatKhau, VaiTro, TrangThai) VALUES ('khtc', '123456', 'KHTC', 1);
+INSERT INTO [CANBO] (HoTen, Email, ChucVu, MaPhong, MaTK) VALUES (N'Lê Văn KHTC', 'khtc@ute.edu.vn', N'Chuyên viên KHTC', 3, IDENT_CURRENT('TAIKHOAN'));
+
+-- 4. Tác nhân: Khoa
+INSERT INTO [TAIKHOAN] (TenDangNhap, MatKhau, VaiTro, TrangThai) VALUES ('khoacntt', '123456', 'Khoa', 1);
+INSERT INTO [CANBO] (HoTen, Email, ChucVu, MaPhong, MaTK) VALUES (N'Nguyễn Văn Khoa', 'khoacntt@ute.edu.vn', N'Trưởng Khoa', NULL, IDENT_CURRENT('TAIKHOAN'));
+
+-- 5. Tác nhân: Hội đồng
+INSERT INTO [TAIKHOAN] (TenDangNhap, MatKhau, VaiTro, TrangThai) VALUES ('hoidong', '123456', 'HoiDong', 1);
+INSERT INTO [CANBO] (HoTen, Email, ChucVu, MaPhong, MaTK) VALUES (N'Hội Đồng Trường', 'hoidong@ute.edu.vn', N'Chủ tịch Hội đồng', 4, IDENT_CURRENT('TAIKHOAN'));
+
+-- 6. Tác nhân: Hiệu trưởng
+INSERT INTO [TAIKHOAN] (TenDangNhap, MatKhau, VaiTro, TrangThai) VALUES ('hieutruong', '123456', 'HieuTruong', 1);
+INSERT INTO [CANBO] (HoTen, Email, ChucVu, MaPhong, MaTK) VALUES (N'Nguyễn Hiệu Trưởng', 'hieutruong@ute.edu.vn', N'Hiệu trưởng', 4, IDENT_CURRENT('TAIKHOAN'));
+
+
+-- =================================================================================
+-- 3. THÊM 10 TÀI KHOẢN & SINH VIÊN (Mã từ 23115053122101 đến 23115053122110)
+-- =================================================================================
+
+-- 3.1. Insert 10 dòng vào bảng TAIKHOAN trước
+INSERT INTO [TAIKHOAN] (TenDangNhap, MatKhau, VaiTro, TrangThai) VALUES 
+('23115053122101', '123456', 'SinhVien', 1),
+('23115053122102', '123456', 'SinhVien', 1),
+('23115053122103', '123456', 'SinhVien', 1),
+('23115053122104', '123456', 'SinhVien', 1),
+('23115053122105', '123456', 'SinhVien', 1),
+('23115053122106', '123456', 'SinhVien', 1),
+('23115053122107', '123456', 'SinhVien', 1),
+('23115053122108', '123456', 'SinhVien', 1),
+('23115053122109', '123456', 'SinhVien', 1),
+('23115053122110', '123456', 'SinhVien', 1);
+
+-- 3.2. Insert 10 dòng vào bảng SINHVIEN (Tìm lại MaTK qua TenDangNhap)
+INSERT INTO [SINHVIEN] (MaSV, HoTen, NgaySinh, Email, SDT, MaLop, MaTK) VALUES 
+('23115053122101', N'Nguyễn Sinh Viên 01', '2005-01-15', 'sv01@sv.ute.edu.vn', '0901000001', 1, (SELECT MaTK FROM TAIKHOAN WHERE TenDangNhap = '23115053122101')),
+('23115053122102', N'Trần Sinh Viên 02', '2005-02-14', 'sv02@sv.ute.edu.vn', '0901000002', 1, (SELECT MaTK FROM TAIKHOAN WHERE TenDangNhap = '23115053122102')),
+('23115053122103', N'Lê Sinh Viên 03', '2005-03-20', 'sv03@sv.ute.edu.vn', '0901000003', 1, (SELECT MaTK FROM TAIKHOAN WHERE TenDangNhap = '23115053122103')),
+('23115053122104', N'Phạm Sinh Viên 04', '2005-04-10', 'sv04@sv.ute.edu.vn', '0901000004', 1, (SELECT MaTK FROM TAIKHOAN WHERE TenDangNhap = '23115053122104')),
+('23115053122105', N'Hoàng Sinh Viên 05', '2005-05-05', 'sv05@sv.ute.edu.vn', '0901000005', 1, (SELECT MaTK FROM TAIKHOAN WHERE TenDangNhap = '23115053122105')),
+('23115053122106', N'Đặng Sinh Viên 06', '2005-06-12', 'sv06@sv.ute.edu.vn', '0901000006', 2, (SELECT MaTK FROM TAIKHOAN WHERE TenDangNhap = '23115053122106')),
+('23115053122107', N'Bùi Sinh Viên 07', '2005-07-22', 'sv07@sv.ute.edu.vn', '0901000007', 2, (SELECT MaTK FROM TAIKHOAN WHERE TenDangNhap = '23115053122107')),
+('23115053122108', N'Đỗ Sinh Viên 08', '2005-08-08', 'sv08@sv.ute.edu.vn', '0901000008', 2, (SELECT MaTK FROM TAIKHOAN WHERE TenDangNhap = '23115053122108')),
+('23115053122109', N'Hồ Sinh Viên 09', '2005-09-19', 'sv09@sv.ute.edu.vn', '0901000009', 2, (SELECT MaTK FROM TAIKHOAN WHERE TenDangNhap = '23115053122109')),
+('23115053122110', N'Ngô Sinh Viên 10', '2005-10-30', 'sv10@sv.ute.edu.vn', '0901000010', 2, (SELECT MaTK FROM TAIKHOAN WHERE TenDangNhap = '23115053122110'));

@@ -6,6 +6,9 @@ ai-workspace/
 Thumbs.db
 ehthumbs.db
 desktop.ini
+road-map.md
+phan-cong.md
+guide.md
 
 # --- Rác cấu hình IDE/Editor ---
 .vscode/

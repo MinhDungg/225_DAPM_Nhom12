@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using BE.DTOs;      // Đã sửa: Nơi chứa BaseResponse
+using BE.DTOs.Response;      // Đã sửa: Nơi chứa BaseResponse
 using BE.Models;    // Cần có để nhận diện HoSoXetHocBong
 using BE.Services;  // Đã thêm: Nơi chứa IFinalDecisionService
 using System.Collections.Generic;
