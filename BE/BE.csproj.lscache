@@ -66,6 +66,7 @@ DTOs/Request/
 DTOs/Response/
  BaseResponse.cs
  DotHocBongResponseDTO.cs
+ HoSoResponseDTO.cs
  LoginResponseDTO.cs
  LoginUserInfoDTO.cs
 Models/
@@ -89,18 +90,20 @@ obj/Debug/net8.0/
 Program.cs
 Repositories/Implementations/
  DotHocBongRepository.cs
+ HoSoXetHocBongRepository.cs
  TaiKhoanRepository.cs
 Repositories/Interfaces/
  IDotHocBongRepository.cs
+ IHoSoXetHocBongRepository.cs
  ITaiKhoanRepository.cs
-Services/
+Services/Implementations/
+ AuthService.cs
+ DotHocBongService.cs
+ FinalDecisionService.cs
+Services/Interfaces/
+ IAuthService.cs
+ IDotHocBongService.cs
  IFinalDecisionService.cs
- Implementations/
-  AuthService.cs
-  DotHocBongService.cs
- Interfaces/
-  IAuthService.cs
-  IDotHocBongService.cs
 
 [metadataReferences]
 <NUGET>/
