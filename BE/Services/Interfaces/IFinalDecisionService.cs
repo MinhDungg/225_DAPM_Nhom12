@@ -8,5 +8,7 @@ namespace BE.Services.Interfaces
     {
         Task<IEnumerable<HoSoResponseDTO>> GetRecommendedProfilesAsync();
         Task<bool> ApproveExpectedListAsync(List<int> profileIds);
+        Task<IEnumerable<HoSoResponseDTO>> GetStudentProgressAsync(string maSV);
+        Task<bool> RectorApproveAsync(int maDot, int maCB);
     }
 }
