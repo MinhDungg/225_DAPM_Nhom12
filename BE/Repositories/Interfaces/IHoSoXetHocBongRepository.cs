@@ -8,5 +8,9 @@ namespace BE.Repositories.Interfaces
     {
         Task<IEnumerable<HoSoXetHocBong>> GetProfilesByStatusAsync(string status);
         Task<bool> UpdateProfilesStatusAsync(List<int> profileIds, string newStatus);
+
+        Task<IEnumerable<HoSoXetHocBong>> GetProfilesByMaSVAsync(string maSV);
+
+        Task<bool> FinalizeScholarshipRoundAsync(int maDot, int maCB_PheDuyet);
     }
 }
