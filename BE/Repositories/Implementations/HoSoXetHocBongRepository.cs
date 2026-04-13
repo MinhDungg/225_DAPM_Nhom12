@@ -24,4 +24,26 @@ public class HoSoXetHocBongRepository : IHoSoXetHocBongRepository
             .Where(h => h.TrangThai == "ChoXet" && h.SinhVien.Lop.MaKhoa == maKhoa)
             .ToListAsync();
     }
+
+    public async Task<List<HoSoXetHocBong>> LayDanhSachChoDuyetTheoKhoaVaDotAsync(int maKhoa, int maDot)
+    {
+        return await _context.HoSoXetHocBongs
+            .Include(h => h.SinhVien)
+                .ThenInclude(sv => sv.Lop)
+            .Include(h => h.SinhVien)
+                .ThenInclude(sv => sv.DiemRenLuyens)
+            .Where(h => h.TrangThai == "ChoXet" 
+                     && h.SinhVien.Lop.MaKhoa == maKhoa 
+                     && h.MaDot == maDot)
+            .ToListAsync();
+    }
+
+    public async Task CapNhatXepLoaiVaTrangThaiAsync(List<HoSoXetHocBong> hoSos)
+    {
+        foreach (var hoSo in hoSos)
+        {
+            _context.HoSoXetHocBongs.Update(hoSo);
+        }
+        await _context.SaveChangesAsync();
+    }
 }
