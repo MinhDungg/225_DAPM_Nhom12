@@ -100,4 +100,55 @@ public class KhoaController : ControllerBase
             });
         }
     }
+
+    [HttpPut("dexuat")]
+    public async Task<IActionResult> ChotDanhSachDeXuat([FromBody] ChotDeXuatRequestDTO request)
+    {
+        // Validate request
+        if (request == null || request.MaDot <= 0 || request.DanhSachMaHoSo == null || !request.DanhSachMaHoSo.Any())
+        {
+            return BadRequest(new BaseResponse<ChotDeXuatResponseDTO>
+            {
+                Success = false,
+                Message = "Du lieu khong hop le. MaDot phai lon hon 0 va danh sach ho so khong duoc rong",
+                Data = null
+            });
+        }
+
+        // Lấy UserId từ JWT token
+        var userIdClaim = User.FindFirst("UserId") 
+                       ?? User.FindFirst(ClaimTypes.NameIdentifier)
+                       ?? User.FindFirst("sub");
+        
+        if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+        {
+            return Unauthorized(new BaseResponse<ChotDeXuatResponseDTO>
+            {
+                Success = false,
+                Message = "Khong tim thay thong tin nguoi dung",
+                Data = null
+            });
+        }
+
+        try
+        {
+            var result = await _khoaService.ChotDanhSachDeXuatAsync(userId, request);
+
+            return Ok(new BaseResponse<ChotDeXuatResponseDTO>
+            {
+                Success = true,
+                Message = "Chot danh sach de xuat thanh cong",
+                Data = result
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new BaseResponse<ChotDeXuatResponseDTO>
+            {
+                Success = false,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+    }
 }

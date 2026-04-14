@@ -127,10 +127,6 @@ public class KhoaService : IKhoaService
                 tongChiTieu += item.MucHocBong;
                 soLuongDuocNhan++;
                 duocNhan = true;
-
-                // Cập nhật XepLoaiHB và TrangThai cho hồ sơ
-                item.HoSo.XepLoaiHB = item.XepLoai;
-                item.HoSo.TrangThai = "KhoaDeXuat";
             }
 
             // Thêm vào danh sách kết quả
@@ -149,18 +145,7 @@ public class KhoaService : IKhoaService
             });
         }
 
-        // Bước 6: Cập nhật database
-        var hoSosCanCapNhat = danhSachDaSapXep
-            .Where(x => x.HoSo.TrangThai == "KhoaDeXuat")
-            .Select(x => x.HoSo)
-            .ToList();
-
-        if (hoSosCanCapNhat.Any())
-        {
-            await _hoSoRepository.CapNhatXepLoaiVaTrangThaiAsync(hoSosCanCapNhat);
-        }
-
-        // Bước 7: Trả về kết quả
+        // Bước 6: Trả về kết quả (KHÔNG cập nhật database - sẽ được xử lý ở Task 2.3)
         return new XepHangResponseDTO
         {
             TongNganSach = request.NganSach,
@@ -194,5 +179,38 @@ public class KhoaService : IKhoaService
 
         // Không đủ điều kiện
         return ("KhongDuDieuKien", 0);
+    }
+
+    public async Task<ChotDeXuatResponseDTO> ChotDanhSachDeXuatAsync(int maTaiKhoan, ChotDeXuatRequestDTO request)
+    {
+        // Bước 1: Tìm cán bộ và lấy MaKhoa
+        var canBo = await _context.CanBos
+            .FirstOrDefaultAsync(cb => cb.MaTK == maTaiKhoan);
+
+        if (canBo == null || canBo.MaKhoa == null)
+        {
+            throw new Exception("Khong tim thay thong tin can bo hoac khoa");
+        }
+
+        // Bước 2: Validate danh sách hồ sơ
+        if (request.DanhSachMaHoSo == null || !request.DanhSachMaHoSo.Any())
+        {
+            throw new Exception("Danh sach ho so khong duoc rong");
+        }
+
+        // Bước 3: Gọi repository để cập nhật trạng thái
+        var soLuongDaChot = await _hoSoRepository.ChotDanhSachDeXuatAsync(
+            canBo.MaKhoa.Value,
+            request.MaDot,
+            request.DanhSachMaHoSo,
+            canBo.MaCB
+        );
+
+        // Bước 4: Trả về kết quả
+        return new ChotDeXuatResponseDTO
+        {
+            SoLuongDaChot = soLuongDaChot,
+            DanhSachMaHoSo = request.DanhSachMaHoSo
+        };
     }
 }
