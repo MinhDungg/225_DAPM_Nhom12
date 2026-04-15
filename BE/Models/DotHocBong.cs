@@ -10,4 +10,5 @@ public class DotHocBong
 
     public ICollection<HoSoXetHocBong> HoSoXetHocBongs { get; set; } = new List<HoSoXetHocBong>();
     public ICollection<DSHocBong> DSHocBongs { get; set; } = new List<DSHocBong>();
+    public ICollection<PhanBoKinhPhi> PhanBoKinhPhis { get; set; } = new List<PhanBoKinhPhi>();
 }

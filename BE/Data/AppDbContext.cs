@@ -19,6 +19,7 @@ public class AppDbContext : DbContext
     public DbSet<KetQuaHocTap> KetQuaHocTaps => Set<KetQuaHocTap>();
     public DbSet<DiemRenLuyen> DiemRenLuyens => Set<DiemRenLuyen>();
     public DbSet<DotHocBong> DotHocBongs => Set<DotHocBong>();
+    public DbSet<PhanBoKinhPhi> PhanBoKinhPhis => Set<PhanBoKinhPhi>();
     public DbSet<HoSoXetHocBong> HoSoXetHocBongs => Set<HoSoXetHocBong>();
     public DbSet<KhieuNai> KhieuNais => Set<KhieuNai>();
     public DbSet<DSHocBong> DSHocBongs => Set<DSHocBong>();
@@ -215,6 +216,26 @@ public class AppDbContext : DbContext
                 .HasDefaultValue("KhoiTao");
         });
 
+        modelBuilder.Entity<PhanBoKinhPhi>(entity =>
+        {
+            entity.ToTable("PHANBOKINHPHI");
+            entity.HasKey(e => e.MaPhanBo);
+            entity.Property(e => e.MaPhanBo).ValueGeneratedOnAdd();
+            entity.Property(e => e.KinhPhi)
+                .HasColumnType("decimal(18,2)");
+            entity.Property(e => e.MucHBLoaiKha)
+                .HasColumnType("decimal(18,2)");
+            entity.HasIndex(e => new { e.MaDot, e.MaKhoa }).IsUnique();
+
+            entity.HasOne(e => e.DotHocBong)
+                .WithMany(e => e.PhanBoKinhPhis)
+                .HasForeignKey(e => e.MaDot);
+
+            entity.HasOne(e => e.Khoa)
+                .WithMany(e => e.PhanBoKinhPhis)
+                .HasForeignKey(e => e.MaKhoa);
+        });
+
         modelBuilder.Entity<HoSoXetHocBong>(entity =>
         {
             entity.ToTable("HOSOXETHOCBONG");
@@ -226,12 +247,11 @@ public class AppDbContext : DbContext
                 .IsUnicode(false);
             entity.Property(e => e.NgayNop)
                 .HasDefaultValueSql("GETDATE()");
-            entity.Property(e => e.GPA)
+            entity.Property(e => e.DiemHocTap)
+                .IsRequired()
+                .HasColumnType("float");
+            entity.Property(e => e.DiemRenLuyen)
                 .IsRequired();
-            entity.Property(e => e.DiemNCKH)
-                .HasDefaultValue(0);
-            entity.Property(e => e.DiemHDCD)
-                .HasDefaultValue(0);
             entity.Property(e => e.XepLoaiHB)
                 .HasMaxLength(50);
             entity.Property(e => e.TrangThai)
