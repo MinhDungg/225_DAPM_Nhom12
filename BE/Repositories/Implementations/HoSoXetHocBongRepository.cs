@@ -19,9 +19,9 @@ public class HoSoXetHocBongRepository : IHoSoXetHocBongRepository
         return await _context.HoSoXetHocBongs
             .Include(h => h.SinhVien)
                 .ThenInclude(sv => sv.Lop)
-            .Include(h => h.SinhVien)
-                .ThenInclude(sv => sv.DiemRenLuyens)
+            .Include(h => h.SinhVien.DiemRenLuyens)
             .Where(h => h.TrangThai == "ChoXet" && h.SinhVien.Lop.MaKhoa == maKhoa)
+            .Distinct()
             .ToListAsync();
     }
 
@@ -30,11 +30,11 @@ public class HoSoXetHocBongRepository : IHoSoXetHocBongRepository
         return await _context.HoSoXetHocBongs
             .Include(h => h.SinhVien)
                 .ThenInclude(sv => sv.Lop)
-            .Include(h => h.SinhVien)
-                .ThenInclude(sv => sv.DiemRenLuyens)
+            .Include(h => h.SinhVien.DiemRenLuyens)
             .Where(h => h.TrangThai == "ChoXet" 
                      && h.SinhVien.Lop.MaKhoa == maKhoa 
                      && h.MaDot == maDot)
+            .Distinct()
             .ToListAsync();
     }
 
@@ -57,6 +57,7 @@ public class HoSoXetHocBongRepository : IHoSoXetHocBongRepository
                      && h.MaDot == maDot
                      && h.SinhVien.Lop.MaKhoa == maKhoa
                      && h.TrangThai == "ChoXet")
+            .Distinct()
             .ToListAsync();
 
         // Cập nhật trạng thái và cán bộ duyệt
