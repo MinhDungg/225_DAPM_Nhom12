@@ -49,47 +49,68 @@ const StudentDashboard = () => {
         }
     };
 
+    // Lấy thông tin user đăng nhập
+    const userInfo = JSON.parse(localStorage.getItem('userInfo')) || {};
+
+    const handleLogout = () => {
+        localStorage.clear();
+        window.location.href = '/';
+    };
+
     const latestStatusUI = renderStatusUI(latestProfile?.trangThai);
 
     return (
-        <div className="space-y-8 animate-fade-in">
-            {/* Tiêu đề trang */}
-            <div className="flex flex-col">
-                <h2 className="text-3xl font-extrabold text-gray-900 leading-tight">Cổng thông tin Sinh viên</h2>
-                <p className="text-gray-500 mt-1.5">Theo dõi thông báo học bổng, danh sách xét duyệt và xử lý khiếu nại.</p>
+        <div className="space-y-8 animate-fade-in p-6 bg-gray-50 min-h-screen">
+            {/* Header / Tiêu đề trang */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+                <div>
+                    <h2 className="text-3xl font-extrabold text-gray-900 leading-tight">Cổng thông tin Sinh viên</h2>
+                    <p className="text-gray-500 mt-1.5">Xin chào, <span className="font-bold text-blue-600">{userInfo.name || 'Sinh viên'}</span>! Theo dõi hồ sơ xét duyệt học bổng của bạn tại đây.</p>
+                </div>
+                <button 
+                    onClick={handleLogout}
+                    className="flex text-sm items-center gap-2 px-5 py-2.5 bg-red-50 text-red-600 font-bold rounded-xl hover:bg-red-100 transition-colors"
+                >
+                    Đăng xuất
+                </button>
             </div>
 
             {/* Thẻ thống kê cá nhân */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 flex items-center gap-5 border-l-8 border-l-blue-500 hover:shadow-lg transition-all duration-300">
-                    <div className="bg-blue-50 p-4 rounded-2xl"><BookOpen className="text-blue-600 w-8 h-8" /></div>
-                    <div>
-                        <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">GPA Hiện tại</p>
-                        <h3 className="text-2xl font-extrabold text-gray-900 mt-1">{latestProfile ? latestProfile.gpa : '---'}</h3>
-                        <p className="text-xs text-blue-600 font-medium mt-1">Dữ liệu từ hệ thống</p>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 flex flex-col justify-center gap-3 border-b-4 border-b-blue-500 hover:shadow-lg transition-all duration-300">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-blue-50 p-3 rounded-xl"><BookOpen className="text-blue-600 w-6 h-6" /></div>
+                        <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">GPA</p>
                     </div>
+                    <h3 className="text-3xl font-extrabold text-gray-900">{latestProfile ? latestProfile.gpa : '---'}</h3>
                 </div>
 
-                <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 flex items-center gap-5 border-l-8 border-l-teal-500 hover:shadow-lg transition-all duration-300">
-                    <div className="bg-teal-50 p-4 rounded-2xl"><Activity className="text-teal-600 w-8 h-8" /></div>
-                    <div>
-                        <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">Điểm rèn luyện</p>
-                        <h3 className="text-2xl font-extrabold text-gray-900 mt-1">85 / 100</h3>
-                        <p className="text-xs text-teal-600 font-medium mt-1">Xếp loại Tốt</p>
+                <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 flex flex-col justify-center gap-3 border-b-4 border-b-teal-500 hover:shadow-lg transition-all duration-300">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-teal-50 p-3 rounded-xl"><Activity className="text-teal-600 w-6 h-6" /></div>
+                        <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">Điểm NCKH</p>
                     </div>
+                    <h3 className="text-3xl font-extrabold text-gray-900">{latestProfile ? latestProfile.diemNCKH : '---'}</h3>
                 </div>
 
-                <div className={`bg-white rounded-3xl shadow-sm border p-6 flex items-center gap-5 border-l-8 hover:shadow-lg transition-all duration-300 ${latestStatusUI.border}`}>
-                    <div className={`${latestStatusUI.bg} p-4 rounded-2xl`}>
-                        {latestProfile?.trangThai === 'ChinhThuc' ? <CheckCircle className={`${latestStatusUI.color} w-8 h-8`} /> : <Clock className={`${latestStatusUI.color} w-8 h-8`} />}
+                <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 flex flex-col justify-center gap-3 border-b-4 border-b-purple-500 hover:shadow-lg transition-all duration-300">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-purple-50 p-3 rounded-xl"><Activity className="text-purple-600 w-6 h-6" /></div>
+                        <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">Điểm HĐCĐ</p>
                     </div>
-                    <div>
-                        <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">Trạng thái Hồ sơ</p>
-                        <h3 className="text-xl font-extrabold text-gray-900 mt-1">{latestStatusUI.text}</h3>
-                        <p className={`text-xs font-medium mt-1 ${latestStatusUI.color}`}>
-                            {latestProfile ? 'Hồ sơ mới nhất' : 'Chưa có hồ sơ'}
-                        </p>
+                    <h3 className="text-3xl font-extrabold text-gray-900">{latestProfile ? latestProfile.diemHDCD : '---'}</h3>
+                </div>
+
+                <div className={`bg-white rounded-3xl shadow-sm border p-6 flex flex-col justify-center gap-3 border-b-4 transition-all duration-300 hover:shadow-lg ${
+                    latestProfile?.trangThai === 'ChinhThuc' ? 'border-b-green-500' : 'border-b-gray-400'
+                }`}>
+                    <div className="flex items-center gap-3">
+                        <div className={`${latestStatusUI.bg} p-3 rounded-xl`}>
+                            {latestProfile?.trangThai === 'ChinhThuc' ? <CheckCircle className={`${latestStatusUI.color} w-6 h-6`} /> : <Clock className={`${latestStatusUI.color} w-6 h-6`} />}
+                        </div>
+                        <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">Trạng thái</p>
                     </div>
+                    <h3 className="text-xl font-extrabold text-gray-900 break-words">{latestStatusUI.text}</h3>
                 </div>
             </div>
 
@@ -99,7 +120,7 @@ const StudentDashboard = () => {
                     onClick={() => setActiveTab('thongbao')}
                     className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-semibold transition-all ${activeTab === 'thongbao' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}
                 >
-                    <Bell size={18} /> Tiến trình & Danh sách
+                    <Bell size={18} /> Hồ sơ & Tiến trình
                 </button>
                 <button
                     onClick={() => setActiveTab('khieunai')}
@@ -141,6 +162,8 @@ const StudentDashboard = () => {
                                         <tr className="bg-gray-50 text-gray-500 uppercase text-xs tracking-wider font-bold">
                                             <th className="py-4 px-6 border-b border-gray-100">Mã Hồ Sơ</th>
                                             <th className="py-4 px-6 border-b border-gray-100 text-center">GPA</th>
+                                            <th className="py-4 px-6 border-b border-gray-100 text-center">NCKH</th>
+                                            <th className="py-4 px-6 border-b border-gray-100 text-center">HĐCĐ</th>
                                             <th className="py-4 px-6 border-b border-gray-100">Xếp loại</th>
                                             <th className="py-4 px-6 border-b border-gray-100">Tiến trình hiện tại</th>
                                         </tr>
@@ -152,6 +175,8 @@ const StudentDashboard = () => {
                                                 <tr key={hoso.maHoSo} className="hover:bg-blue-50/50 transition-colors group border-b border-gray-50 last:border-0">
                                                     <td className="py-4 px-6 text-blue-600 font-bold">HS-{hoso.maHoSo}</td>
                                                     <td className="py-4 px-6 text-center">{hoso.gpa.toFixed(2)}</td>
+                                                    <td className="py-4 px-6 text-center">{hoso.diemNCKH !== undefined ? hoso.diemNCKH : '-'}</td>
+                                                    <td className="py-4 px-6 text-center">{hoso.diemHDCD !== undefined ? hoso.diemHDCD : '-'}</td>
                                                     <td className="py-4 px-6">
                                                         <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-lg text-xs font-bold">
                                                             {hoso.xepLoaiHB || 'Đang xét'}
@@ -173,24 +198,23 @@ const StudentDashboard = () => {
                 </div>
             )}
 
-            {/* Nội dung Tab: Gửi khiếu nại (Giữ nguyên giao diện Form tĩnh của bạn) */}
+            {/* Nội dung Tab: Gửi khiếu nại (Chưa khả dụng phía Backend) */}
             {activeTab === 'khieunai' && (
-                <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 animate-fade-in flex flex-col md:flex-row gap-10">
-                    {/* ... (Đoạn code Form khiếu nại của bạn giữ nguyên, mình rút gọn để đỡ dài) ... */}
-                    <div className="flex-1 space-y-6">
-                        <div>
-                            <h3 className="text-2xl font-bold text-gray-900">Biểu mẫu Khiếu nại</h3>
-                            <p className="text-gray-500 text-sm mt-1">Dành cho sinh viên phát hiện sai sót trong Danh sách Dự kiến.</p>
-                        </div>
-                        {/* Các input form của bạn */}
-                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-3 text-amber-800 text-sm">
-                            <AlertCircle className="shrink-0 w-5 h-5" />
-                            <p>Lưu ý: Hệ thống chỉ tiếp nhận khiếu nại trong vòng <strong>10 ngày</strong> kể từ khi công bố Danh sách Dự kiến. Vui lòng đính kèm minh chứng rõ ràng.</p>
-                        </div>
-                        <button type="button" className="w-full md:w-auto px-8 py-3.5 bg-blue-600 text-white font-bold rounded-xl shadow-md hover:bg-blue-700 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
-                            <Send size={18} /> Gửi khiếu nại tới Phòng CTSV
-                        </button>
+                <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-12 text-center animate-fade-in flex flex-col items-center justify-center">
+                    <div className="bg-amber-50 p-6 rounded-full inline-block mb-4">
+                        <FileWarning className="w-16 h-16 text-amber-500" />
                     </div>
+                    <h3 className="text-2xl font-bold text-gray-900">Tính năng đang phát triển</h3>
+                    <p className="text-gray-500 mt-2 max-w-md">
+                        Hệ thống máy chủ (Backend) hiện tại chưa cung cấp API để xử lý Đơn khiếu nại. 
+                        Vui lòng quay lại sau khi nhà trường cập nhật hệ thống.
+                    </p>
+                    <button 
+                        onClick={() => setActiveTab('thongbao')}
+                        className="mt-6 px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-colors"
+                    >
+                        Quản lý hồ sơ
+                    </button>
                 </div>
             )}
         </div>
