@@ -1,6 +1,6 @@
 # --- Môi trường làm việc của AI (KHÔNG PUSH LÊN GIT) ---
 ai-workspace/
-
+task/
 # --- Rác hệ điều hành ---
 .DS_Store
 Thumbs.db
