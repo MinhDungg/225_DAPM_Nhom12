@@ -23,6 +23,16 @@ builder.Services.AddScoped<IDotHocBongService, DotHocBongService>();
 builder.Services.AddScoped<IHoSoXetHocBongRepository, HoSoXetHocBongRepository>();
 builder.Services.AddScoped<IFinalDecisionService, FinalDecisionService>();
 
+// 1. THÊM CẤU HÌNH CORS Ở ĐÂY (Cho phép tất cả Frontend gọi tới)
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()   // Cho phép mọi domain (localhost:5173, localhost:3000...)
+              .AllowAnyMethod()   // Cho phép mọi method (GET, POST, PUT, DELETE...)
+              .AllowAnyHeader();  // Cho phép mọi header (bao gồm cả header Authorization chứa Token)
+    });
+});
 
 var jwtSection = builder.Configuration.GetSection("Jwt");
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -87,7 +97,14 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// Tạm thời tắt Https Redirection ở môi trường dev để tránh lỗi CORS Preflight (OPTIONS) bị redirect sang HTTPS
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
+// 2. KÍCH HOẠT CORS TRONG PIPELINE (Bắt buộc phải nằm TRƯỚC UseAuthentication)
+app.UseCors("AllowAll");
 
 app.UseAuthentication();
 app.UseAuthorization();
