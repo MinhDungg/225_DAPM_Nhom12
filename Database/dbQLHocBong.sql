@@ -24,6 +24,7 @@ GO
 USE dbQLHocBong;
 GO
 
+-- Bảng Tài khoản (Dùng chung cho Sinh viên và Cán bộ/Giảng viên)
 CREATE TABLE [TAIKHOAN] (
   [MaTK] int PRIMARY KEY IDENTITY(1,1),
   [TenDangNhap] varchar(100) NOT NULL UNIQUE,
@@ -34,12 +35,14 @@ CREATE TABLE [TAIKHOAN] (
 );
 GO
 
+-- Bảng Phòng ban
 CREATE TABLE [PHONGBAN] (
   [MaPhong] int PRIMARY KEY IDENTITY(1,1),
   [TenPhong] nvarchar(150) NOT NULL CONSTRAINT UQ_TenPhong UNIQUE
 );
 GO
 
+-- Bảng Cán bộ (Quản lý nhân sự các phòng ban, khoa, ban giám hiệu)
 CREATE TABLE [CANBO] (
   [MaCB] int PRIMARY KEY IDENTITY(1,1),
   [HoTen] nvarchar(150) NOT NULL,
@@ -50,12 +53,14 @@ CREATE TABLE [CANBO] (
 );
 GO
 
+-- Bảng Khoa
 CREATE TABLE [KHOA] (
   [MaKhoa] int PRIMARY KEY IDENTITY(1,1),
   [TenKhoa] nvarchar(150) NOT NULL CONSTRAINT UQ_TenKhoa UNIQUE
 );
 GO
 
+-- Bảng Lớp
 CREATE TABLE [LOP] (
   [MaLop] int PRIMARY KEY IDENTITY(1,1),
   [TenLop] nvarchar(100) NOT NULL,
@@ -63,6 +68,7 @@ CREATE TABLE [LOP] (
 );
 GO
 
+-- Bảng Sinh viên
 CREATE TABLE [SINHVIEN] (
   [MaSV] varchar(20) PRIMARY KEY, 
   [HoTen] nvarchar(150) NOT NULL,
@@ -74,6 +80,7 @@ CREATE TABLE [SINHVIEN] (
 );
 GO
 
+-- Bảng Kết quả học tập (Lưu GPA từng kỳ)
 CREATE TABLE [KETQUAHOCTAP] (
   [MaDiem] int PRIMARY KEY IDENTITY(1,1),
   [MaSV] varchar(20) NOT NULL,
@@ -85,6 +92,7 @@ CREATE TABLE [KETQUAHOCTAP] (
 );
 GO
 
+-- Bảng Điểm rèn luyện
 CREATE TABLE [DIEMRENLUYEN] (
   [MaDRL] int PRIMARY KEY IDENTITY(1,1),
   [MaSV] varchar(20) NOT NULL,
@@ -95,6 +103,7 @@ CREATE TABLE [DIEMRENLUYEN] (
 );
 GO
 
+-- Bảng Đợt học bổng
 CREATE TABLE [DOTHOCBONG] (
   [MaDot] int PRIMARY KEY IDENTITY(1,1),
   [LoaiDot] nvarchar(150) NOT NULL, 
@@ -104,6 +113,7 @@ CREATE TABLE [DOTHOCBONG] (
 );
 GO
 
+-- Bảng Hồ sơ xét học bổng
 CREATE TABLE [HOSOXETHOCBONG] (
   [MaHoSo] int PRIMARY KEY IDENTITY(1,1),
   [MaSV] varchar(20) NOT NULL,
@@ -120,6 +130,7 @@ CREATE TABLE [HOSOXETHOCBONG] (
 );
 GO
 
+-- Bảng Khiếu nại
 CREATE TABLE [KHIEUNAI] (
   [MaKhieuNai] int PRIMARY KEY IDENTITY(1,1),
   [MaHoSo] int NOT NULL,
@@ -131,6 +142,7 @@ CREATE TABLE [KHIEUNAI] (
 );
 GO
 
+-- Bảng Danh sách Học bổng (Lưu vết Quyết định của Hiệu trưởng)
 CREATE TABLE [DSHOCBONG] (
   [MaDS] int PRIMARY KEY IDENTITY(1,1),
   [MaDot] int NOT NULL,
@@ -142,6 +154,7 @@ CREATE TABLE [DSHOCBONG] (
 );
 GO
 
+-- Bảng Chi trả (Giải ngân tiền từ KHTC)
 CREATE TABLE [CHITRA] (
   [MaChiTra] int PRIMARY KEY IDENTITY(1,1),
   [MaHoSo] int NOT NULL,
@@ -152,6 +165,7 @@ CREATE TABLE [CHITRA] (
 );
 GO
 
+-- Bảng Phân bổ kinh phí (Lưu trữ ngân sách học bổng được cấp cho từng Khoa trong mỗi Đợt)
 CREATE TABLE [PHANBOKINHPHI] (
   [MaPhanBo] int PRIMARY KEY IDENTITY(1,1),
   [MaDot] int NOT NULL,
@@ -275,18 +289,18 @@ INSERT INTO [PHANBOKINHPHI] (MaDot, MaKhoa, KinhPhi, MucHBLoaiKha) VALUES
 (2, 1, 250000000, 5500000), (2, 2, 150000000, 5000000);
 
 -- 6. HỒ SƠ XÉT HỌC BỔNG 
-INSERT INTO [HOSOXETHOCBONG] (MaSV, MaDot, NgayNop, GPA, DiemNCKH, DiemHDCD, XepLoaiHB, TrangThai, MaCB_Duyet) VALUES 
-('23115053101', 1, '2024-02-10', 3.8, 2.0, 1.0, N'Xuất sắc', 'HoiDongDuyet', 4),
-('23115053102', 1, '2024-02-11', 3.6, 0.0, 1.5, N'Giỏi', 'HoiDongDuyet', 4),
-('23115053104', 1, '2024-02-12', 3.9, 5.0, 2.0, N'Xuất sắc', 'HoiDongDuyet', 4),
-('23115053106', 1, '2024-02-12', 3.7, 0.0, 0.0, N'Giỏi', 'HoiDongDuyet', 4),
-('23115053109', 1, '2024-02-13', 3.8, 1.0, 2.0, N'Xuất sắc', 'HoiDongDuyet', 4),
-('23115053107', 1, '2024-02-14', 3.5, 0.0, 3.0, N'Giỏi', 'HoiDongDuyet', 4),
-('23115053105', 1, '2024-02-14', 3.2, 0.0, 5.0, N'Khá', 'HoiDongDuyet', 4),
-('23115053103', 1, '2024-02-15', 2.5, 0.0, 0.0, NULL, 'TuChoi', 4),
-('23115053108', 1, '2024-02-16', 3.1, 0.0, 1.0, NULL, 'TuChoi', 4),
-('23115053110', 1, '2024-02-16', 2.8, 0.0, 0.0, NULL, 'ChoXet', NULL);
-
+-- 6. HỒ SƠ XÉT HỌC BỔNG 
+INSERT INTO [HOSOXETHOCBONG] (MaSV, MaDot, NgayNop, DiemHocTap, DiemRenLuyen, XepLoaiHB, TrangThai, MaCB_Duyet) VALUES 
+('23115053101', 1, '2024-02-10', 3.8, 95, N'Xuất sắc', 'HoiDongDuyet', 4),
+('23115053102', 1, '2024-02-11', 3.6, 90, N'Giỏi', 'HoiDongDuyet', 4),
+('23115053104', 1, '2024-02-12', 3.9, 98, N'Xuất sắc', 'HoiDongDuyet', 4),
+('23115053106', 1, '2024-02-12', 3.7, 85, N'Giỏi', 'HoiDongDuyet', 4),
+('23115053109', 1, '2024-02-13', 3.8, 92, N'Xuất sắc', 'HoiDongDuyet', 4),
+('23115053107', 1, '2024-02-14', 3.5, 88, N'Giỏi', 'HoiDongDuyet', 4),
+('23115053105', 1, '2024-02-14', 3.2, 80, N'Khá', 'HoiDongDuyet', 4),
+('23115053103', 1, '2024-02-15', 2.5, 65, NULL, 'TuChoi', 4),
+('23115053108', 1, '2024-02-16', 3.1, 75, NULL, 'TuChoi', 4),
+('23115053110', 1, '2024-02-16', 2.8, 70, NULL, 'ChoXet', NULL);
 -- 7. KHIẾU NẠI
 INSERT INTO [KHIEUNAI] (MaHoSo, NoiDung, MinhChung, NgayGui, TrangThai, MaCB_Duyet) VALUES 
 (8, N'Lỗi hệ thống ghi nhận thiếu điểm rèn luyện', 'link_driver_1', '2024-02-20', 'DaXuLy', 2),
