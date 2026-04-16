@@ -7,6 +7,7 @@ using BE.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -92,7 +93,14 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// Tạm thời tắt Https Redirection ở môi trường dev để tránh lỗi CORS Preflight (OPTIONS) bị redirect sang HTTPS
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
+// 2. KÍCH HOẠT CORS TRONG PIPELINE (Bắt buộc phải nằm TRƯỚC UseAuthentication)
+app.UseCors("AllowAll");
 
 app.UseAuthentication();
 app.UseAuthorization();
