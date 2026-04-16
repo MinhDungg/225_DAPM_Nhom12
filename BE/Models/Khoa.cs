@@ -7,4 +7,5 @@ public class Khoa
 
     public ICollection<Lop> Lops { get; set; } = new List<Lop>();
     public ICollection<PhanBoKinhPhi> PhanBoKinhPhis { get; set; } = new List<PhanBoKinhPhi>();
+    public ICollection<CanBo> CanBos { get; set; } = new List<CanBo>();
 }
