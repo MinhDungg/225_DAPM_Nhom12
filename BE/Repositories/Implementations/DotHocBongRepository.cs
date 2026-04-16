@@ -1,6 +1,7 @@
 ﻿using BE.Data;
 using BE.Models;
 using BE.Repositories.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace BE.Repositories.Implementations;
 
@@ -18,5 +19,15 @@ public class DotHocBongRepository : IDotHocBongRepository
         _context.DotHocBongs.Add(dotHocBong);
         await _context.SaveChangesAsync();
         return dotHocBong;
+    }
+
+    public Task<DotHocBong?> LayTheoIdAsync(int maDot)
+    {
+        return _context.DotHocBongs.FirstOrDefaultAsync(d => d.MaDot == maDot);
+    }
+
+    public void CapNhat(DotHocBong dotHocBong)
+    {
+        _context.DotHocBongs.Update(dotHocBong);
     }
 }

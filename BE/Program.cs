@@ -17,8 +17,17 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddScoped<ITaiKhoanRepository, TaiKhoanRepository>();
 builder.Services.AddScoped<IDotHocBongRepository, DotHocBongRepository>();
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<ISinhVienRepository, SinhVienRepository>();
+builder.Services.AddScoped<IKhoaRepository, KhoaRepository>();
+builder.Services.AddScoped<IKetQuaHocTapRepository, KetQuaHocTapRepository>();
+builder.Services.AddScoped<IDiemRenLuyenRepository, DiemRenLuyenRepository>();
+builder.Services.AddScoped<IHoSoXetHocBongRepository, HoSoXetHocBongRepository>();
+builder.Services.AddScoped<IPhanBoKinhPhiRepository, PhanBoKinhPhiRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IDotHocBongService, DotHocBongService>();
+builder.Services.AddScoped<IDiemService, DiemService>();
+builder.Services.AddScoped<IKinhPhiService, KinhPhiService>();
 
 var jwtSection = builder.Configuration.GetSection("Jwt");
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

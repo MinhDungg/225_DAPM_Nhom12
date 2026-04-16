@@ -249,7 +249,7 @@ public class AppDbContext : DbContext
                 .HasDefaultValueSql("GETDATE()");
             entity.Property(e => e.DiemHocTap)
                 .IsRequired()
-                .HasColumnType("float");
+                .HasColumnType("real");
             entity.Property(e => e.DiemRenLuyen)
                 .IsRequired();
             entity.Property(e => e.XepLoaiHB)

@@ -89,7 +89,7 @@ CREATE TABLE [KETQUAHOCTAP] (
   [MaSV] varchar(20) NOT NULL,
   [HocKy] int NOT NULL,
   [NamHoc] varchar(20) NOT NULL,
-  [GPA] float NOT NULL,
+  [GPA] real NOT NULL,
   [SoTC] int NOT NULL,
   [MaCB_Nhap] int -- Cán bộ phòng Đào tạo import
 );
@@ -122,9 +122,11 @@ CREATE TABLE [HOSOXETHOCBONG] (
   [MaSV] varchar(20) NOT NULL,
   [MaDot] int NOT NULL,
   [NgayNop] datetime DEFAULT GETDATE(),
-  [GPA] float NOT NULL,
-  [DiemNCKH] float DEFAULT 0,
-  [DiemHDCD] float DEFAULT 0,
+  [DiemHocTap] real NOT NULL,   -- MỚI: Đã đổi tên và dùng real (thay vì GPA)
+  [DiemRenLuyen] int NOT NULL,  -- MỚI: Lưu snapshot ĐRL tại thời điểm nộp hồ sơ
+  -- [GPA] float NOT NULL,
+  -- [DiemNCKH] float DEFAULT 0,
+  -- [DiemHDCD] float DEFAULT 0,
   [XepLoaiHB] nvarchar(50),
   [TrangThai] varchar(50) DEFAULT 'ChoXet', -- ChoXet, KhoaDeXuat, HoiDongDuyet, TuChoi
   [MaCB_Duyet] int
@@ -221,7 +223,7 @@ ALTER TABLE [PHANBOKINHPHI] ADD FOREIGN KEY ([MaDot]) REFERENCES [DOTHOCBONG] ([
 ALTER TABLE [PHANBOKINHPHI] ADD FOREIGN KEY ([MaKhoa]) REFERENCES [KHOA] ([MaKhoa]);
 GO
 
--- ALTER TABLE [PHANBOKINHPHI] ADD CONSTRAINT UQ_PhanBo_DotKhoa UNIQUE (MaDot, MaKhoa);
+ALTER TABLE [PHANBOKINHPHI] ADD CONSTRAINT UQ_PhanBo_DotKhoa UNIQUE (MaDot, MaKhoa);
 
 USE dbQLHocBong;
 GO
