@@ -235,7 +235,9 @@ INSERT INTO [PHONGBAN] (TenPhong) VALUES
 
 -- Thêm Khoa
 INSERT INTO [KHOA] (TenKhoa) VALUES 
-(N'Khoa Công nghệ Thông tin');  -- ID: 1
+(N'Khoa Công nghệ Thông tin'),
+(N'Khoa Công nghệ thực phẩm'),
+(N'Khoa Điện');  -- ID: 1
 
 -- Thêm Lớp (Chia làm 2 lớp thuộc Khoa CNTT)
 INSERT INTO [LOP] (TenLop, MaKhoa) VALUES 
@@ -303,18 +305,18 @@ INSERT INTO [SINHVIEN] (MaSV, HoTen, NgaySinh, Email, SDT, MaLop, MaTK) VALUES
 
 -- 4. ĐIỂM HỌC TẬP VÀ RÈN LUYỆN
 INSERT INTO [KETQUAHOCTAP] (MaSV, HocKy, NamHoc, GPA, SoTC, MaCB_Nhap) VALUES 
-('23115053101', 1, '2023-2024', 3.8, 18, 1), ('23115053102', 1, '2023-2024', 3.6, 18, 1),
-('23115053103', 1, '2023-2024', 2.5, 15, 1), ('23115053104', 1, '2023-2024', 3.9, 20, 1),
-('23115053105', 1, '2023-2024', 3.2, 18, 1), ('23115053106', 1, '2023-2024', 3.7, 18, 1),
-('23115053107', 1, '2023-2024', 3.5, 18, 1), ('23115053108', 1, '2023-2024', 3.1, 15, 1),
-('23115053109', 1, '2023-2024', 3.8, 20, 1), ('23115053110', 1, '2023-2024', 2.8, 15, 1);
+('23115053122101', 1, '2023-2024', 3.8, 18, 1), ('23115053122102', 1, '2023-2024', 3.6, 18, 1),
+('23115053122103', 1, '2023-2024', 2.5, 15, 1), ('23115053122104', 1, '2023-2024', 3.9, 20, 1),
+('23115053122105', 1, '2023-2024', 3.2, 18, 1), ('23115053122106', 1, '2023-2024', 3.7, 18, 1),
+('23115053122107', 1, '2023-2024', 3.5, 18, 1), ('23115053122108', 1, '2023-2024', 3.1, 15, 1),
+('23115053122109', 1, '2023-2024', 3.8, 20, 1), ('23115053122110', 1, '2023-2024', 2.8, 15, 1);
 
 INSERT INTO [DIEMRENLUYEN] (MaSV, HocKy, NamHoc, DiemSo, MaCB_Nhap) VALUES 
-('23115053101', 1, '2023-2024', 95, 2), ('23115053102', 1, '2023-2024', 90, 2),
-('23115053103', 1, '2023-2024', 65, 2), ('23115053104', 1, '2023-2024', 98, 2),
-('23115053105', 1, '2023-2024', 80, 2), ('23115053106', 1, '2023-2024', 85, 2),
-('23115053107', 1, '2023-2024', 88, 2), ('23115053108', 1, '2023-2024', 75, 2),
-('23115053109', 1, '2023-2024', 92, 2), ('23115053110', 1, '2023-2024', 70, 2);
+('23115053122101', 1, '2023-2024', 95, 2), ('23115053122102', 1, '2023-2024', 90, 2),
+('23115053122103', 1, '2023-2024', 65, 2), ('23115053122104', 1, '2023-2024', 98, 2),
+('23115053122105', 1, '2023-2024', 80, 2), ('23115053122106', 1, '2023-2024', 85, 2),
+('23115053122107', 1, '2023-2024', 88, 2), ('23115053122108', 1, '2023-2024', 75, 2),
+('23115053122109', 1, '2023-2024', 92, 2), ('23115053122110', 1, '2023-2024', 70, 2);
 
 -- 5. ĐỢT HỌC BỔNG VÀ PHÂN BỔ KINH PHÍ
 INSERT INTO [DOTHOCBONG] (LoaiDot, HocKy, NamHoc, TrangThai) VALUES 
@@ -328,16 +330,16 @@ INSERT INTO [PHANBOKINHPHI] (MaDot, MaKhoa, KinhPhi, MucHBLoaiKha) VALUES
 -- 6. HỒ SƠ XÉT HỌC BỔNG 
 -- 6. HỒ SƠ XÉT HỌC BỔNG 
 INSERT INTO [HOSOXETHOCBONG] (MaSV, MaDot, NgayNop, DiemHocTap, DiemRenLuyen, XepLoaiHB, TrangThai, MaCB_Duyet) VALUES 
-('23115053101', 1, '2024-02-10', 3.8, 95, N'Xuất sắc', 'HoiDongDuyet', 4),
-('23115053102', 1, '2024-02-11', 3.6, 90, N'Giỏi', 'HoiDongDuyet', 4),
-('23115053104', 1, '2024-02-12', 3.9, 98, N'Xuất sắc', 'HoiDongDuyet', 4),
-('23115053106', 1, '2024-02-12', 3.7, 85, N'Giỏi', 'HoiDongDuyet', 4),
-('23115053109', 1, '2024-02-13', 3.8, 92, N'Xuất sắc', 'HoiDongDuyet', 4),
-('23115053107', 1, '2024-02-14', 3.5, 88, N'Giỏi', 'HoiDongDuyet', 4),
-('23115053105', 1, '2024-02-14', 3.2, 80, N'Khá', 'HoiDongDuyet', 4),
-('23115053103', 1, '2024-02-15', 2.5, 65, NULL, 'TuChoi', 4),
-('23115053108', 1, '2024-02-16', 3.1, 75, NULL, 'TuChoi', 4),
-('23115053110', 1, '2024-02-16', 2.8, 70, NULL, 'ChoXet', NULL);
+('23115053122101', 1, '2024-02-10', 3.8, 95, N'Xuất sắc', 'HoiDongDuyet', 4),
+('23115053122102', 1, '2024-02-11', 3.6, 90, N'Giỏi', 'HoiDongDuyet', 4),
+('23115053122104', 1, '2024-02-12', 3.9, 98, N'Xuất sắc', 'HoiDongDuyet', 4),
+('23115053122106', 1, '2024-02-12', 3.7, 85, N'Giỏi', 'HoiDongDuyet', 4),
+('23115053122109', 1, '2024-02-13', 3.8, 92, N'Xuất sắc', 'HoiDongDuyet', 4),
+('23115053122107', 1, '2024-02-14', 3.5, 88, N'Giỏi', 'HoiDongDuyet', 4),
+('23115053122105', 1, '2024-02-14', 3.2, 80, N'Khá', 'HoiDongDuyet', 4),
+('23115053122103', 1, '2024-02-15', 2.5, 65, NULL, 'TuChoi', 4),
+('23115053122108', 1, '2024-02-16', 3.1, 75, NULL, 'TuChoi', 4),
+('23115053122110', 1, '2024-02-16', 2.8, 70, NULL, 'ChoXet', NULL);
 -- 7. KHIẾU NẠI
 INSERT INTO [KHIEUNAI] (MaHoSo, NoiDung, MinhChung, NgayGui, TrangThai, MaCB_Duyet) VALUES 
 (8, N'Lỗi hệ thống ghi nhận thiếu điểm rèn luyện', 'link_driver_1', '2024-02-20', 'DaXuLy', 2),
@@ -346,13 +348,13 @@ INSERT INTO [KHIEUNAI] (MaHoSo, NoiDung, MinhChung, NgayGui, TrangThai, MaCB_Duy
 
 -- 8. DANH SÁCH HỌC BỔNG ĐƯỢC DUYỆT 
 INSERT INTO [DSHOCBONG] (MaDot, MaSV, XepLoai, SoTien, NgayPheDuyet, MaCB_PheDuyet) VALUES 
-(1, '23115053101', N'Xuất sắc', 8000000, '2024-03-01', 6),
-(1, '23115053102', N'Giỏi', 6500000, '2024-03-01', 6),
-(1, '23115053104', N'Xuất sắc', 8000000, '2024-03-01', 6),
-(1, '23115053106', N'Giỏi', 6500000, '2024-03-01', 6),
-(1, '23115053109', N'Xuất sắc', 8000000, '2024-03-01', 6),
-(1, '23115053107', N'Giỏi', 6500000, '2024-03-01', 6),
-(1, '23115053105', N'Khá', 5000000, '2024-03-01', 6);
+(1, '23115053122101', N'Xuất sắc', 8000000, '2024-03-01', 6),
+(1, '23115053122102', N'Giỏi', 6500000, '2024-03-01', 6),
+(1, '23115053122104', N'Xuất sắc', 8000000, '2024-03-01', 6),
+(1, '23115053122106', N'Giỏi', 6500000, '2024-03-01', 6),
+(1, '23115053122109', N'Xuất sắc', 8000000, '2024-03-01', 6),
+(1, '23115053122107', N'Giỏi', 6500000, '2024-03-01', 6),
+(1, '23115053122105', N'Khá', 5000000, '2024-03-01', 6);
 
 -- 9. CHI TRẢ 
 INSERT INTO [CHITRA] (MaHoSo, SoTien, NgayXacNhan, TrangThai, MaCB_GiaiNgan) VALUES 
@@ -410,16 +412,16 @@ GO
 
 -- Thêm hồ sơ xét học bổng (trạng thái ChoXet)
 -- Lấy MaDot đầu tiên
-DECLARE @MaDotTest int = (SELECT TOP 1 MaDot FROM DOTHOCBONG ORDER BY MaDot DESC);
+-- DECLARE @MaDotTest int = (SELECT TOP 1 MaDot FROM DOTHOCBONG ORDER BY MaDot DESC);
 
-INSERT INTO [HOSOXETHOCBONG] (MaSV, MaDot, NgayNop, GPA, DiemNCKH, DiemHDCD, XepLoaiHB, TrangThai, MaCB_Duyet)
-VALUES 
-('23115053122101', @MaDotTest, GETDATE(), 3.5, 5, 3, NULL, 'ChoXet', NULL),
-('23115053122102', @MaDotTest, GETDATE(), 3.8, 8, 5, NULL, 'ChoXet', NULL),
-('23115053122103', @MaDotTest, GETDATE(), 3.2, 2, 1, NULL, 'ChoXet', NULL),
-('23115053122104', @MaDotTest, GETDATE(), 3.6, 6, 4, NULL, 'ChoXet', NULL),
-('23115053122105', @MaDotTest, GETDATE(), 3.9, 10, 7, NULL, 'ChoXet', NULL);
-GO
+-- INSERT INTO [HOSOXETHOCBONG] (MaSV, MaDot, NgayNop, GPA, DiemNCKH, DiemHDCD, XepLoaiHB, TrangThai, MaCB_Duyet)
+-- VALUES 
+-- ('23115053122101', @MaDotTest, GETDATE(), 3.5, 5, 3, NULL, 'ChoXet', NULL),
+-- ('23115053122102', @MaDotTest, GETDATE(), 3.8, 8, 5, NULL, 'ChoXet', NULL),
+-- ('23115053122103', @MaDotTest, GETDATE(), 3.2, 2, 1, NULL, 'ChoXet', NULL),
+-- ('23115053122104', @MaDotTest, GETDATE(), 3.6, 6, 4, NULL, 'ChoXet', NULL),
+-- ('23115053122105', @MaDotTest, GETDATE(), 3.9, 10, 7, NULL, 'ChoXet', NULL);
+-- GO
 
 USE dbQLHocBong;
 GO
@@ -526,22 +528,22 @@ GO
 -- ================================================
 -- BƯỚC 5: Thêm HỒ SƠ XÉT HỌC BỔNG (nếu chưa có)
 -- ================================================
-IF NOT EXISTS (
-    SELECT 1 FROM HOSOXETHOCBONG 
-    WHERE MaDot = 1 AND TrangThai = 'ChoXet'
-)
-BEGIN
-    INSERT INTO HOSOXETHOCBONG 
-        (MaSV, MaDot, NgayNop, GPA, DiemNCKH, DiemHDCD, XepLoaiHB, TrangThai, MaCB_Duyet)
-    VALUES 
-    ('23115053122101', 1, GETDATE(), 3.5, 5, 3, NULL, 'ChoXet', NULL),
-    ('23115053122102', 1, GETDATE(), 3.8, 8, 5, NULL, 'ChoXet', NULL),
-    ('23115053122103', 1, GETDATE(), 3.2, 2, 1, NULL, 'ChoXet', NULL),
-    ('23115053122104', 1, GETDATE(), 3.6, 6, 4, NULL, 'ChoXet', NULL),
-    ('23115053122105', 1, GETDATE(), 3.9, 10, 7, NULL, 'ChoXet', NULL);
-    PRINT 'Đã thêm 5 HOSOXETHOCBONG trạng thái ChoXet';
-END
-GO
+-- IF NOT EXISTS (
+--     SELECT 1 FROM HOSOXETHOCBONG 
+--     WHERE MaDot = 1 AND TrangThai = 'ChoXet'
+-- )
+-- BEGIN
+--     INSERT INTO HOSOXETHOCBONG 
+--         (MaSV, MaDot, NgayNop, GPA, DiemNCKH, DiemHDCD, XepLoaiHB, TrangThai, MaCB_Duyet)
+--     VALUES 
+--     ('23115053122101', 1, GETDATE(), 3.5, 5, 3, NULL, 'ChoXet', NULL),
+--     ('23115053122102', 1, GETDATE(), 3.8, 8, 5, NULL, 'ChoXet', NULL),
+--     ('23115053122103', 1, GETDATE(), 3.2, 2, 1, NULL, 'ChoXet', NULL),
+--     ('23115053122104', 1, GETDATE(), 3.6, 6, 4, NULL, 'ChoXet', NULL),
+--     ('23115053122105', 1, GETDATE(), 3.9, 10, 7, NULL, 'ChoXet', NULL);
+--     PRINT 'Đã thêm 5 HOSOXETHOCBONG trạng thái ChoXet';
+-- END
+-- GO
 
 -- ================================================
 -- KIỂM TRA KẾT QUẢ QUERY MỤC TIÊU
@@ -554,7 +556,7 @@ SELECT
     hs.TrangThai,
     sv.MaLop,
     l.MaKhoa,
-    hs.GPA
+    hs.DiemHocTap
 FROM HOSOXETHOCBONG hs
 JOIN SINHVIEN sv ON hs.MaSV = sv.MaSV
 JOIN LOP l ON sv.MaLop = l.MaLop
