@@ -7,18 +7,43 @@ using BE.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+
+// Add CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
 
 builder.Services.AddControllers();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddScoped<ITaiKhoanRepository, TaiKhoanRepository>();
 builder.Services.AddScoped<IDotHocBongRepository, DotHocBongRepository>();
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<ISinhVienRepository, SinhVienRepository>();
+builder.Services.AddScoped<IKhoaRepository, KhoaRepository>();
+builder.Services.AddScoped<IKetQuaHocTapRepository, KetQuaHocTapRepository>();
+builder.Services.AddScoped<IDiemRenLuyenRepository, DiemRenLuyenRepository>();
+builder.Services.AddScoped<IHoSoXetHocBongRepository, HoSoXetHocBongRepository>();
+builder.Services.AddScoped<IPhanBoKinhPhiRepository, PhanBoKinhPhiRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IDotHocBongService, DotHocBongService>();
+builder.Services.AddScoped<IDiemService, DiemService>();
+builder.Services.AddScoped<IKinhPhiService, KinhPhiService>();
+builder.Services.AddScoped<IHoSoXetHocBongRepository, HoSoXetHocBongRepository>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IDotHocBongService, DotHocBongService>();
+builder.Services.AddScoped<IKhoaService, KhoaService>();
 
 var jwtSection = builder.Configuration.GetSection("Jwt");
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -83,7 +108,16 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// Tạm thời tắt Https Redirection ở môi trường dev để tránh lỗi CORS Preflight (OPTIONS) bị redirect sang HTTPS
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
+// 2. KÍCH HOẠT CORS TRONG PIPELINE (Bắt buộc phải nằm TRƯỚC UseAuthentication)
+app.UseCors("AllowAll");
+
+app.UseCors("AllowAll");
 
 app.UseAuthentication();
 app.UseAuthorization();
