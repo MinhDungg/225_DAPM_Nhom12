@@ -67,7 +67,22 @@ namespace BE.Services.Implementations
                 TrangThai = h.TrangThai // SV theo dõi trạng thái từ lúc nộp đến khi chốt sổ
             });
         }
-
+        // Service Implementation
+        public async Task<IEnumerable<HoSoResponseDTO>> GetProfilesByStatusAsync(string status)
+        {
+            var rawData = await _repository.GetProfilesByStatusAsync(status);
+            return rawData.Select(h => new HoSoResponseDTO
+            {
+                MaHoSo = h.MaHoSo,
+                MaSV = h.MaSV,
+                HoTen = h.SinhVien?.HoTen,
+                TenLop = h.SinhVien?.Lop?.TenLop,
+                GPA = h.GPA,
+                XepLoaiHB = h.XepLoaiHB,
+                TrangThai = h.TrangThai
+                // Bạn có thể tính toán số tiền tạm tính dựa trên XepLoai ở đây nếu cần
+            });
+        }
         /// <summary>
         /// Kích hoạt quy trình phê duyệt cuối cùng để ban hành danh sách chính thức.
         /// </summary>
