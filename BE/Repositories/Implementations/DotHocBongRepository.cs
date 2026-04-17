@@ -2,6 +2,7 @@
 using BE.Models;
 using BE.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using System.Threading.Tasks;
 
 namespace BE.Repositories.Implementations;
 
@@ -21,13 +22,17 @@ public class DotHocBongRepository : IDotHocBongRepository
         return dotHocBong;
     }
 
-    public Task<DotHocBong?> LayTheoIdAsync(int maDot)
+    public async Task<DotHocBong?> LayTheoIdAsync(int maDot)
     {
-        return _context.DotHocBongs.FirstOrDefaultAsync(d => d.MaDot == maDot);
+        return await _context.DotHocBongs.FirstOrDefaultAsync(d => d.MaDot == maDot);
     }
 
     public void CapNhat(DotHocBong dotHocBong)
     {
         _context.DotHocBongs.Update(dotHocBong);
+    }
+    public async Task<IEnumerable<DotHocBong>> LayDanhSachAsync()
+    {
+        return await _context.DotHocBongs.ToListAsync();
     }
 }
