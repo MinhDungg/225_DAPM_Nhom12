@@ -147,9 +147,9 @@ public class HoSoXetHocBongRepository : IHoSoXetHocBongRepository
 
                 dot.TrangThai = "ChinhThuc";
 
-                // 2. Lấy danh sách hồ sơ "DanhSachDuKien"
+                // 2. Lấy danh sách hồ sơ "HoiDongDuyet"
                 var confirmedProfiles = await _context.HoSoXetHocBongs
-                    .Where(h => h.MaDot == maDot && h.TrangThai == "DanhSachDuKien")
+                    .Where(h => h.MaDot == maDot && h.TrangThai == "HoiDongDuyet")
                     .ToListAsync();
 
                 if (confirmedProfiles.Any())

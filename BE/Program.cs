@@ -40,10 +40,8 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IDotHocBongService, DotHocBongService>();
 builder.Services.AddScoped<IDiemService, DiemService>();
 builder.Services.AddScoped<IKinhPhiService, KinhPhiService>();
-builder.Services.AddScoped<IHoSoXetHocBongRepository, HoSoXetHocBongRepository>();
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IDotHocBongService, DotHocBongService>();
 builder.Services.AddScoped<IKhoaService, KhoaService>();
+builder.Services.AddScoped<IFinalDecisionService, FinalDecisionService>();
 
 var jwtSection = builder.Configuration.GetSection("Jwt");
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -117,7 +115,6 @@ if (!app.Environment.IsDevelopment())
 // 2. KÍCH HOẠT CORS TRONG PIPELINE (Bắt buộc phải nằm TRƯỚC UseAuthentication)
 app.UseCors("AllowAll");
 
-app.UseCors("AllowAll");
 
 app.UseAuthentication();
 app.UseAuthorization();

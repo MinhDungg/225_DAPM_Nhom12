@@ -42,7 +42,7 @@ namespace BE.Controllers
             return Ok(new BaseResponse<bool>
             {
                 Success = result,
-                Message = result ? "Cập nhật hồ sơ thành DanhSachDuKien thành công." : "Không có hồ sơ nào được cập nhật.",
+                Message = result ? "Cập nhật hồ sơ thành HoiDongDuyet thành công." : "Không có hồ sơ nào được cập nhật.",
                 Data = result
             });
         }
@@ -62,13 +62,35 @@ namespace BE.Controllers
                 Data = result
             });
         }
+        [HttpGet("/api/hieutruong/tong-hop/{maDot}")]
+        [Authorize(Roles = "HieuTruong")]
+        public async Task<ActionResult<BaseResponse<TongHopHieuTruongResponseDTO>>> GetToTrinhHieuTruong(int maDot)
+        {
+            var result = await _service.GetToTrinhHieuTruongAsync(maDot);
+
+            if (result == null)
+            {
+                return Ok(new BaseResponse<TongHopHieuTruongResponseDTO>
+                {
+                    Success = false,
+                    Message = "Không tìm thấy dữ liệu tờ trình cho đợt học bổng này.",
+                    Data = null!
+                });
+            }
+
+            return Ok(new BaseResponse<TongHopHieuTruongResponseDTO>
+            {
+                Success = true,
+                Message = "Lấy dữ liệu tờ trình thành công.",
+                Data = result
+            });
+        }
 
         // Task 3.4: Hiệu trưởng phê duyệt
         [HttpPut("/api/hieutruong/pheduyet/{maDot}")]
         [Authorize(Roles = "HieuTruong")]
         public async Task<ActionResult<BaseResponse<bool>>> RectorApprove(int maDot)
         {
-            // Giả sử MaCB được lưu trong Claim "MaCB"
             var maCBClaim = User.FindFirst("MaCB")?.Value;
             if (!int.TryParse(maCBClaim, out int maCB)) maCB = 0;
 
