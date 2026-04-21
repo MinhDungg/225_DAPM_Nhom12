@@ -43,6 +43,10 @@ builder.Services.AddScoped<IKinhPhiService, KinhPhiService>();
 builder.Services.AddScoped<IKhoaService, KhoaService>();
 builder.Services.AddScoped<IFinalDecisionService, FinalDecisionService>();
 
+builder.Services.AddScoped<IKhieuNaiRepository, KhieuNaiRepository>();
+builder.Services.AddScoped<IKhieuNaiService, KhieuNaiService>();
+
+
 var jwtSection = builder.Configuration.GetSection("Jwt");
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
