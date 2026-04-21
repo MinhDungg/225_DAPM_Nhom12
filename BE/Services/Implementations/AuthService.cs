@@ -1,4 +1,4 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -104,6 +104,16 @@ public class AuthService : IAuthService
             new(ClaimTypes.Role, taiKhoan.VaiTro),
             new(ClaimTypes.Name, taiKhoan.TenDangNhap)
         };
+
+        // Bổ sung claim MaSV hoặc MaCB tùy theo vai trò
+        if (taiKhoan.SinhVien != null)
+        {
+            claims.Add(new Claim("MaSV", taiKhoan.SinhVien.MaSV));
+        }
+        if (taiKhoan.CanBo != null)
+        {
+            claims.Add(new Claim("MaCB", taiKhoan.CanBo.MaCB.ToString()));
+        }
 
         var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
         var credentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
