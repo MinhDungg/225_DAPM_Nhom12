@@ -8,3 +8,5 @@ export { default as HieuTruongDashboard } from './HieuTruong/HieuTruongDashboard
 export { default as KhoaDashboard } from './Khoa/KhoaDashboard';
 export { default as StudentDashboard } from './SinhVien/StudentDashboard';
 export { default as TaiChinhDashboard } from './TaiChinh/TaiChinhDashboard';
+export { default as KhieuNaiSinhVien } from './SinhVien/KhieuNaiSinhVien';
+export { default as KhieuNaiQuanLy } from './CTSV/KhieuNaiQuanLy';
