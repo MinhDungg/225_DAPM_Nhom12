@@ -1,4 +1,4 @@
-﻿using BE.Models;
+using BE.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace BE.Data;
@@ -293,6 +293,9 @@ public class AppDbContext : DbContext
                 .HasMaxLength(50)
                 .IsUnicode(false)
                 .HasDefaultValue("ChoXuLy");
+            entity.Property(e => e.NoiDungPhanHoi)
+                .HasColumnType("nvarchar(max)");
+            entity.Property(e => e.NgayPhanHoi);
 
             entity.HasOne(e => e.HoSoXetHocBong)
                 .WithMany(e => e.KhieuNais)

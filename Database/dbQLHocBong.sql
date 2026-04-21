@@ -141,7 +141,9 @@ CREATE TABLE [KHIEUNAI] (
   [MinhChung] varchar(255),
   [NgayGui] datetime DEFAULT GETDATE(),
   [TrangThai] varchar(50) DEFAULT 'ChoXuLy' CONSTRAINT CHK_TrangThai_KhieuNai CHECK ([TrangThai] IN ('ChoXuLy', 'DaXuLy')),
-  [MaCB_Duyet] int
+  [MaCB_Duyet] int,
+  [NoiDungPhanHoi] nvarchar(MAX),
+  [NgayPhanHoi] datetime
 );
 GO
 
@@ -334,10 +336,10 @@ INSERT INTO [HOSOXETHOCBONG] (MaSV, MaDot, NgayNop, DiemHocTap, DiemRenLuyen, Xe
 ('23115053122104', 2, '2024-06-12', 3.9, 98, N'Xuất sắc', 'HoiDongDuyet', 4);
 
 -- KHIẾU NẠI
-INSERT INTO [KHIEUNAI] (MaHoSo, NoiDung, MinhChung, NgayGui, TrangThai, MaCB_Duyet) VALUES 
-(8, N'Lỗi hệ thống ghi nhận thiếu điểm rèn luyện', 'link_driver_1', '2024-02-20', 'DaXuLy', 2),
-(9, N'Chưa cộng điểm ban cán sự lớp', 'link_driver_2', '2024-02-21', 'DaXuLy', 4),
-(10, N'Lỗi cập nhật tín chỉ học tập', 'link_driver_3', '2024-02-22', 'ChoXuLy', NULL);
+INSERT INTO [KHIEUNAI] (MaHoSo, NoiDung, MinhChung, NgayGui, TrangThai, MaCB_Duyet, NoiDungPhanHoi, NgayPhanHoi) VALUES 
+(8, N'Lỗi hệ thống ghi nhận thiếu điểm rèn luyện', 'link_driver_1', '2024-02-20', 'DaXuLy', 2, N'Đã kiểm tra và cập nhật lại điểm rèn luyện cho sinh viên. Vui lòng kiểm tra lại.', '2024-02-25'),
+(9, N'Chưa cộng điểm ban cán sự lớp', 'link_driver_2', '2024-02-21', 'DaXuLy', 4, N'Đã bổ sung điểm cộng ban cán sự lớp vào hồ sơ. Cảm ơn bạn đã phản ánh.', '2024-02-26'),
+(10, N'Lỗi cập nhật tín chỉ học tập', 'link_driver_3', '2024-02-22', 'ChoXuLy', NULL, NULL, NULL);
 
 -- DANH SÁCH HỌC BỔNG ĐƯỢC DUYỆT 
 INSERT INTO [DSHOCBONG] (MaDot, MaSV, XepLoai, SoTien, NgayPheDuyet, MaCB_PheDuyet) VALUES 
