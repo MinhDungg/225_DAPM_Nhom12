@@ -16,6 +16,7 @@ import {
 } from './pages';
 import TaoDotHocBong from './pages/CTSV/TaoDotHocBong.jsx';
 import DaoTaoImport from './pages/DaoTao/DaoTaoImport.jsx';
+import DaoTaoDanhSachDot from './pages/DaoTao/DaoTaoDanhSachDot.jsx';
 
 function App() {
   const [role, setRole] = useState('SinhVien');
@@ -42,12 +43,15 @@ function App() {
           <Route path="ctsv/khieu-nai" element={<KhieuNaiQuanLy />} />
           <Route path="khoa/khieu-nai" element={<KhieuNaiQuanLy />} />
 
-          {/* ===== ROUTE CHO TASK 04 ===== */}
+          {/* ===== ROUTE CHO TASK 04 & 05 ===== */}
           {/* CTSV: Tạo đợt học bổng */}
           <Route path="ctsv/tao-dot-hoc-bong" element={<TaoDotHocBong />} />
 
-          {/* Đào Tạo: Import dữ liệu học vụ */}
-          <Route path="dao-tao/danh-sach" element={<DaoTaoImport />} />
+          {/* Đào Tạo: Danh sách đợt (chọn đích import) */}
+          <Route path="dao-tao/danh-sach" element={<DaoTaoDanhSachDot />} />
+
+          {/* Đào Tạo: Import điểm cho đợt cụ thể (nhận state từ DaoTaoDanhSachDot) */}
+          <Route path="dao-tao/import/:maDot" element={<DaoTaoImport />} />
 
           {/* Nếu gõ đường dẫn root (/) sẽ tự động chuyển hướng về trang login */}
           <Route index element={<Navigate to="/login" replace />} />

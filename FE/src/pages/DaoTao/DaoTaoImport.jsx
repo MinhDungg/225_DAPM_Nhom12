@@ -1,19 +1,26 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import { toast } from 'react-toastify';
-import { Download, Upload, CheckCircle, Loader2, FileSpreadsheet, X } from 'lucide-react';
+import {
+  Download, CheckCircle, Loader2, FileSpreadsheet,
+  X, UploadCloud, ArrowLeft,
+} from 'lucide-react';
 import diemService from '../../services/diemService.js';
 
-// Tên cột Excel khớp với ImportHocVuRequest DTO (Backend)
-const EXCEL_HEADERS = [
-  'MaSV', 'HocKy', 'NamHoc', 'GPA', 'DiemHocTap', 'SoTC', 'CoDiemF', 'DiemSoDRL',
-];
+// ─── Cấu trúc file Excel quy ước mới ─────────────────────────────────────────
+// Dòng 1: ["HocKy",  <giá trị>]
+// Dòng 2: ["NamHoc", <giá trị>]
+// Dòng 3: [] (trống)
+// Dòng 4: ["MaSV", "GPA", "DiemHocTap", "SoTC", "CoDiemF", "DiemSoDRL"]  ← header
+// Dòng 5+: dữ liệu sinh viên
 
-// Map tên cột Excel → tên field DTO (camelCase cho JSON)
+// Các cột dữ liệu (không gồm HocKy/NamHoc vì đã lấy từ B1/B2)
+const DATA_HEADERS = ['MaSV', 'GPA', 'DiemHocTap', 'SoTC', 'CoDiemF', 'DiemSoDRL'];
+
+// Map tên cột → DTO key
 const HEADER_MAP = {
   MaSV: 'maSV',
-  HocKy: 'hocKy',
-  NamHoc: 'namHoc',
   GPA: 'gPA',
   DiemHocTap: 'diemHocTap',
   SoTC: 'soTC',
@@ -21,97 +28,160 @@ const HEADER_MAP = {
   DiemSoDRL: 'diemSoDRL',
 };
 
+// ─── Helper: ép kiểu từng field ──────────────────────────────────────────────
+const epKieu = (header, val) => {
+  if (header === 'SoTC' || header === 'DiemSoDRL') return parseInt(val, 10) || 0;
+  if (header === 'GPA' || header === 'DiemHocTap') return parseFloat(val) || 0;
+  if (header === 'CoDiemF') {
+    return (
+      val === true ||
+      val === 1 ||
+      String(val).toLowerCase() === 'true' ||
+      String(val).toLowerCase() === '1' ||
+      String(val).toLowerCase() === 'có'
+    );
+  }
+  return String(val ?? '').trim();
+};
+
+// ─── Helper: lấy giá trị ô theo địa chỉ (VD: "B1") ──────────────────────────
+const layGiaTriO = (ws, diaChi) => {
+  const cell = ws[diaChi];
+  return cell ? cell.v : undefined;
+};
+
+// ─── Component ────────────────────────────────────────────────────────────────
 const DaoTaoImport = () => {
+  const { maDot } = useParams();
+  const { state: routeState } = useLocation();
+  const navigate = useNavigate();
+
+  // Thông tin đợt học bổng lấy từ router state
+  const dotHocBong = routeState || {};
+  const { hocKy: hocKyDot, namHoc: namHocDot, loaiDot } = dotHocBong;
+
   const fileInputRef = useRef(null);
+  const dropZoneRef = useRef(null);
+
   const [danhSachPreview, setDanhSachPreview] = useState([]);
   const [tenFile, setTenFile] = useState('');
   const [dangGui, setDangGui] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  // Đếm enter/leave để tránh flicker khi di chuột qua child elements
+  const dragCounterRef = useRef(0);
 
-  // ─── Tải file mẫu ────────────────────────────────────────────────────────────
+  // ─── Tạo file mẫu (pre-fill HocKy/NamHoc từ đợt hiện tại) ──────────────────
   const taiFileMau = () => {
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet([EXCEL_HEADERS]);
+    const aoaData = [
+      ['HocKy', hocKyDot ?? ''],
+      ['NamHoc', namHocDot ?? ''],
+      [],
+      ['MaSV', 'GPA', 'DiemHocTap', 'SoTC', 'CoDiemF', 'DiemSoDRL'],
+    ];
 
-    // Đặt độ rộng cột
-    ws['!cols'] = EXCEL_HEADERS.map(() => ({ wch: 16 }));
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(aoaData);
+    ws['!cols'] = [{ wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 10 }, { wch: 10 }, { wch: 12 }];
 
     XLSX.utils.book_append_sheet(wb, ws, 'DuLieuHocVu');
-    XLSX.writeFile(wb, 'mau_import_hoc_vu.xlsx');
-    toast.info('Đã tải file mẫu thành công.');
+    const tenFileXuat = `Mau_Import_HocVu_HK${hocKyDot ?? 'X'}_${namHocDot ?? 'XXXX'}.xlsx`;
+    XLSX.writeFile(wb, tenFileXuat);
+    toast.info(`Đã tải file mẫu: ${tenFileXuat}`);
   };
 
-  // ─── Đọc & parse file Excel ───────────────────────────────────────────────────
+  // ─── Parse file Excel theo cấu trúc mới ─────────────────────────────────────
+  const parseFile = useCallback(
+    (file) => {
+      if (!file) return;
+
+      setTenFile(file.name);
+      setDanhSachPreview([]);
+
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        try {
+          const data = new Uint8Array(evt.target.result);
+          const wb = XLSX.read(data, { type: 'array' });
+          const ws = wb.Sheets[wb.SheetNames[0]];
+
+          // ── Bước 1: Đọc B1 (HocKy) và B2 (NamHoc) ──────────────────────────
+          const hocKyFile = layGiaTriO(ws, 'B1');
+          const namHocFile = layGiaTriO(ws, 'B2');
+
+          if (hocKyFile === undefined || namHocFile === undefined) {
+            toast.error('File không đúng cấu trúc: Thiếu HocKy (B1) hoặc NamHoc (B2).');
+            setTenFile('');
+            return;
+          }
+
+          // ── Bước 2: Validate so với đợt đã chọn ─────────────────────────────
+          const hocKyFileNum = Number(hocKyFile);
+          if (
+            hocKyDot !== undefined &&
+            namHocDot !== undefined &&
+            (hocKyFileNum !== Number(hocKyDot) ||
+              String(namHocFile).trim() !== String(namHocDot).trim())
+          ) {
+            toast.error(
+              `File không khớp với đợt đã chọn!\n` +
+              `File: HK${hocKyFile} - ${namHocFile}\n` +
+              `Đợt: HK${hocKyDot} - ${namHocDot}`
+            );
+            setTenFile('');
+            return;
+          }
+
+          // ── Bước 3: Đọc dữ liệu từ dòng 4 (range: 3 = bỏ 3 dòng đầu) ───────
+          const rows = XLSX.utils.sheet_to_json(ws, { range: 3, defval: '' });
+
+          if (rows.length === 0) {
+            toast.warning('File không có dữ liệu sinh viên (từ dòng 5 trở đi).');
+            setTenFile('');
+            return;
+          }
+
+          // ── Bước 4: Map sang DTO, thêm lại hocKy và namHoc ──────────────────
+          const parsed = rows
+            .filter((row) =>
+              Object.values(row).some((v) => v !== '' && v !== null && v !== undefined)
+            )
+            .map((row) => {
+              const obj = {
+                hocKy: Number(hocKyFile),
+                namHoc: String(namHocFile).trim(),
+              };
+              DATA_HEADERS.forEach((header) => {
+                const dtoKey = HEADER_MAP[header];
+                if (dtoKey) {
+                  obj[dtoKey] = epKieu(header, row[header]);
+                }
+              });
+              return obj;
+            });
+
+          if (parsed.length === 0) {
+            toast.warning('Không tìm thấy dòng dữ liệu hợp lệ trong file.');
+            setTenFile('');
+            return;
+          }
+
+          setDanhSachPreview(parsed);
+          toast.success(`Đọc file thành công: ${parsed.length} bản ghi.`);
+        } catch (err) {
+          toast.error('Lỗi khi đọc file Excel. Vui lòng kiểm tra định dạng.');
+          console.error(err);
+          setTenFile('');
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    },
+    [hocKyDot, namHocDot]
+  );
+
+  // ─── Chọn file qua input ─────────────────────────────────────────────────────
   const xuLyChonFile = (e) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-
-    setTenFile(file.name);
-    setDanhSachPreview([]);
-
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      try {
-        const data = new Uint8Array(evt.target.result);
-        const wb = XLSX.read(data, { type: 'array' });
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        // header: 1 → trả về mảng mảng; defval: '' để không bị undefined
-        const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
-
-        if (rows.length < 2) {
-          toast.warning('File không có dữ liệu (chỉ có header hoặc rỗng).');
-          return;
-        }
-
-        const headers = rows[0].map((h) => String(h).trim());
-        const dataRows = rows.slice(1).filter((row) =>
-          row.some((cell) => cell !== '' && cell !== null && cell !== undefined)
-        );
-
-        const parsed = dataRows.map((row) => {
-          const obj = {};
-          headers.forEach((header, idx) => {
-            const dtoKey = HEADER_MAP[header];
-            if (!dtoKey) return;
-
-            let val = row[idx];
-
-            // Ép kiểu đúng theo DTO
-            if (header === 'HocKy' || header === 'SoTC' || header === 'DiemSoDRL') {
-              val = parseInt(val, 10) || 0;
-            } else if (header === 'GPA' || header === 'DiemHocTap') {
-              val = parseFloat(val) || 0;
-            } else if (header === 'CoDiemF') {
-              // Chấp nhận: true/false, 1/0, "true"/"false", "1"/"0", "có"/"không"
-              val =
-                val === true ||
-                val === 1 ||
-                String(val).toLowerCase() === 'true' ||
-                String(val).toLowerCase() === '1' ||
-                String(val).toLowerCase() === 'có';
-            } else {
-              val = String(val).trim();
-            }
-
-            obj[dtoKey] = val;
-          });
-          return obj;
-        });
-
-        if (parsed.length === 0) {
-          toast.warning('Không tìm thấy dòng dữ liệu hợp lệ trong file.');
-          return;
-        }
-
-        setDanhSachPreview(parsed);
-        toast.success(`Đọc file thành công: ${parsed.length} bản ghi.`);
-      } catch (err) {
-        toast.error('Lỗi khi đọc file Excel. Vui lòng kiểm tra định dạng.');
-        console.error(err);
-      }
-    };
-    reader.readAsArrayBuffer(file);
-
-    // Reset input để có thể chọn lại cùng file
+    if (file) parseFile(file);
     e.target.value = '';
   };
 
@@ -120,7 +190,44 @@ const DaoTaoImport = () => {
     setTenFile('');
   };
 
-  // ─── Gửi dữ liệu lên Backend ─────────────────────────────────────────────────
+  // ─── Drag & Drop handlers ────────────────────────────────────────────────────
+  const onDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current += 1;
+    if (dragCounterRef.current === 1) setIsDragging(true);
+  };
+
+  const onDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const onDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current -= 1;
+    if (dragCounterRef.current === 0) setIsDragging(false);
+  };
+
+  const onDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current = 0;
+    setIsDragging(false);
+
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (!['xlsx', 'xls'].includes(ext)) {
+      toast.error('Chỉ chấp nhận file .xlsx hoặc .xls');
+      return;
+    }
+    parseFile(file);
+  };
+
+  // ─── Submit lên Backend ──────────────────────────────────────────────────────
   const xuLyImport = async () => {
     if (danhSachPreview.length === 0) {
       toast.warning('Chưa có dữ liệu để import. Vui lòng chọn file trước.');
@@ -144,8 +251,7 @@ const DaoTaoImport = () => {
         toast.error(res.message || 'Import thất bại.');
       }
     } catch (err) {
-      const msg =
-        err?.response?.data?.message || err.message || 'Lỗi hệ thống.';
+      const msg = err?.response?.data?.message || err.message || 'Lỗi hệ thống.';
       toast.error(msg);
     } finally {
       setDangGui(false);
@@ -154,21 +260,47 @@ const DaoTaoImport = () => {
 
   // ─── Render ───────────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-6">
-      {/* Page Header */}
+    <div
+      className="space-y-6 relative"
+      onDragEnter={onDragEnter}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+      ref={dropZoneRef}
+    >
+      {/* ── Drag & Drop Overlay ─────────────────────────────────────────────── */}
+      {isDragging && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center rounded-2xl bg-blue-50/80 backdrop-blur-sm border-2 border-dashed border-blue-400 pointer-events-none">
+          <UploadCloud className="w-16 h-16 text-blue-500 mb-4 animate-bounce" />
+          <p className="text-blue-700 font-bold text-lg">Thả file vào đây</p>
+          <p className="text-blue-500 text-sm mt-1">Chỉ chấp nhận .xlsx hoặc .xls</p>
+        </div>
+      )}
+
+      {/* ── Page Header ─────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-3">
+        <button
+          onClick={() => navigate('/dao-tao/danh-sach')}
+          className="p-2 rounded-xl hover:bg-slate-100 text-slate-500 transition"
+          title="Quay lại"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </button>
         <div className="bg-green-50 p-2.5 rounded-xl">
           <FileSpreadsheet className="text-green-600 w-6 h-6" />
         </div>
         <div>
           <h1 className="text-xl font-bold text-slate-800">Import Dữ Liệu Học Vụ</h1>
-          <p className="text-sm text-slate-500 mt-0.5">
-            Tải lên file Excel chứa GPA và điểm rèn luyện của sinh viên
-          </p>
+          {loaiDot && (
+            <p className="text-sm text-slate-500 mt-0.5">
+              Đợt: <span className="font-semibold text-blue-600">{loaiDot}</span>
+              {' · '}HK {hocKyDot} · {namHocDot}
+            </p>
+          )}
         </div>
       </div>
 
-      {/* Action Card */}
+      {/* ── Action Card ─────────────────────────────────────────────────────── */}
       <div className="bg-white shadow-sm border border-gray-100 rounded-2xl p-6 space-y-4">
         <div className="flex flex-wrap gap-3">
           {/* Tải file mẫu */}
@@ -185,7 +317,7 @@ const DaoTaoImport = () => {
             onClick={() => fileInputRef.current?.click()}
             className="flex items-center gap-2 px-4 py-2.5 border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-sm font-semibold transition active:scale-95"
           >
-            <Upload className="w-4 h-4" />
+            <UploadCloud className="w-4 h-4" />
             Chọn file Excel
           </button>
           <input
@@ -196,6 +328,14 @@ const DaoTaoImport = () => {
             className="hidden"
           />
         </div>
+
+        {/* Hướng dẫn kéo thả */}
+        {!tenFile && (
+          <div className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center text-slate-400 text-sm select-none">
+            <UploadCloud className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+            Kéo &amp; thả file Excel vào đây, hoặc nhấn <span className="text-blue-500 font-semibold">Chọn file</span>
+          </div>
+        )}
 
         {/* Tên file đã chọn */}
         {tenFile && (
@@ -213,7 +353,7 @@ const DaoTaoImport = () => {
         )}
       </div>
 
-      {/* Preview Table */}
+      {/* ── Preview Table ────────────────────────────────────────────────────── */}
       {danhSachPreview.length > 0 && (
         <div className="bg-white shadow-sm border border-gray-100 rounded-2xl overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
@@ -248,7 +388,14 @@ const DaoTaoImport = () => {
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">
                     #
                   </th>
-                  {EXCEL_HEADERS.map((h) => (
+                  {/* HocKy & NamHoc từ metadata */}
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    HocKy
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    NamHoc
+                  </th>
+                  {DATA_HEADERS.map((h) => (
                     <th
                       key={h}
                       className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap"
@@ -262,16 +409,22 @@ const DaoTaoImport = () => {
                 {danhSachPreview.map((row, idx) => (
                   <tr key={idx} className="hover:bg-slate-50 transition-colors">
                     <td className="px-4 py-2.5 text-gray-400 font-mono text-xs">{idx + 1}</td>
-                    {EXCEL_HEADERS.map((h) => {
+                    <td className="px-4 py-2.5 text-slate-700 whitespace-nowrap">{row.hocKy}</td>
+                    <td className="px-4 py-2.5 text-slate-700 whitespace-nowrap">{row.namHoc}</td>
+                    {DATA_HEADERS.map((h) => {
                       const dtoKey = HEADER_MAP[h];
                       const val = row[dtoKey];
                       return (
                         <td key={h} className="px-4 py-2.5 text-slate-700 whitespace-nowrap">
-                          {h === 'CoDiemF'
-                            ? val
-                              ? <span className="text-red-500 font-semibold">Có</span>
-                              : <span className="text-green-600 font-semibold">Không</span>
-                            : String(val ?? '')}
+                          {h === 'CoDiemF' ? (
+                            val ? (
+                              <span className="text-red-500 font-semibold">Có</span>
+                            ) : (
+                              <span className="text-green-600 font-semibold">Không</span>
+                            )
+                          ) : (
+                            String(val ?? '')
+                          )}
                         </td>
                       );
                     })}

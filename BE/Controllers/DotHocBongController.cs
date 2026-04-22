@@ -57,7 +57,7 @@ public class DotHocBongController : ControllerBase
     }
 
     [HttpGet]
-    [Authorize(Roles = "CTSV,HoiDong,HieuTruong,Khoa")] // Thêm các role cần thiết
+    [Authorize(Roles = "CTSV,HoiDong,HieuTruong,Khoa,DaoTao, KHTC")] // Thêm các role cần thiết
     public async Task<IActionResult> GetAll()
     {
         try
