@@ -10,6 +10,8 @@ public class KhieuNai
     public string TrangThai { get; set; } = null!;
     public int? MaCB_Duyet { get; set; }
 
+    public string? NoiDungPhanHoi { get; set; }
+    public DateTime? NgayPhanHoi { get; set; }
     public HoSoXetHocBong HoSoXetHocBong { get; set; } = null!;
     public CanBo? CanBoDuyet { get; set; }
 }

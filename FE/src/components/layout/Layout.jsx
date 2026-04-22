@@ -51,7 +51,8 @@ const Layout = ({ role }) => {
         ],
         'Khoa': [
             { path: '/khoa', icon: Home, label: 'Trang chủ Khoa' },
-            { path: '/khoa/de-xuat', icon: ClipboardList, label: 'Lập danh sách đề xuất' }
+            { path: '/khoa/de-xuat', icon: ClipboardList, label: 'Lập danh sách đề xuất' },
+            { path: '/khoa/khieu-nai', icon: MessageSquareWarning, label: 'Xử lý khiếu nại' }
         ],
         'HDXD': [
             { path: '/hdxd', icon: Home, label: 'Trang chủ Hội đồng' },
