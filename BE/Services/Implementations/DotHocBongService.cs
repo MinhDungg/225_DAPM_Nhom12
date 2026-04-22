@@ -77,24 +77,57 @@ public class DotHocBongService : IDotHocBongService
                 return null;
             }
 
-            await _hoSoXetHocBongRepository.XoaHoSoChoXetTheoMaDotAsync(maDot, TrangThaiHocBong.ChoXet);
+            // Anti-double-click: Xóa TẤT CẢ hồ sơ cũ của đợt này (không chỉ ChoXet)
+            await _hoSoXetHocBongRepository.XoaTatCaHoSoTheoMaDotAsync(maDot);
 
-            var ungVienDuDieuKien = await _ketQuaHocTapRepository.LayUngVienDuDieuKienAsync(
+            // Lấy TẤT CẢ sinh viên có điểm trong kỳ (kể cả không đủ điều kiện)
+            var tatCaUngVien = await _ketQuaHocTapRepository.LayTatCaUngVienTheoKyAsync(
                 dot.HocKy,
-                dot.NamHoc,
-                minGpa: 2.5,
-                minSoTc: 15,
-                minDiemRenLuyen: 65);
+                dot.NamHoc);
 
-            var danhSachHoSo = ungVienDuDieuKien.Select(u => new HoSoXetHocBong
+            var danhSachHoSo = new List<HoSoXetHocBong>();
+
+            foreach (var u in tatCaUngVien)
             {
-                MaSV = u.MaSV,
-                MaDot = maDot,
-                NgayNop = DateTime.Now,
-                DiemHocTap = (float)u.GPA,
-                DiemRenLuyen = u.DiemRenLuyen,
-                TrangThai = TrangThaiHocBong.ChoXet
-            }).ToList();
+                var ghiChu = new List<string>();
+                var trangThai = TrangThaiHocBong.ChoXet;
+
+                // Bộ lọc V3: Check từng điều kiện
+                if (u.GPA < 2.5f)
+                {
+                    ghiChu.Add("GPA < 2.5");
+                }
+                if (u.SoTC < 15)
+                {
+                    ghiChu.Add("Số TC < 15");
+                }
+                if (u.CoDiemF)
+                {
+                    ghiChu.Add("Có môn F");
+                }
+                if (u.DiemRenLuyen < 65)
+                {
+                    ghiChu.Add("Điểm Rèn Luyện < 65");
+                }
+
+                // Nếu có bất kỳ lý do nào → Loại
+                if (ghiChu.Count > 0)
+                {
+                    trangThai = TrangThaiHocBong.Loai;
+                }
+
+                danhSachHoSo.Add(new HoSoXetHocBong
+                {
+                    MaSV = u.MaSV,
+                    MaDot = maDot,
+                    NgayNop = DateTime.Now,
+                    GPA = u.GPA,
+                    DiemHocTap = u.DiemHocTap,
+                    DiemRenLuyen = u.DiemRenLuyen,
+                    TrangThai = trangThai,
+                    GhiChu = ghiChu.Count > 0 ? string.Join("; ", ghiChu) + ";" : null
+                });
+            }
 
             await _hoSoXetHocBongRepository.ThemNhieuAsync(danhSachHoSo);
 

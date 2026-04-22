@@ -21,6 +21,13 @@ public class HoSoXetHocBongRepository : IHoSoXetHocBongRepository
             .ExecuteDeleteAsync();
     }
 
+    public Task XoaTatCaHoSoTheoMaDotAsync(int maDot)
+    {
+        return _context.HoSoXetHocBongs
+            .Where(h => h.MaDot == maDot)
+            .ExecuteDeleteAsync();
+    }
+
     public Task ThemNhieuAsync(IEnumerable<HoSoXetHocBong> danhSach)
     {
         return _context.HoSoXetHocBongs.AddRangeAsync(danhSach);

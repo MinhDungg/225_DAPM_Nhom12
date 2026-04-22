@@ -5,6 +5,7 @@ namespace BE.Repositories.Interfaces;
 public interface IHoSoXetHocBongRepository
 {
     Task XoaHoSoChoXetTheoMaDotAsync(int maDot, string trangThaiChoXet);
+    Task XoaTatCaHoSoTheoMaDotAsync(int maDot);
     Task ThemNhieuAsync(IEnumerable<HoSoXetHocBong> danhSach);
 
     Task<List<HoSoXetHocBong>> LayDanhSachChoDuyetTheoKhoaAsync(int maKhoa);

@@ -40,9 +40,28 @@ public class KetQuaHocTapRepository : IKetQuaHocTapRepository
             {
                 MaSV = kq.MaSV,
                 GPA = kq.GPA,
+                DiemHocTap = kq.DiemHocTap,
                 SoTC = kq.SoTC,
+                CoDiemF = kq.CoDiemF,
+                DiemRenLuyen = drl.DiemSo
+            }).ToListAsync();
+    }
+
+    public async Task<List<UngVienDiemDTO>> LayTatCaUngVienTheoKyAsync(int hocKy, string namHoc)
+    {
+        return await (
+            from kq in _context.KetQuaHocTaps
+            join drl in _context.DiemRenLuyens
+                on new { kq.MaSV, kq.HocKy, kq.NamHoc } equals new { drl.MaSV, drl.HocKy, drl.NamHoc }
+            where kq.HocKy == hocKy && kq.NamHoc == namHoc
+            select new UngVienDiemDTO
+            {
+                MaSV = kq.MaSV,
+                GPA = kq.GPA,
+                DiemHocTap = kq.DiemHocTap,
+                SoTC = kq.SoTC,
+                CoDiemF = kq.CoDiemF,
                 DiemRenLuyen = drl.DiemSo
             }).ToListAsync();
     }
 }
-

@@ -11,5 +11,6 @@ public static class TrangThaiHocBong
     public const string KhoaDeXuat = "KhoaDeXuat";
     public const string HoiDongDuyet = "HoiDongDuyet";
     public const string TuChoi = "TuChoi";
+    public const string Loai = "Loai";
 }
 

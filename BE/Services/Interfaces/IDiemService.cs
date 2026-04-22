@@ -7,5 +7,5 @@ public interface IDiemService
 {
     Task<ImportResultDTO> ImportGpaAsync(List<ImportGpaRequest> requests);
     Task<ImportResultDTO> ImportDrlAsync(List<ImportDrlRequest> requests);
+    Task<ImportResultDTO> ImportDuLieuHocVuAsync(List<ImportHocVuRequest> requests);
 }
-

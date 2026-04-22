@@ -90,5 +90,41 @@ public class DiemController : ControllerBase
             });
         }
     }
+
+    [HttpPost("import-du-lieu-hoc-vu")]
+    [Authorize(Roles = "DaoTao")]
+    public async Task<IActionResult> ImportDuLieuHocVu([FromBody] List<ImportHocVuRequest> requests)
+    {
+        if (requests == null)
+        {
+            return BadRequest(new BaseResponse<ImportResultDTO>
+            {
+                Success = false,
+                Message = "Du lieu import hoc vu khong hop le",
+                Data = null
+            });
+        }
+
+        try
+        {
+            var result = await _diemService.ImportDuLieuHocVuAsync(requests);
+            return Ok(new BaseResponse<ImportResultDTO>
+            {
+                Success = true,
+                Message = "Import du lieu hoc vu thanh cong",
+                Data = result
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "ImportDuLieuHocVu failed.");
+            return StatusCode(500, new BaseResponse<ImportResultDTO>
+            {
+                Success = false,
+                Message = "Loi he thong",
+                Data = null
+            });
+        }
+    }
 }
 
