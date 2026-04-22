@@ -40,6 +40,7 @@ const Layout = ({ role }) => {
         ],
         'CTSV': [
             { path: '/ctsv', icon: Home, label: 'Tổng quan học bổng' },
+            { path: '/tao-dot-hoc-bong', icon: Home, label: 'Tạo đợt học bổng' },
             { path: '/ctsv/phan-bo', icon: Users, label: 'Phân bổ dữ liệu Khoa' },
             { path: '/ctsv/cong-bo', icon: Bell, label: 'Công bố danh sách' },
             { path: '/ctsv/trinh-duyet', icon: FileCheck, label: 'Trình duyệt danh sách' },
@@ -47,7 +48,7 @@ const Layout = ({ role }) => {
         ],
         'DaoTao': [
             { path: '/dao-tao', icon: Home, label: 'Trang chủ Đào tạo' },
-            { path: '/dao-tao/danh-sach', icon: Database, label: 'Cung cấp DS đủ điều kiện' }
+            { path: '/dao-tao/danh-sach', icon: Database, label: 'Cung cấp điểm học vụ' }
         ],
         'Khoa': [
             { path: '/khoa', icon: Home, label: 'Trang chủ Khoa' },
