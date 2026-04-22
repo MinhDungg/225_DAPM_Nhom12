@@ -93,6 +93,8 @@ CREATE TABLE [KETQUAHOCTAP] (
   [HocKy] int NOT NULL CONSTRAINT CHK_HocKy_KQHT CHECK ([HocKy] IN (1, 2, 3)),
   [NamHoc] varchar(20) NOT NULL,
   [GPA] real NOT NULL CONSTRAINT CHK_GPA CHECK ([GPA] >= 0.0 AND [GPA] <= 4.0),
+  [DiemHocTap] real NOT NULL DEFAULT 0,
+  [CoDiemF] bit NOT NULL DEFAULT 0,
   [SoTC] int NOT NULL CONSTRAINT CHK_SoTC CHECK ([SoTC] > 0),
   [MaCB_Nhap] int 
 );
@@ -125,10 +127,12 @@ CREATE TABLE [HOSOXETHOCBONG] (
   [MaSV] varchar(20) NOT NULL,
   [MaDot] int NOT NULL,
   [NgayNop] datetime DEFAULT GETDATE(),
-  [DiemHocTap] real NOT NULL CONSTRAINT CHK_GPA_HoSo CHECK ([DiemHocTap] >= 0.0 AND [DiemHocTap] <= 4.0),
+  [GPA] real NOT NULL CONSTRAINT CHK_GPA_HoSo CHECK ([GPA] >= 0.0 AND [GPA] <= 4.0),
+  [DiemHocTap] real NOT NULL CONSTRAINT CHK_DiemHocTap_HoSo CHECK ([DiemHocTap] >= 0.0 AND [DiemHocTap] <= 10.0),
   [DiemRenLuyen] int NOT NULL CONSTRAINT CHK_DiemRenLuyen CHECK ([DiemRenLuyen] >= 0 AND [DiemRenLuyen] <= 100),
   [XepLoaiHB] nvarchar(50),
   [TrangThai] varchar(50) DEFAULT 'ChoXet' CONSTRAINT CHK_TrangThai_HoSo CHECK ([TrangThai] IN ('ChoXet', 'KhoaDeXuat', 'HoiDongDuyet', 'TuChoi', 'ChinhThuc')),
+  [GhiChu] nvarchar(500) NULL,
   [MaCB_Duyet] int
 );
 GO
