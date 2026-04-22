@@ -52,6 +52,18 @@ public class DotHocBongService : IDotHocBongService
         };
     }
 
+    public async Task<IEnumerable<DotHocBongResponseDTO>> GetAllDotHocBongAsync()
+    {
+        var dsDotHocBong = await _dotHocBongRepository.LayDanhSachAsync(); // Giả sử repo của bạn có hàm này
+        return dsDotHocBong.Select(d => new DotHocBongResponseDTO
+        {
+            MaDot = d.MaDot,
+            LoaiDot = d.LoaiDot,
+            HocKy = d.HocKy,
+            NamHoc = d.NamHoc,
+            TrangThai = d.TrangThai
+        });
+    }
     public async Task<AutoScanResultDTO?> AutoScanCandidatesAsync(int maDot)
     {
         _logger.LogInformation("AutoScanCandidatesAsync start. MaDot={MaDot}", maDot);

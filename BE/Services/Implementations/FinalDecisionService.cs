@@ -1,95 +1,127 @@
+using BE.DTOs.Response;
 using BE.Models;
+using BE.Repositories.Interfaces;
+using BE.Services.Interfaces;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using BE.Services.Interfaces;
-using BE.Repositories.Interfaces;
-using BE.DTOs.Response;
 
 namespace BE.Services.Implementations
 {
     public class FinalDecisionService : IFinalDecisionService
     {
-        private readonly IHoSoXetHocBongRepository _repository;
+        private readonly IHoSoXetHocBongRepository _hoSoRepository;
+        private readonly IDotHocBongRepository _dotHocBongRepository;
+        private readonly IPhanBoKinhPhiRepository _phanBoKinhPhiRepository;
 
-        public FinalDecisionService(IHoSoXetHocBongRepository repository)
+        public FinalDecisionService(
+            IHoSoXetHocBongRepository hoSoRepository,
+            IDotHocBongRepository dotHocBongRepository,
+            IPhanBoKinhPhiRepository phanBoKinhPhiRepository)
         {
-            _repository = repository;
+            _hoSoRepository = hoSoRepository;
+            _dotHocBongRepository = dotHocBongRepository;
+            _phanBoKinhPhiRepository = phanBoKinhPhiRepository;
         }
 
-        /// <summary>
-        /// Lấy danh sách hồ sơ từ các Khoa gửi lên để Hội đồng xem xét tổng thể.
-        /// </summary>
+        // ====================================================================
+        // TASK 3.1: Tổng hợp dữ liệu toàn trường (CTSV/Hội đồng xem)
+        // ====================================================================
         public async Task<IEnumerable<HoSoResponseDTO>> GetRecommendedProfilesAsync()
         {
-            // Truy vấn hồ sơ đang ở trạng thái chờ tổng hợp (KhoaDeXuat)
-            var rawData = await _repository.GetProfilesByStatusAsync("KhoaDeXuat");
+            var profiles = await _hoSoRepository.GetProfilesByStatusAsync("KhoaDeXuat");
 
-            // Ánh xạ sang DTO để tinh gọn dữ liệu trả về cho Client
-            return rawData.Select(h => new HoSoResponseDTO
+            return profiles.Select(p => new HoSoResponseDTO
             {
-                MaHoSo = h.MaHoSo,
-                MaSV = h.MaSV,
-                HoTen = h.SinhVien?.HoTen,
-                TenLop = h.SinhVien?.Lop?.TenLop,
-                GPA = h.DiemHocTap,
-                // DiemNCKH = h.DiemNCKH,
-                // DiemHDCD = h.DiemHDCD,
-                XepLoaiHB = h.XepLoaiHB,
-                TrangThai = h.TrangThai
+                MaHoSo = p.MaHoSo,
+                MaSV = p.MaSV,
+                HoTen = p.SinhVien?.HoTen,
+                TenLop = p.SinhVien?.Lop?.TenLop,
+                GPA = p.DiemHocTap,
+                XepLoaiHB = p.XepLoaiHB,
+                TrangThai = p.TrangThai
             });
         }
 
-        /// <summary>
-        /// Chốt danh sách dự kiến sau khi Hội đồng đã xét chọn từ danh sách tổng hợp.
-        /// </summary>
+        // ====================================================================
+        // TASK 3.2: Hội đồng xét chọn
+        // ====================================================================
         public async Task<bool> ApproveExpectedListAsync(List<int> profileIds)
         {
-            if (profileIds == null || !profileIds.Any()) return false;
+            if (profileIds == null || !profileIds.Any())
+                return false;
 
-            // Cập nhật trạng thái hàng loạt cho các hồ sơ được chọn
-            return await _repository.UpdateProfilesStatusAsync(profileIds, "DanhSachDuKien");
+            // FIX: Đổi thành UpdateProfilesStatusAsync cho khớp Interface
+            return await _hoSoRepository.UpdateProfilesStatusAsync(profileIds, "HoiDongDuyet");
         }
 
-        /// <summary>
-        /// Lấy tiến trình xử lý hồ sơ dựa trên mã sinh viên (phục vụ tra cứu cá nhân).
-        /// </summary>
+        // ====================================================================
+        // TASK 3.3: Sinh viên tra cứu
+        // ====================================================================
         public async Task<IEnumerable<HoSoResponseDTO>> GetStudentProgressAsync(string maSV)
         {
-            var rawData = await _repository.GetProfilesByMaSVAsync(maSV);
+            // FIX: Gọi hàm GetProfilesByMaSVAsync thay vì LayDanhSachAsync
+            var studentProfiles = await _hoSoRepository.GetProfilesByMaSVAsync(maSV);
 
-            return rawData.Select(h => new HoSoResponseDTO
+            return studentProfiles.Select(p => new HoSoResponseDTO
             {
-                MaHoSo = h.MaHoSo,
-                MaSV = h.MaSV,
-                GPA = h.DiemHocTap,
-                XepLoaiHB = h.XepLoaiHB,
-                TrangThai = h.TrangThai // SV theo dõi trạng thái từ lúc nộp đến khi chốt sổ
+                MaHoSo = p.MaHoSo,
+                MaSV = p.MaSV,
+                HoTen = p.SinhVien?.HoTen,
+                TenLop = p.SinhVien?.Lop?.TenLop,
+                GPA = p.DiemHocTap,
+                XepLoaiHB = p.XepLoaiHB,
+                TrangThai = p.TrangThai
             });
         }
-        // Service Implementation
-        public async Task<IEnumerable<HoSoResponseDTO>> GetProfilesByStatusAsync(string status)
+
+        // ====================================================================
+        // MỚI THÊM: Dữ liệu Tờ trình cho Dashboard Hiệu Trưởng
+        // ====================================================================
+        public async Task<TongHopHieuTruongResponseDTO?> GetToTrinhHieuTruongAsync(int maDot)
         {
-            var rawData = await _repository.GetProfilesByStatusAsync(status);
-            return rawData.Select(h => new HoSoResponseDTO
+            var dotHocBong = await _dotHocBongRepository.LayTheoIdAsync(maDot);
+            if (dotHocBong == null) return null;
+
+            // Lấy danh sách phân bổ kinh phí theo mã đợt
+            var phanBoKinhPhis = await _phanBoKinhPhiRepository.LayTheoMaDotAsync(maDot);
+            decimal tongKinhPhi = phanBoKinhPhis.Sum(p => p.KinhPhi);
+
+            string statusToFetch = dotHocBong.TrangThai == "ChinhThuc" ? "ChinhThuc" : "HoiDongDuyet";
+            var allProfiles = await _hoSoRepository.GetProfilesByStatusAsync(statusToFetch);
+            var profilesForRound = allProfiles.Where(h => h.MaDot == maDot).ToList();
+
+            return new TongHopHieuTruongResponseDTO
             {
-                MaHoSo = h.MaHoSo,
-                MaSV = h.MaSV,
-                HoTen = h.SinhVien?.HoTen,
-                TenLop = h.SinhVien?.Lop?.TenLop,
-                GPA = h.DiemHocTap,
-                XepLoaiHB = h.XepLoaiHB,
-                TrangThai = h.TrangThai
-                // Bạn có thể tính toán số tiền tạm tính dựa trên XepLoai ở đây nếu cần
-            });
+                ThongTinDot = new ThongTinDotDTO
+                {
+                    LoaiDot = dotHocBong.LoaiDot,
+                    HocKy = dotHocBong.HocKy,
+                    NamHoc = dotHocBong.NamHoc,
+                    TrangThai = dotHocBong.TrangThai
+                },
+                TongSinhVien = profilesForRound.Count,
+                TongKinhPhi = tongKinhPhi,
+                DanhSach = profilesForRound.Select(h => new HoSoResponseDTO
+                {
+                    MaHoSo = h.MaHoSo,
+                    MaSV = h.MaSV,
+                    HoTen = h.SinhVien?.HoTen,
+                    TenLop = h.SinhVien?.Lop?.TenLop,
+                    GPA = h.DiemHocTap,
+                    XepLoaiHB = h.XepLoaiHB,
+                    TrangThai = h.TrangThai
+                })
+            };
         }
-        /// <summary>
-        /// Kích hoạt quy trình phê duyệt cuối cùng để ban hành danh sách chính thức.
-        /// </summary>
+
+        // ====================================================================
+        // TASK 3.4: Hiệu trưởng phê duyệt (Final Trigger)
+        // ====================================================================
         public async Task<bool> RectorApproveAsync(int maDot, int maCB)
         {
-            // Logic xử lý transaction và snapshot dữ liệu sang bảng DSHocBong được thực hiện tại Repository
-            return await _repository.FinalizeScholarshipRoundAsync(maDot, maCB);
+            // FIX: Sử dụng hàm Finalize có sẵn trong Repo thay vì viết lại Logic ở Service
+            return await _hoSoRepository.FinalizeScholarshipRoundAsync(maDot, maCB);
         }
     }
 }

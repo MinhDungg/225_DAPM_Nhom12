@@ -1,5 +1,6 @@
 -- =======================================================
 -- SCRIPT TẠO CƠ SỞ DỮ LIỆU: HỆ THỐNG QUẢN LÝ HỌC BỎNG UTE
+-- (Đã fix toàn bộ lỗi khóa ngoại và tên cột)
 -- =======================================================
 
 -- 1. KIỂM TRA VÀ TẠO DATABASE MỚI
@@ -24,7 +25,11 @@ GO
 USE dbQLHocBong;
 GO
 
--- Bảng Tài khoản (Dùng chung cho Sinh viên và Cán bộ/Giảng viên)
+-- =======================================================
+-- TẠO BẢNG
+-- =======================================================
+
+-- Bảng Tài khoản
 CREATE TABLE [TAIKHOAN] (
   [MaTK] int PRIMARY KEY IDENTITY(1,1),
   [TenDangNhap] varchar(100) NOT NULL UNIQUE,
@@ -42,7 +47,7 @@ CREATE TABLE [PHONGBAN] (
 );
 GO
 
--- Bảng Cán bộ (Quản lý nhân sự các phòng ban, khoa, ban giám hiệu)
+-- Bảng Cán bộ
 CREATE TABLE [CANBO] (
   [MaCB] int PRIMARY KEY IDENTITY(1,1),
   [HoTen] nvarchar(150) NOT NULL,
@@ -81,7 +86,7 @@ CREATE TABLE [SINHVIEN] (
 );
 GO
 
--- Bảng Kết quả học tập (Lưu GPA từng kỳ)
+-- Bảng Kết quả học tập
 CREATE TABLE [KETQUAHOCTAP] (
   [MaDiem] int PRIMARY KEY IDENTITY(1,1),
   [MaSV] varchar(20) NOT NULL,
@@ -120,13 +125,10 @@ CREATE TABLE [HOSOXETHOCBONG] (
   [MaSV] varchar(20) NOT NULL,
   [MaDot] int NOT NULL,
   [NgayNop] datetime DEFAULT GETDATE(),
-  [DiemHocTap] real NOT NULL CONSTRAINT CHK_GPA_HoSo CHECK ([DiemHocTap] >= 0.0 AND [DiemHocTap] <= 4.0),   -- MỚI: Đã đổi tên và dùng real (thay vì GPA)
-  [DiemRenLuyen] int NOT NULL CONSTRAINT CHK_DiemRenLuyen CHECK ([DiemRenLuyen] >= 0 AND [DiemRenLuyen] <= 100),  -- MỚI: Lưu snapshot ĐRL tại thời điểm nộp hồ sơ
-  -- [GPA] float NOT NULL,
-  -- [DiemNCKH] float DEFAULT 0,
-  -- [DiemHDCD] float DEFAULT 0,
+  [DiemHocTap] real NOT NULL CONSTRAINT CHK_GPA_HoSo CHECK ([DiemHocTap] >= 0.0 AND [DiemHocTap] <= 4.0),
+  [DiemRenLuyen] int NOT NULL CONSTRAINT CHK_DiemRenLuyen CHECK ([DiemRenLuyen] >= 0 AND [DiemRenLuyen] <= 100),
   [XepLoaiHB] nvarchar(50),
-  [TrangThai] varchar(50) DEFAULT 'ChoXet' CONSTRAINT CHK_TrangThai_HoSo CHECK ([TrangThai] IN ('ChoXet', 'KhoaDeXuat', 'HoiDongDuyet', 'TuChoi')),
+  [TrangThai] varchar(50) DEFAULT 'ChoXet' CONSTRAINT CHK_TrangThai_HoSo CHECK ([TrangThai] IN ('ChoXet', 'KhoaDeXuat', 'HoiDongDuyet', 'TuChoi', 'ChinhThuc')),
   [MaCB_Duyet] int
 );
 GO
@@ -139,11 +141,13 @@ CREATE TABLE [KHIEUNAI] (
   [MinhChung] varchar(255),
   [NgayGui] datetime DEFAULT GETDATE(),
   [TrangThai] varchar(50) DEFAULT 'ChoXuLy' CONSTRAINT CHK_TrangThai_KhieuNai CHECK ([TrangThai] IN ('ChoXuLy', 'DaXuLy')),
-  [MaCB_Duyet] int
+  [MaCB_Duyet] int,
+  [NoiDungPhanHoi] nvarchar(MAX),
+  [NgayPhanHoi] datetime
 );
 GO
 
--- Bảng Danh sách Học bổng (Lưu vết Quyết định của Hiệu trưởng)
+-- Bảng Danh sách Học bổng
 CREATE TABLE [DSHOCBONG] (
   [MaDS] int PRIMARY KEY IDENTITY(1,1),
   [MaDot] int NOT NULL,
@@ -155,7 +159,7 @@ CREATE TABLE [DSHOCBONG] (
 );
 GO
 
--- Bảng Chi trả (Giải ngân tiền từ KHTC)
+-- Bảng Chi trả
 CREATE TABLE [CHITRA] (
   [MaChiTra] int PRIMARY KEY IDENTITY(1,1),
   [MaHoSo] int NOT NULL,
@@ -166,7 +170,7 @@ CREATE TABLE [CHITRA] (
 );
 GO
 
--- Bảng Phân bổ kinh phí (Lưu trữ ngân sách học bổng được cấp cho từng Khoa trong mỗi Đợt)
+-- Bảng Phân bổ kinh phí
 CREATE TABLE [PHANBOKINHPHI] (
   [MaPhanBo] int PRIMARY KEY IDENTITY(1,1),
   [MaDot] int NOT NULL,
@@ -176,8 +180,9 @@ CREATE TABLE [PHANBOKINHPHI] (
 );
 GO
 
+-- =======================================================
 -- XỬ LÝ KHÓA NGOẠI 
--- Lưu ý: Cố ý sử dụng NO ACTION ở một số nhánh để SQL Server không báo lỗi Multiple Cascade Paths.
+-- =======================================================
 
 ALTER TABLE [CANBO] ADD FOREIGN KEY ([MaPhong]) REFERENCES [PHONGBAN] ([MaPhong]) ON UPDATE CASCADE ON DELETE SET NULL;
 ALTER TABLE [CANBO] ADD FOREIGN KEY ([MaTK]) REFERENCES [TAIKHOAN] ([MaTK]) ON UPDATE CASCADE ON DELETE CASCADE;
@@ -210,13 +215,6 @@ ALTER TABLE [CHITRA] ADD FOREIGN KEY ([MaCB_GiaiNgan]) REFERENCES [CANBO] ([MaCB
 
 ALTER TABLE [PHANBOKINHPHI] ADD FOREIGN KEY ([MaDot]) REFERENCES [DOTHOCBONG] ([MaDot]) ON UPDATE CASCADE ON DELETE CASCADE;
 ALTER TABLE [PHANBOKINHPHI] ADD FOREIGN KEY ([MaKhoa]) REFERENCES [KHOA] ([MaKhoa]) ON UPDATE NO ACTION ON DELETE NO ACTION;
-GO
-
--- Khóa ngoại bảng Phân bổ kinh phí
-ALTER TABLE [PHANBOKINHPHI] ADD FOREIGN KEY ([MaDot]) REFERENCES [DOTHOCBONG] ([MaDot]);
-ALTER TABLE [PHANBOKINHPHI] ADD FOREIGN KEY ([MaKhoa]) REFERENCES [KHOA] ([MaKhoa]);
-GO
-
 ALTER TABLE [PHANBOKINHPHI] ADD CONSTRAINT UQ_PhanBo_DotKhoa UNIQUE (MaDot, MaKhoa);
 
 

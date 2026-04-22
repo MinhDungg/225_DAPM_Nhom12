@@ -132,10 +132,16 @@ public class HoSoXetHocBongRepository : IHoSoXetHocBongRepository
                 .ToListAsync();
         }
 
-      
-        /// <param name="maCB_PheDuyet">Mã cán bộ (Hiệu trưởng) thực hiện phê duyệt</param>
-        /// <returns>True nếu giao dịch thành công</returns>
-        public async Task<bool> FinalizeScholarshipRoundAsync(int maDot, int maCB_PheDuyet)
+
+
+    public async Task<HoSoXetHocBong?> GetByIdAsync(int id)
+    {
+        return await _context.HoSoXetHocBongs.FirstOrDefaultAsync(h => h.MaHoSo == id);
+    }
+
+    /// <param name="maCB_PheDuyet">Mã cán bộ (Hiệu trưởng) thực hiện phê duyệt</param>
+    /// <returns>True nếu giao dịch thành công</returns>
+    public async Task<bool> FinalizeScholarshipRoundAsync(int maDot, int maCB_PheDuyet)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
@@ -147,9 +153,9 @@ public class HoSoXetHocBongRepository : IHoSoXetHocBongRepository
 
                 dot.TrangThai = "ChinhThuc";
 
-                // 2. Lấy danh sách hồ sơ "DanhSachDuKien"
+                // 2. Lấy danh sách hồ sơ "HoiDongDuyet"
                 var confirmedProfiles = await _context.HoSoXetHocBongs
-                    .Where(h => h.MaDot == maDot && h.TrangThai == "DanhSachDuKien")
+                    .Where(h => h.MaDot == maDot && h.TrangThai == "HoiDongDuyet")
                     .ToListAsync();
 
                 if (confirmedProfiles.Any())

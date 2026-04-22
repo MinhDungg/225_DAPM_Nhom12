@@ -56,6 +56,32 @@ public class DotHocBongController : ControllerBase
         }
     }
 
+    [HttpGet]
+    [Authorize(Roles = "CTSV,HoiDong,HieuTruong,Khoa")] // Thêm các role cần thiết
+    public async Task<IActionResult> GetAll()
+    {
+        try
+        {
+            var result = await _dotHocBongService.GetAllDotHocBongAsync();
+            return Ok(new BaseResponse<IEnumerable<DotHocBongResponseDTO>>
+            {
+                Success = true,
+                Message = "Lay danh sach dot hoc bong thanh cong",
+                Data = result
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi lấy danh sách đợt học bổng.");
+            return StatusCode(500, new BaseResponse<IEnumerable<DotHocBongResponseDTO>>
+            {
+                Success = false,
+                Message = "Lỗi hệ thống",
+                Data = null
+            });
+        }
+    }
+
     [HttpPost("{maDot:int}/tu-dong-quet")]
     [Authorize(Roles = "CTSV")]
     public async Task<IActionResult> TuDongQuet([FromRoute] int maDot)

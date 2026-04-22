@@ -2,6 +2,9 @@ using BE.Data;
 using BE.Models;
 using BE.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace BE.Repositories.Implementations;
 
@@ -29,5 +32,11 @@ public class PhanBoKinhPhiRepository : IPhanBoKinhPhiRepository
     {
         _context.PhanBoKinhPhis.Update(phanBoKinhPhi);
     }
-}
 
+    public async Task<List<PhanBoKinhPhi>> LayTheoMaDotAsync(int maDot)
+    {
+        return await _context.PhanBoKinhPhis
+            .Where(p => p.MaDot == maDot)
+            .ToListAsync();
+    }
+}

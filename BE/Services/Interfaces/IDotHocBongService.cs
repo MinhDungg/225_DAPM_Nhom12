@@ -7,4 +7,5 @@ public interface IDotHocBongService
 {
     Task<DotHocBongResponseDTO> CreateDotHocBongAsync(DotHocBongCreateDTO request);
     Task<AutoScanResultDTO?> AutoScanCandidatesAsync(int maDot);
+    Task<IEnumerable<DotHocBongResponseDTO>> GetAllDotHocBongAsync();
 }

@@ -17,5 +17,6 @@ public interface IHoSoXetHocBongRepository
 
     Task<IEnumerable<HoSoXetHocBong>> GetProfilesByMaSVAsync(string maSV);
 
+    Task<HoSoXetHocBong?> GetByIdAsync(int id);
     Task<bool> FinalizeScholarshipRoundAsync(int maDot, int maCB_PheDuyet);
 }
