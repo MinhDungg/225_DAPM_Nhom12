@@ -4,7 +4,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 
 import Layout from './components/layout/Layout.jsx';
 import { KhieuNaiSinhVien, KhieuNaiQuanLy } from './pages';
-// Import từ file index.js trong thư mục pages
 import {
   Login,
   StudentDashboard,
@@ -15,6 +14,8 @@ import {
   TaiChinhDashboard,
   HieuTruongDashboard
 } from './pages';
+import TaoDotHocBong from './pages/CTSV/TaoDotHocBong.jsx';
+import DaoTaoImport from './pages/DaoTao/DaoTaoImport.jsx';
 
 function App() {
   const [role, setRole] = useState('SinhVien');
@@ -37,14 +38,16 @@ function App() {
           <Route path="hieu-truong" element={<HieuTruongDashboard />} />
 
           {/* ===== ROUTE CHO CHỨC NĂNG KHIẾU NẠI ===== */}
-          {/* Dành cho Sinh Viên */}
           <Route path="sinh-vien/khieu-nai" element={<KhieuNaiSinhVien />} />
-
-          {/* Dành cho CTSV (Khớp với menuConfig trong Layout) */}
           <Route path="ctsv/khieu-nai" element={<KhieuNaiQuanLy />} />
-
-          {/* Dành cho Khoa (Nếu ban nãy bạn có thêm menu KhieuNai cho Khoa ở Layout) */}
           <Route path="khoa/khieu-nai" element={<KhieuNaiQuanLy />} />
+
+          {/* ===== ROUTE CHO TASK 04 ===== */}
+          {/* CTSV: Tạo đợt học bổng */}
+          <Route path="ctsv/tao-dot-hoc-bong" element={<TaoDotHocBong />} />
+
+          {/* Đào Tạo: Import dữ liệu học vụ */}
+          <Route path="dao-tao/danh-sach" element={<DaoTaoImport />} />
 
           {/* Nếu gõ đường dẫn root (/) sẽ tự động chuyển hướng về trang login */}
           <Route index element={<Navigate to="/login" replace />} />
