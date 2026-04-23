@@ -14,7 +14,7 @@ const HDXDDashboard = () => {
     // 2. Load dữ liệu từ Backend khi mở trang
     const fetchHoSo = async () => {
         try {
-            const res = await finalDecisionService.layTongHopToanTruong();
+            const res = await finalDecisionService.getTongHopToanTruong();
             if (res.success) {
                 setHoSos(res.data);
                 // Tích chọn sẵn tất cả sinh viên
