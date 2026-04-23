@@ -37,6 +37,15 @@ public class DotHocBongService : IDotHocBongService
 
     public async Task<DotHocBongResponseDTO> CreateDotHocBongAsync(DotHocBongCreateDTO request)
     {
+        // Double-guard: kiểm tra trùng học kỳ + năm học
+        var trungLap = await _dotHocBongRepository.KiemTraTonTaiHocKyNamHocAsync(
+            request.HocKy, request.NamHoc);
+        if (trungLap)
+        {
+            throw new InvalidOperationException(
+                $"Học kỳ {request.HocKy} năm học {request.NamHoc} đã tồn tại trong hệ thống!");
+        }
+
         var dotHocBong = new DotHocBong
         {
             LoaiDot = request.LoaiDot,
@@ -63,6 +72,15 @@ public class DotHocBongService : IDotHocBongService
     {
         var dot = await _dotHocBongRepository.LayTheoIdAsync(maDot);
         if (dot == null) return null;
+
+        // Double-guard: kiểm tra trùng, loại trừ chính đợt đang sửa
+        var trungLap = await _dotHocBongRepository.KiemTraTonTaiHocKyNamHocAsync(
+            request.HocKy, request.NamHoc, excludeMaDot: maDot);
+        if (trungLap)
+        {
+            throw new InvalidOperationException(
+                $"Học kỳ {request.HocKy} năm học {request.NamHoc} đã tồn tại trong hệ thống!");
+        }
 
         dot.LoaiDot = request.LoaiDot;
         dot.HocKy = request.HocKy;

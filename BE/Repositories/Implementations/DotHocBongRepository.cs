@@ -45,4 +45,12 @@ public class DotHocBongRepository : IDotHocBongRepository
     {
         return await _context.DotHocBongs.ToListAsync();
     }
+
+    public async Task<bool> KiemTraTonTaiHocKyNamHocAsync(int hocKy, string namHoc, int? excludeMaDot = null)
+    {
+        return await _context.DotHocBongs.AnyAsync(d =>
+            d.HocKy == hocKy &&
+            d.NamHoc == namHoc &&
+            (excludeMaDot == null || d.MaDot != excludeMaDot.Value));
+    }
 }

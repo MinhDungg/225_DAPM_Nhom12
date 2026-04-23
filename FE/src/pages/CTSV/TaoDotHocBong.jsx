@@ -150,6 +150,21 @@ const TaoDotHocBong = () => {
   const xuLySubmit = async (e) => {
     e.preventDefault();
     if (!form.namHoc.trim()) { toast.error('Vui lòng nhập năm học.'); return; }
+
+    // ── Double-guard: kiểm tra trùng học kỳ + năm học trước khi gọi API ──────
+    const trungLap = danhSachDot.some(dot => {
+      // Khi đang sửa: bỏ qua chính đợt đang sửa
+      if (editingMaDot && dot.maDot === editingMaDot) return false;
+      return dot.hocKy === form.hocKy && dot.namHoc === form.namHoc.trim();
+    });
+
+    if (trungLap) {
+      toast.error(
+        `Học kỳ ${form.hocKy} năm học ${form.namHoc} đã tồn tại trong hệ thống! Vui lòng chọn học kỳ hoặc năm học khác.`
+      );
+      return;
+    }
+
     setDangGui(true);
     try {
       const payload = { loaiDot: form.loaiDot, hocKy: form.hocKy, namHoc: form.namHoc.trim() };

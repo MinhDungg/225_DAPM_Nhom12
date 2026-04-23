@@ -44,6 +44,15 @@ public class DotHocBongController : ControllerBase
                 Data = created
             });
         }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new BaseResponse<DotHocBongResponseDTO>
+            {
+                Success = false,
+                Message = ex.Message,
+                Data = null
+            });
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Create DotHocBong failed.");
@@ -116,6 +125,15 @@ public class DotHocBongController : ControllerBase
                 Success = true,
                 Message = "Cap nhat dot hoc bong thanh cong",
                 Data = updated
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new BaseResponse<DotHocBongResponseDTO>
+            {
+                Success = false,
+                Message = ex.Message,
+                Data = null
             });
         }
         catch (Exception ex)
