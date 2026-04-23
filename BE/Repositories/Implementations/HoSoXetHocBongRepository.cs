@@ -93,6 +93,7 @@ public class HoSoXetHocBongRepository : IHoSoXetHocBongRepository
             return await _context.HoSoXetHocBongs
                 .Include(app => app.SinhVien)
                     .ThenInclude(sv => sv.Lop) // Nối thêm bảng Lớp nếu DTO cần TenLop
+                        .ThenInclude(lop => lop.Khoa) // Nối thêm bảng Khoa để lấy TenKhoa
                 .Where(app => app.TrangThai == status)
                 .AsNoTracking() // Tối ưu hiệu suất vì chỉ đọc dữ liệu (Read-only)
                 .ToListAsync();
@@ -190,4 +191,14 @@ public class HoSoXetHocBongRepository : IHoSoXetHocBongRepository
                 return false;
             }
         }
+
+    public async Task DeleteAsync(int maHoSo)
+    {
+        var hoSo = await _context.HoSoXetHocBongs.FindAsync(maHoSo);
+        if (hoSo != null)
+        {
+            _context.HoSoXetHocBongs.Remove(hoSo);
+            await _context.SaveChangesAsync();
+        }
+    }
 }
