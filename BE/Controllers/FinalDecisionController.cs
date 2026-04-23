@@ -20,15 +20,18 @@ namespace BE.Controllers
 
         [HttpGet("/api/ctsv/tonghop")]
         [Authorize(Roles = "CTSV,HoiDong")]
-        // Cập nhật ở dòng ActionResult bên dưới từ Model sang DTO
         public async Task<ActionResult<BaseResponse<IEnumerable<HoSoResponseDTO>>>> GetSystemWideSummaryAsync()
         {
-            var profiles = await _service.GetRecommendedProfilesAsync();
+            // Lấy thông tin từ Token xem người đăng nhập có phải là Hội Đồng không
+            bool isHoiDong = User.IsInRole("HoiDong");
+
+            // Truyền kết quả xuống cho Service xử lý
+            var profiles = await _service.GetRecommendedProfilesAsync(isHoiDong);
 
             return Ok(new BaseResponse<IEnumerable<HoSoResponseDTO>>
             {
                 Success = true,
-                Message = "Lấy danh sách tổng hợp toàn trường thành công.",
+                Message = "Lấy danh sách tổng hợp thành công.",
                 Data = profiles
             });
         }
@@ -78,30 +81,27 @@ namespace BE.Controllers
             return Ok(result);
         }
 
-  
 
         [HttpGet("/api/hieutruong/tong-hop/{maDot}")]
-        [Authorize(Roles = "HieuTruong,CTSV")]
-        public async Task<ActionResult<BaseResponse<TongHopHieuTruongResponseDTO>>> GetToTrinhHieuTruong(int maDot)
+        [Authorize(Roles = "HieuTruong,CTSV")] // Mở quyền cho cả CTSV
+        public async Task<ActionResult<BaseResponse<TongHopHieuTruongResponseDTO>>> GetToTrinh(int maDot)
         {
-            var result = await _service.GetToTrinhHieuTruongAsync(maDot);
+            // Kiểm tra xem user đang gọi API có phải là Hiệu Trưởng không
+            bool isHieuTruong = User.IsInRole("HieuTruong");
+
+            // Truyền biến isHieuTruong xuống service
+            var result = await _service.GetToTrinhHieuTruongAsync(maDot, isHieuTruong);
 
             if (result == null)
             {
                 return Ok(new BaseResponse<TongHopHieuTruongResponseDTO>
                 {
                     Success = false,
-                    Message = "Không tìm thấy dữ liệu tờ trình cho đợt học bổng này.",
-                    Data = null!
+                    Message = "Danh sách hiện tại đang được phòng CTSV rà soát, chưa trình lên Ban Giám Hiệu."
                 });
             }
 
-            return Ok(new BaseResponse<TongHopHieuTruongResponseDTO>
-            {
-                Success = true,
-                Message = "Lấy dữ liệu tờ trình thành công.",
-                Data = result
-            });
+            return Ok(new BaseResponse<TongHopHieuTruongResponseDTO> { Success = true, Data = result });
         }
 
         // Task 3.4: Hiệu trưởng phê duyệt

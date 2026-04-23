@@ -27,12 +27,15 @@ namespace BE.Services.Implementations
             _diemRenLuyenRepository = diemRenLuyenRepository;
         }
 
-        // ====================================================================
-        // TASK 3.1: Tổng hợp dữ liệu toàn trường (CTSV/Hội đồng xem lúc đầu)
-        // ====================================================================
-        public async Task<IEnumerable<HoSoResponseDTO>> GetRecommendedProfilesAsync()
+        // Tổng hợp dữ liệu từ Khoa đề xuất
+        public async Task<IEnumerable<HoSoResponseDTO>> GetRecommendedProfilesAsync(bool isHoiDong)
         {
-            var profiles = await _hoSoRepository.GetProfilesByStatusAsync("KhoaDeXuat");
+            // LOGIC TỰ ĐỘNG PHÂN LUỒNG:
+            // - Nếu Hội đồng đăng nhập -> Tìm danh sách 'KhoaDeXuat' để duyệt
+            // - Nếu CTSV đăng nhập -> Tìm danh sách 'HoiDongDuyet' để lập tờ trình
+            string statusToFetch = isHoiDong ? "KhoaDeXuat" : "HoiDongDuyet";
+
+            var profiles = await _hoSoRepository.GetProfilesByStatusAsync(statusToFetch);
 
             return profiles.Select(p => new HoSoResponseDTO
             {
@@ -40,15 +43,16 @@ namespace BE.Services.Implementations
                 MaSV = p.MaSV,
                 HoTen = p.SinhVien?.HoTen,
                 TenLop = p.SinhVien?.Lop?.TenLop,
+                TenKhoa = p.SinhVien?.Lop?.Khoa?.TenKhoa,
                 GPA = p.DiemHocTap,
+                DiemHocTap = p.DiemHocTap,
+                DiemRenLuyen = p.DiemRenLuyen,
                 XepLoaiHB = p.XepLoaiHB,
                 TrangThai = p.TrangThai
             });
         }
 
-        // ====================================================================
-        // TASK 3.2: Hội đồng xét chọn (Chốt danh sách gửi về CTSV)
-        // ====================================================================
+        // Hội đồng chốt danh sách
         public async Task<bool> ApproveExpectedListAsync(List<int> profileIds)
         {
             if (profileIds == null || !profileIds.Any())
@@ -57,68 +61,53 @@ namespace BE.Services.Implementations
             return await _hoSoRepository.UpdateProfilesStatusAsync(profileIds, "HoiDongDuyet");
         }
 
-        // ====================================================================
-        // TASK 3.3: CTSV Rà soát và Lập Tờ Trình lên Hiệu trưởng
-        // ====================================================================
+        // CTSV lập tờ trình lên Hiệu trưởng
         public async Task<BaseResponse<bool>> CTSVTrinhHieuTruongAsync(int maDot)
         {
             var dot = await _dotHocBongRepository.LayTheoIdAsync(maDot);
-            if (dot == null)
-            {
-                return new BaseResponse<bool> { Success = false, Message = "Không tìm thấy đợt học bổng." };
-            }
+            if (dot == null) return new BaseResponse<bool> { Success = false, Message = "Không tìm thấy đợt học bổng." };
 
-            // Lấy các hồ sơ đã được Hội đồng duyệt
             var hoSos = await _hoSoRepository.GetProfilesByStatusAsync("HoiDongDuyet");
             if (!hoSos.Any(h => h.MaDot == maDot))
             {
                 return new BaseResponse<bool> { Success = false, Message = "Chưa có hồ sơ nào được Hội đồng duyệt để trình lên." };
             }
 
-            // Mở khóa cho Hiệu trưởng thấy Tờ trình bằng cách đổi trạng thái Đợt HB
             dot.TrangThai = "ChoPheDuyet";
             await _dotHocBongRepository.UpdateAsync(dot);
 
-            return new BaseResponse<bool>
-            {
-                Success = true,
-                Message = "Đã khóa danh sách và gửi Tờ trình lên Ban Giám Hiệu.",
-                Data = true
-            };
+            return new BaseResponse<bool> { Success = true, Message = "Đã khóa danh sách và gửi Tờ trình lên Ban Giám Hiệu.", Data = true };
         }
 
-        // ====================================================================
-        // TASK 3.4: Dữ liệu Tờ trình cho Dashboard Hiệu Trưởng (Hiển thị)
-        // ====================================================================
-        public async Task<TongHopHieuTruongResponseDTO?> GetToTrinhHieuTruongAsync(int maDot)
+        // Lấy dữ liệu Tờ trình cho Hiệu Trưởng xem
+        public async Task<TongHopHieuTruongResponseDTO?> GetToTrinhHieuTruongAsync(int maDot, bool isHieuTruong)
         {
             var dotHocBong = await _dotHocBongRepository.LayTheoIdAsync(maDot);
             if (dotHocBong == null) return null;
 
-            // CHẶN BẢO MẬT: Mở rộng cho phép CTSV xem trước danh sách khi đợt đang ở trạng thái DangXetDuyet
-            if (dotHocBong.TrangThai != "ChoPheDuyet" && dotHocBong.TrangThai != "ChinhThuc" && dotHocBong.TrangThai != "DangXetDuyet")
+            // LÔ-GIC CHẶN CHỈ ÁP DỤNG CHO HIỆU TRƯỞNG
+            if (isHieuTruong)
             {
-                return null;
+                if (dotHocBong.TrangThai != "ChoPheDuyet" && dotHocBong.TrangThai != "ChinhThuc" && dotHocBong.TrangThai != "DangXetDuyet")
+                {
+                    // Hiệu trưởng không được xem khi CTSV chưa trình
+                    return null;
+                }
             }
+            // Nếu là CTSV thì đoạn if trên sẽ bị bỏ qua, CTSV được phép xem tiếp để rà soát hồ sơ.
 
-            // Tính toán tổng kinh phí
             var phanBoKinhPhis = await _phanBoKinhPhiRepository.LayTheoMaDotAsync(maDot);
             decimal tongKinhPhi = phanBoKinhPhis.Sum(p => p.KinhPhi);
 
-            // LOGIC CỐT LÕI:
-            // - Đang chờ duyệt: Lấy đúng danh sách CTSV vừa trình lên (HoiDongDuyet)
-            // - Đã duyệt xong: Lấy danh sách lịch sử chính thức (ChinhThuc)
+            // Lấy danh sách hồ sơ tùy theo trạng thái đợt
             string statusToFetch = dotHocBong.TrangThai == "ChinhThuc" ? "ChinhThuc" : "HoiDongDuyet";
             var allProfiles = await _hoSoRepository.GetProfilesByStatusAsync(statusToFetch);
-
             var profilesForRound = allProfiles.Where(h => h.MaDot == maDot).ToList();
 
-            // Lấy điểm rèn luyện tuần tự (tránh lỗi DbContext concurrency)
             var danhSachDTO = new List<HoSoResponseDTO>();
             foreach (var h in profilesForRound)
             {
-                var diemRL = await _diemRenLuyenRepository.GetDiemRenLuyenAsync(
-                    h.MaSV, dotHocBong.HocKy, dotHocBong.NamHoc);
+                var diemRL = await _diemRenLuyenRepository.GetDiemRenLuyenAsync(h.MaSV, dotHocBong.HocKy, dotHocBong.NamHoc);
 
                 danhSachDTO.Add(new HoSoResponseDTO
                 {
@@ -151,18 +140,13 @@ namespace BE.Services.Implementations
             };
         }
 
-        // ====================================================================
-        // TASK 3.5: Hiệu trưởng phê duyệt (Final Trigger)
-        // ====================================================================
+        // Hiệu trưởng phê duyệt (Chốt danh sách và đợt)
         public async Task<bool> RectorApproveAsync(int maDot, int maCB)
         {
-            // Tận dụng hàm Finalize có sẵn trong Repo (Chuyển hồ sơ -> ChinhThuc, Đợt -> ChinhThuc, Chèn DSHocBong)
             return await _hoSoRepository.FinalizeScholarshipRoundAsync(maDot, maCB);
         }
 
-        // ====================================================================
-        // TASK 3.6: Sinh viên tra cứu trạng thái hồ sơ của cá nhân
-        // ====================================================================
+        // Sinh viên tra cứu hồ sơ cá nhân
         public async Task<IEnumerable<HoSoResponseDTO>> GetStudentProgressAsync(string maSV)
         {
             var studentProfiles = await _hoSoRepository.GetProfilesByMaSVAsync(maSV);
@@ -178,16 +162,12 @@ namespace BE.Services.Implementations
                 TrangThai = p.TrangThai
             });
         }
-        // ====================================================================
-        // TASK 3.6: Hiệu trưởng trả lại hồ sơ (Yêu cầu giải trình)
-        // ====================================================================
+
+        // Hiệu trưởng trả hồ sơ về CTSV (Yêu cầu giải trình)
         public async Task<BaseResponse<bool>> TraHoSoAsync(int maDot, string lyDo)
         {
             var dot = await _dotHocBongRepository.LayTheoIdAsync(maDot);
-            if (dot == null)
-            {
-                return new BaseResponse<bool> { Success = false, Message = "Không tìm thấy đợt học bổng." };
-            }
+            if (dot == null) return new BaseResponse<bool> { Success = false, Message = "Không tìm thấy đợt học bổng." };
 
             if (dot.TrangThai != "ChoPheDuyet")
             {
@@ -199,23 +179,14 @@ namespace BE.Services.Implementations
             
             await _dotHocBongRepository.UpdateAsync(dot);
 
-            return new BaseResponse<bool>
-            {
-                Success = true,
-                Message = "Đã trả hồ sơ về cho CTSV.",
-                Data = true
-            };
+            return new BaseResponse<bool> { Success = true, Message = "Đã trả hồ sơ về cho CTSV.", Data = true };
         }
-        // ====================================================================
+
         // Xóa hồ sơ (CTSV)
-        // ====================================================================
         public async Task<BaseResponse<bool>> XoaHoSoAsync(int maHoSo)
         {
             var hoSo = await _hoSoRepository.GetByIdAsync(maHoSo);
-            if (hoSo == null)
-            {
-                return new BaseResponse<bool> { Success = false, Message = "Không tìm thấy hồ sơ." };
-            }
+            if (hoSo == null) return new BaseResponse<bool> { Success = false, Message = "Không tìm thấy hồ sơ." };
 
             await _hoSoRepository.DeleteAsync(maHoSo);
 
