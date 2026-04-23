@@ -1,8 +1,11 @@
+using BE.Data;
 using BE.DTOs.Request;
 using BE.DTOs.Response;
+using BE.Helpers;
 using BE.Models;
 using BE.Repositories.Interfaces;
 using BE.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace BE.Services.Implementations;
@@ -13,6 +16,7 @@ public class DiemService : IDiemService
     private readonly IKetQuaHocTapRepository _ketQuaHocTapRepository;
     private readonly IDiemRenLuyenRepository _diemRenLuyenRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly AppDbContext _context;
     private readonly ILogger<DiemService> _logger;
 
     public DiemService(
@@ -20,12 +24,14 @@ public class DiemService : IDiemService
         IKetQuaHocTapRepository ketQuaHocTapRepository,
         IDiemRenLuyenRepository diemRenLuyenRepository,
         IUnitOfWork unitOfWork,
+        AppDbContext context,
         ILogger<DiemService> logger)
     {
         _sinhVienRepository = sinhVienRepository;
         _ketQuaHocTapRepository = ketQuaHocTapRepository;
         _diemRenLuyenRepository = diemRenLuyenRepository;
         _unitOfWork = unitOfWork;
+        _context = context;
         _logger = logger;
     }
 
@@ -82,6 +88,30 @@ public class DiemService : IDiemService
             await _ketQuaHocTapRepository.ThemNhieuAsync(danhSachKetQua);
             await _diemRenLuyenRepository.ThemNhieuAsync(danhSachDRL);
             await _unitOfWork.SaveChangesAsync();
+
+            // ── Trigger: Tự động chuyển DotHocBong KhoiTao → DaCoDiem ──────────
+            if (danhSachKetQua.Count > 0)
+            {
+                var firstItem = requests.First(r => !string.IsNullOrWhiteSpace(r.MaSV));
+                var hocKy = firstItem.HocKy;
+                var namHoc = firstItem.NamHoc?.Trim();
+
+                var dotKhoiTao = await _context.DotHocBongs
+                    .Where(d => d.HocKy == hocKy
+                             && d.NamHoc == namHoc
+                             && d.TrangThai == TrangThaiHocBong.KhoiTao)
+                    .FirstOrDefaultAsync();
+
+                if (dotKhoiTao != null)
+                {
+                    dotKhoiTao.TrangThai = TrangThaiHocBong.DaCoDiem;
+                    await _context.SaveChangesAsync();
+                    _logger.LogInformation(
+                        "Trigger: DotHocBong MaDot={MaDot} chuyen sang DaCoDiem.",
+                        dotKhoiTao.MaDot);
+                }
+            }
+
             await transaction.CommitAsync();
 
             var result = new ImportResultDTO

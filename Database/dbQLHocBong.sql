@@ -117,7 +117,7 @@ CREATE TABLE [DOTHOCBONG] (
   [LoaiDot] nvarchar(150) NOT NULL, 
   [HocKy] int NOT NULL,
   [NamHoc] varchar(20) NOT NULL,
-  [TrangThai] varchar(50) DEFAULT 'KhoiTao' CONSTRAINT CHK_TrangThai_Dot CHECK ([TrangThai] IN ('KhoiTao', 'DangXetDuyet', 'DuKien', 'ChinhThuc'))
+  [TrangThai] varchar(50) DEFAULT 'KhoiTao' CONSTRAINT CHK_TrangThai_Dot CHECK ([TrangThai] IN ('KhoiTao','DaCoDiem', 'DangXetDuyet', 'DuKien', 'ChinhThuc'))
 );
 GO
 
@@ -131,7 +131,7 @@ CREATE TABLE [HOSOXETHOCBONG] (
   [DiemHocTap] real NOT NULL CONSTRAINT CHK_DiemHocTap_HoSo CHECK ([DiemHocTap] >= 0.0 AND [DiemHocTap] <= 10.0),
   [DiemRenLuyen] int NOT NULL CONSTRAINT CHK_DiemRenLuyen CHECK ([DiemRenLuyen] >= 0 AND [DiemRenLuyen] <= 100),
   [XepLoaiHB] nvarchar(50),
-  [TrangThai] varchar(50) DEFAULT 'ChoXet' CONSTRAINT CHK_TrangThai_HoSo CHECK ([TrangThai] IN ('ChoXet', 'KhoaDeXuat', 'HoiDongDuyet', 'TuChoi', 'ChinhThuc')),
+  [TrangThai] varchar(50) DEFAULT 'ChoXet' CONSTRAINT CHK_TrangThai_HoSo CHECK ([TrangThai] IN ('ChoXet', 'KhoaDeXuat', 'HoiDongDuyet', 'TuChoi', 'ChinhThuc', 'Loai')),
   [GhiChu] nvarchar(500) NULL,
   [MaCB_Duyet] int
 );

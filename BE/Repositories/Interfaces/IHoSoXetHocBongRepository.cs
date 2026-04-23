@@ -1,3 +1,4 @@
+using BE.DTOs.Response;
 using BE.Models;
 
 namespace BE.Repositories.Interfaces;
@@ -20,4 +21,9 @@ public interface IHoSoXetHocBongRepository
 
     Task<HoSoXetHocBong?> GetByIdAsync(int id);
     Task<bool> FinalizeScholarshipRoundAsync(int maDot, int maCB_PheDuyet);
+
+    /// <summary>
+    /// Lấy danh sách ứng viên của một đợt, kèm HoTen từ SinhVien.
+    /// </summary>
+    Task<List<UngVienResponseDTO>> LayDanhSachUngVienTheoMaDotAsync(int maDot);
 }

@@ -125,44 +125,44 @@ INSERT INTO [PHANBOKINHPHI] (MaDot, MaKhoa, KinhPhi, MucHBLoaiKha) VALUES
 -- Cấu trúc mới: Phải có GPA, DiemHocTap, DiemRenLuyen, GhiChu
 -- =================================================================================
 
-INSERT INTO [HOSOXETHOCBONG] (MaSV, MaDot, NgayNop, GPA, DiemHocTap, DiemRenLuyen, XepLoaiHB, TrangThai, GhiChu, MaCB_Duyet) VALUES 
-('23115053122101', 1, '2024-02-10', 3.8, 9.2, 95, N'Xuất sắc', 'HoiDongDuyet', NULL, 4),
-('23115053122102', 1, '2024-02-11', 3.6, 8.8, 90, N'Giỏi', 'HoiDongDuyet', NULL, 4),
-('23115053122104', 1, '2024-02-12', 3.9, 9.5, 98, N'Xuất sắc', 'HoiDongDuyet', NULL, 4),
-('23115053122106', 1, '2024-02-12', 3.7, 9.0, 85, N'Giỏi', 'HoiDongDuyet', NULL, 4),
-('23115053122109', 1, '2024-02-13', 3.8, 9.2, 92, N'Xuất sắc', 'HoiDongDuyet', NULL, 4),
-('23115053122107', 1, '2024-02-14', 3.5, 8.5, 88, N'Giỏi', 'HoiDongDuyet', NULL, 4),
-('23115053122105', 1, '2024-02-14', 3.2, 8.0, 80, N'Khá', 'HoiDongDuyet', NULL, 4),
-('23115053122103', 1, '2024-02-15', 2.5, 6.5, 65, NULL, 'TuChoi', N'Bị điểm F', 4),
-('23115053122108', 1, '2024-02-16', 3.1, 7.8, 75, NULL, 'TuChoi', N'Không đủ chỉ tiêu', 4),
-('23115053122110', 1, '2024-02-16', 2.8, 7.0, 70, NULL, 'ChoXet', NULL, NULL);
+-- INSERT INTO [HOSOXETHOCBONG] (MaSV, MaDot, NgayNop, GPA, DiemHocTap, DiemRenLuyen, XepLoaiHB, TrangThai, GhiChu, MaCB_Duyet) VALUES 
+-- ('23115053122101', 1, '2024-02-10', 3.8, 9.2, 95, N'Xuất sắc', 'HoiDongDuyet', NULL, 4),
+-- ('23115053122102', 1, '2024-02-11', 3.6, 8.8, 90, N'Giỏi', 'HoiDongDuyet', NULL, 4),
+-- ('23115053122104', 1, '2024-02-12', 3.9, 9.5, 98, N'Xuất sắc', 'HoiDongDuyet', NULL, 4),
+-- ('23115053122106', 1, '2024-02-12', 3.7, 9.0, 85, N'Giỏi', 'HoiDongDuyet', NULL, 4),
+-- ('23115053122109', 1, '2024-02-13', 3.8, 9.2, 92, N'Xuất sắc', 'HoiDongDuyet', NULL, 4),
+-- ('23115053122107', 1, '2024-02-14', 3.5, 8.5, 88, N'Giỏi', 'HoiDongDuyet', NULL, 4),
+-- ('23115053122105', 1, '2024-02-14', 3.2, 8.0, 80, N'Khá', 'HoiDongDuyet', NULL, 4),
+-- ('23115053122103', 1, '2024-02-15', 2.5, 6.5, 65, NULL, 'TuChoi', N'Bị điểm F', 4),
+-- ('23115053122108', 1, '2024-02-16', 3.1, 7.8, 75, NULL, 'TuChoi', N'Không đủ chỉ tiêu', 4),
+-- ('23115053122110', 1, '2024-02-16', 2.8, 7.0, 70, NULL, 'ChoXet', NULL, NULL);
 
 -- =================================================================================
 -- 7. KHIẾU NẠI, DANH SÁCH & CHI TRẢ (LUỒNG SAU XÉT DUYỆT)
 -- =================================================================================
 
-INSERT INTO [KHIEUNAI] (MaHoSo, NoiDung, MinhChung, NgayGui, TrangThai, MaCB_Duyet) VALUES 
-(8, N'Lỗi hệ thống ghi nhận thiếu điểm rèn luyện', 'link_driver_1', '2024-02-20', 'DaXuLy', 2),
-(9, N'Chưa cộng điểm ban cán sự lớp', 'link_driver_2', '2024-02-21', 'DaXuLy', 4),
-(10, N'Lỗi cập nhật tín chỉ học tập', 'link_driver_3', '2024-02-22', 'ChoXuLy', NULL);
+-- INSERT INTO [KHIEUNAI] (MaHoSo, NoiDung, MinhChung, NgayGui, TrangThai, MaCB_Duyet) VALUES 
+-- (8, N'Lỗi hệ thống ghi nhận thiếu điểm rèn luyện', 'link_driver_1', '2024-02-20', 'DaXuLy', 2),
+-- (9, N'Chưa cộng điểm ban cán sự lớp', 'link_driver_2', '2024-02-21', 'DaXuLy', 4),
+-- (10, N'Lỗi cập nhật tín chỉ học tập', 'link_driver_3', '2024-02-22', 'ChoXuLy', NULL);
 
-INSERT INTO [DSHOCBONG] (MaDot, MaSV, XepLoai, SoTien, NgayPheDuyet, MaCB_PheDuyet) VALUES 
-(1, '23115053122101', N'Xuất sắc', 8000000, '2024-03-01', 6),
-(1, '23115053122102', N'Giỏi', 6500000, '2024-03-01', 6),
-(1, '23115053122104', N'Xuất sắc', 8000000, '2024-03-01', 6),
-(1, '23115053122106', N'Giỏi', 6500000, '2024-03-01', 6),
-(1, '23115053122109', N'Xuất sắc', 8000000, '2024-03-01', 6),
-(1, '23115053122107', N'Giỏi', 6500000, '2024-03-01', 6),
-(1, '23115053122105', N'Khá', 5000000, '2024-03-01', 6);
+-- INSERT INTO [DSHOCBONG] (MaDot, MaSV, XepLoai, SoTien, NgayPheDuyet, MaCB_PheDuyet) VALUES 
+-- (1, '23115053122101', N'Xuất sắc', 8000000, '2024-03-01', 6),
+-- (1, '23115053122102', N'Giỏi', 6500000, '2024-03-01', 6),
+-- (1, '23115053122104', N'Xuất sắc', 8000000, '2024-03-01', 6),
+-- (1, '23115053122106', N'Giỏi', 6500000, '2024-03-01', 6),
+-- (1, '23115053122109', N'Xuất sắc', 8000000, '2024-03-01', 6),
+-- (1, '23115053122107', N'Giỏi', 6500000, '2024-03-01', 6),
+-- (1, '23115053122105', N'Khá', 5000000, '2024-03-01', 6);
 
-INSERT INTO [CHITRA] (MaHoSo, SoTien, NgayXacNhan, TrangThai, MaCB_GiaiNgan) VALUES 
-(1, 8000000, '2024-03-15', 'DaGiaiNgan', 3),
-(2, 6500000, '2024-03-15', 'DaGiaiNgan', 3),
-(3, 8000000, '2024-03-15', 'DaGiaiNgan', 3),
-(4, 6500000, '2024-03-15', 'DaGiaiNgan', 3),
-(5, 8000000, '2024-03-15', 'DaGiaiNgan', 3),
-(6, 6500000, NULL, 'ChuaGiaiNgan', NULL),
-(7, 5000000, NULL, 'ChuaGiaiNgan', NULL);
+-- INSERT INTO [CHITRA] (MaHoSo, SoTien, NgayXacNhan, TrangThai, MaCB_GiaiNgan) VALUES 
+-- (1, 8000000, '2024-03-15', 'DaGiaiNgan', 3),
+-- (2, 6500000, '2024-03-15', 'DaGiaiNgan', 3),
+-- (3, 8000000, '2024-03-15', 'DaGiaiNgan', 3),
+-- (4, 6500000, '2024-03-15', 'DaGiaiNgan', 3),
+-- (5, 8000000, '2024-03-15', 'DaGiaiNgan', 3),
+-- (6, 6500000, NULL, 'ChuaGiaiNgan', NULL),
+-- (7, 5000000, NULL, 'ChuaGiaiNgan', NULL);
 
 -- =================================================================================
 -- 8. KỊCH BẢN TEST CHO ĐỢT MỚI (TẠO MẪU BẰNG TAY)

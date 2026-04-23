@@ -52,9 +52,46 @@ public class DotHocBongService : IDotHocBongService
         };
     }
 
+    public async Task<DotHocBongResponseDTO?> UpdateDotHocBongAsync(int maDot, DotHocBongUpdateDTO request)
+    {
+        var dot = await _dotHocBongRepository.LayTheoIdAsync(maDot);
+        if (dot == null) return null;
+
+        dot.LoaiDot = request.LoaiDot;
+        dot.HocKy = request.HocKy;
+        dot.NamHoc = request.NamHoc;
+        _dotHocBongRepository.CapNhat(dot);
+        await _unitOfWork.SaveChangesAsync();
+
+        return new DotHocBongResponseDTO
+        {
+            MaDot = dot.MaDot,
+            LoaiDot = dot.LoaiDot,
+            HocKy = dot.HocKy,
+            NamHoc = dot.NamHoc,
+            TrangThai = dot.TrangThai
+        };
+    }
+
+    public async Task<bool> DeleteDotHocBongAsync(int maDot)
+    {
+        var dot = await _dotHocBongRepository.LayTheoIdAsync(maDot);
+        if (dot == null) return false;
+
+        // Chỉ cho xóa khi trạng thái là KhoiTao hoặc DaCoDiem
+        if (dot.TrangThai != TrangThaiHocBong.KhoiTao &&
+            dot.TrangThai != TrangThaiHocBong.DaCoDiem)
+        {
+            throw new InvalidOperationException(
+                $"Khong the xoa dot co trang thai '{dot.TrangThai}'. Chi cho phep xoa khi KhoiTao hoac DaCoDiem.");
+        }
+
+        return await _dotHocBongRepository.XoaAsync(maDot);
+    }
+
     public async Task<IEnumerable<DotHocBongResponseDTO>> GetAllDotHocBongAsync()
     {
-        var dsDotHocBong = await _dotHocBongRepository.LayDanhSachAsync(); // Giả sử repo của bạn có hàm này
+        var dsDotHocBong = await _dotHocBongRepository.LayDanhSachAsync();
         return dsDotHocBong.Select(d => new DotHocBongResponseDTO
         {
             MaDot = d.MaDot,
@@ -64,6 +101,12 @@ public class DotHocBongService : IDotHocBongService
             TrangThai = d.TrangThai
         });
     }
+
+    public async Task<List<UngVienResponseDTO>> GetDanhSachUngVienAsync(int maDot)
+    {
+        return await _hoSoXetHocBongRepository.LayDanhSachUngVienTheoMaDotAsync(maDot);
+    }
+
     public async Task<AutoScanResultDTO?> AutoScanCandidatesAsync(int maDot)
     {
         _logger.LogInformation("AutoScanCandidatesAsync start. MaDot={MaDot}", maDot);
@@ -77,10 +120,17 @@ public class DotHocBongService : IDotHocBongService
                 return null;
             }
 
-            // Anti-double-click: Xóa TẤT CẢ hồ sơ cũ của đợt này (không chỉ ChoXet)
+            // Chốt chặn: Chỉ quét khi đợt đã có điểm (DaCoDiem)
+            if (dot.TrangThai != TrangThaiHocBong.DaCoDiem)
+            {
+                throw new InvalidOperationException(
+                    $"Khong the quet ung vien. Dot hoc bong phai o trang thai 'DaCoDiem' (hien tai: '{dot.TrangThai}').");
+            }
+
+            // Anti-double-click: Xóa TẤT CẢ hồ sơ cũ của đợt này
             await _hoSoXetHocBongRepository.XoaTatCaHoSoTheoMaDotAsync(maDot);
 
-            // Lấy TẤT CẢ sinh viên có điểm trong kỳ (kể cả không đủ điều kiện)
+            // Lấy TẤT CẢ sinh viên có điểm trong kỳ
             var tatCaUngVien = await _ketQuaHocTapRepository.LayTatCaUngVienTheoKyAsync(
                 dot.HocKy,
                 dot.NamHoc);
@@ -92,29 +142,12 @@ public class DotHocBongService : IDotHocBongService
                 var ghiChu = new List<string>();
                 var trangThai = TrangThaiHocBong.ChoXet;
 
-                // Bộ lọc V3: Check từng điều kiện
-                if (u.GPA < 2.5f)
-                {
-                    ghiChu.Add("GPA < 2.5");
-                }
-                if (u.SoTC < 15)
-                {
-                    ghiChu.Add("Số TC < 15");
-                }
-                if (u.CoDiemF)
-                {
-                    ghiChu.Add("Có môn F");
-                }
-                if (u.DiemRenLuyen < 65)
-                {
-                    ghiChu.Add("Điểm Rèn Luyện < 65");
-                }
+                if (u.GPA < 2.5f) ghiChu.Add("GPA < 2.5");
+                if (u.SoTC < 15) ghiChu.Add("Số TC < 15");
+                if (u.CoDiemF) ghiChu.Add("Có môn F");
+                if (u.DiemRenLuyen < 65) ghiChu.Add("Điểm Rèn Luyện < 65");
 
-                // Nếu có bất kỳ lý do nào → Loại
-                if (ghiChu.Count > 0)
-                {
-                    trangThai = TrangThaiHocBong.Loai;
-                }
+                if (ghiChu.Count > 0) trangThai = TrangThaiHocBong.Loai;
 
                 danhSachHoSo.Add(new HoSoXetHocBong
                 {
