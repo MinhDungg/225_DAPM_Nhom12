@@ -62,6 +62,15 @@ namespace BE.Controllers
                 Data = result
             });
         }
+
+        [HttpPut("/api/ctsv/trinh-hieu-truong/{maDot}")]
+        [Authorize(Roles = "CTSV")]
+        public async Task<ActionResult<BaseResponse<bool>>> CTSVTrinhHieuTruong(int maDot)
+        {
+            var result = await _service.CTSVTrinhHieuTruongAsync(maDot);
+            return Ok(result);
+        }
+
         [HttpGet("/api/hieutruong/tong-hop/{maDot}")]
         [Authorize(Roles = "HieuTruong")]
         public async Task<ActionResult<BaseResponse<TongHopHieuTruongResponseDTO>>> GetToTrinhHieuTruong(int maDot)

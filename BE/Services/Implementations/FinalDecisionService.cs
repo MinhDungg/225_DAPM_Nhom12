@@ -25,7 +25,7 @@ namespace BE.Services.Implementations
         }
 
         // ====================================================================
-        // TASK 3.1: Tổng hợp dữ liệu toàn trường (CTSV/Hội đồng xem)
+        // TASK 3.1: Tổng hợp dữ liệu toàn trường (CTSV/Hội đồng xem lúc đầu)
         // ====================================================================
         public async Task<IEnumerable<HoSoResponseDTO>> GetRecommendedProfilesAsync()
         {
@@ -44,51 +44,70 @@ namespace BE.Services.Implementations
         }
 
         // ====================================================================
-        // TASK 3.2: Hội đồng xét chọn
+        // TASK 3.2: Hội đồng xét chọn (Chốt danh sách gửi về CTSV)
         // ====================================================================
         public async Task<bool> ApproveExpectedListAsync(List<int> profileIds)
         {
             if (profileIds == null || !profileIds.Any())
                 return false;
 
-            // FIX: Đổi thành UpdateProfilesStatusAsync cho khớp Interface
             return await _hoSoRepository.UpdateProfilesStatusAsync(profileIds, "HoiDongDuyet");
         }
 
         // ====================================================================
-        // TASK 3.3: Sinh viên tra cứu
+        // TASK 3.3: CTSV Rà soát và Lập Tờ Trình lên Hiệu trưởng
         // ====================================================================
-        public async Task<IEnumerable<HoSoResponseDTO>> GetStudentProgressAsync(string maSV)
+        public async Task<BaseResponse<bool>> CTSVTrinhHieuTruongAsync(int maDot)
         {
-            // FIX: Gọi hàm GetProfilesByMaSVAsync thay vì LayDanhSachAsync
-            var studentProfiles = await _hoSoRepository.GetProfilesByMaSVAsync(maSV);
-
-            return studentProfiles.Select(p => new HoSoResponseDTO
+            var dot = await _dotHocBongRepository.LayTheoIdAsync(maDot);
+            if (dot == null)
             {
-                MaHoSo = p.MaHoSo,
-                MaSV = p.MaSV,
-                HoTen = p.SinhVien?.HoTen,
-                TenLop = p.SinhVien?.Lop?.TenLop,
-                GPA = p.DiemHocTap,
-                XepLoaiHB = p.XepLoaiHB,
-                TrangThai = p.TrangThai
-            });
+                return new BaseResponse<bool> { Success = false, Message = "Không tìm thấy đợt học bổng." };
+            }
+
+            // Lấy các hồ sơ đã được Hội đồng duyệt
+            var hoSos = await _hoSoRepository.GetProfilesByStatusAsync("HoiDongDuyet");
+            if (!hoSos.Any(h => h.MaDot == maDot))
+            {
+                return new BaseResponse<bool> { Success = false, Message = "Chưa có hồ sơ nào được Hội đồng duyệt để trình lên." };
+            }
+
+            // Mở khóa cho Hiệu trưởng thấy Tờ trình bằng cách đổi trạng thái Đợt HB
+            dot.TrangThai = "ChoPheDuyet";
+            await _dotHocBongRepository.UpdateAsync(dot);
+
+            return new BaseResponse<bool>
+            {
+                Success = true,
+                Message = "Đã khóa danh sách và gửi Tờ trình lên Ban Giám Hiệu.",
+                Data = true
+            };
         }
 
         // ====================================================================
-        // MỚI THÊM: Dữ liệu Tờ trình cho Dashboard Hiệu Trưởng
+        // TASK 3.4: Dữ liệu Tờ trình cho Dashboard Hiệu Trưởng (Hiển thị)
         // ====================================================================
         public async Task<TongHopHieuTruongResponseDTO?> GetToTrinhHieuTruongAsync(int maDot)
         {
             var dotHocBong = await _dotHocBongRepository.LayTheoIdAsync(maDot);
             if (dotHocBong == null) return null;
 
-            // Lấy danh sách phân bổ kinh phí theo mã đợt
+            // CHẶN BẢO MẬT: Nếu CTSV chưa trình (ChoPheDuyet) và đợt chưa chốt (ChinhThuc) thì Hiệu trưởng không thấy gì
+            if (dotHocBong.TrangThai != "ChoPheDuyet" && dotHocBong.TrangThai != "ChinhThuc")
+            {
+                return null;
+            }
+
+            // Tính toán tổng kinh phí
             var phanBoKinhPhis = await _phanBoKinhPhiRepository.LayTheoMaDotAsync(maDot);
             decimal tongKinhPhi = phanBoKinhPhis.Sum(p => p.KinhPhi);
 
+            // LOGIC CỐT LÕI:
+            // - Đang chờ duyệt: Lấy đúng danh sách CTSV vừa trình lên (HoiDongDuyet)
+            // - Đã duyệt xong: Lấy danh sách lịch sử chính thức (ChinhThuc)
             string statusToFetch = dotHocBong.TrangThai == "ChinhThuc" ? "ChinhThuc" : "HoiDongDuyet";
             var allProfiles = await _hoSoRepository.GetProfilesByStatusAsync(statusToFetch);
+
             var profilesForRound = allProfiles.Where(h => h.MaDot == maDot).ToList();
 
             return new TongHopHieuTruongResponseDTO
@@ -116,12 +135,31 @@ namespace BE.Services.Implementations
         }
 
         // ====================================================================
-        // TASK 3.4: Hiệu trưởng phê duyệt (Final Trigger)
+        // TASK 3.5: Hiệu trưởng phê duyệt (Final Trigger)
         // ====================================================================
         public async Task<bool> RectorApproveAsync(int maDot, int maCB)
         {
-            // FIX: Sử dụng hàm Finalize có sẵn trong Repo thay vì viết lại Logic ở Service
+            // Tận dụng hàm Finalize có sẵn trong Repo (Chuyển hồ sơ -> ChinhThuc, Đợt -> ChinhThuc, Chèn DSHocBong)
             return await _hoSoRepository.FinalizeScholarshipRoundAsync(maDot, maCB);
+        }
+
+        // ====================================================================
+        // TASK 3.6: Sinh viên tra cứu trạng thái hồ sơ của cá nhân
+        // ====================================================================
+        public async Task<IEnumerable<HoSoResponseDTO>> GetStudentProgressAsync(string maSV)
+        {
+            var studentProfiles = await _hoSoRepository.GetProfilesByMaSVAsync(maSV);
+
+            return studentProfiles.Select(p => new HoSoResponseDTO
+            {
+                MaHoSo = p.MaHoSo,
+                MaSV = p.MaSV,
+                HoTen = p.SinhVien?.HoTen,
+                TenLop = p.SinhVien?.Lop?.TenLop,
+                GPA = p.DiemHocTap,
+                XepLoaiHB = p.XepLoaiHB,
+                TrangThai = p.TrangThai
+            });
         }
     }
 }

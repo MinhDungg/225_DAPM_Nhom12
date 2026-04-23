@@ -10,6 +10,7 @@ namespace BE.Services.Interfaces
         Task<bool> ApproveExpectedListAsync(List<int> profileIds);
         Task<IEnumerable<HoSoResponseDTO>> GetStudentProgressAsync(string maSV);
         Task<bool> RectorApproveAsync(int maDot, int maCB);
+        Task<BaseResponse<bool>> CTSVTrinhHieuTruongAsync(int maDot);
         Task<TongHopHieuTruongResponseDTO?> GetToTrinhHieuTruongAsync(int maDot);
     }
 }

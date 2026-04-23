@@ -31,6 +31,12 @@ public class DotHocBongRepository : IDotHocBongRepository
     {
         _context.DotHocBongs.Update(dotHocBong);
     }
+
+    public async Task UpdateAsync(DotHocBong dotHocBong)
+    {
+        _context.DotHocBongs.Update(dotHocBong);
+        await _context.SaveChangesAsync();
+    }
     public async Task<IEnumerable<DotHocBong>> LayDanhSachAsync()
     {
         return await _context.DotHocBongs.ToListAsync();
