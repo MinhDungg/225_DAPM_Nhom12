@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using BE.DTOs.Request;
 using BE.DTOs.Response;
+using BE.Repositories.Interfaces;
 using BE.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,10 +14,28 @@ namespace BE.Controllers;
 public class KhoaController : ControllerBase
 {
     private readonly IKhoaService _khoaService;
+    private readonly IKhoaRepository _khoaRepository;
 
-    public KhoaController(IKhoaService khoaService)
+    public KhoaController(IKhoaService khoaService, IKhoaRepository khoaRepository)
     {
         _khoaService = khoaService;
+        _khoaRepository = khoaRepository;
+    }
+
+    /// <summary>
+    /// GET /api/khoa — Lấy danh sách tất cả Khoa (dùng cho KHTC, CTSV, DaoTao).
+    /// </summary>
+    [HttpGet]
+    public async Task<IActionResult> GetAll()
+    {
+        var danhSach = await _khoaRepository.LayTatCaAsync();
+        var result = danhSach.Select(k => new { maKhoa = k.MaKhoa, tenKhoa = k.TenKhoa }).ToList();
+        return Ok(new BaseResponse<object>
+        {
+            Success = true,
+            Message = "Lay danh sach khoa thanh cong",
+            Data = result
+        });
     }
 
     [HttpGet("danhsach")]

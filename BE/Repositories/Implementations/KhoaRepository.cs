@@ -17,5 +17,15 @@ public class KhoaRepository : IKhoaRepository
     {
         return _context.Khoas.AnyAsync(k => k.MaKhoa == maKhoa);
     }
+
+    public async Task<List<(int MaKhoa, string TenKhoa)>> LayTatCaAsync()
+    {
+        return await _context.Khoas
+            .OrderBy(k => k.MaKhoa)
+            .Select(k => new { k.MaKhoa, k.TenKhoa })
+            .AsNoTracking()
+            .ToListAsync()
+            .ContinueWith(t => t.Result.Select(x => (x.MaKhoa, x.TenKhoa)).ToList());
+    }
 }
 

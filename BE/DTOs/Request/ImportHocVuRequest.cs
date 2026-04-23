@@ -1,8 +1,7 @@
-﻿namespace BE.Models;
+namespace BE.DTOs.Request;
 
-public class KetQuaHocTap
+public class ImportHocVuRequest
 {
-    public int MaDiem { get; set; }
     public string MaSV { get; set; } = null!;
     public int HocKy { get; set; }
     public string NamHoc { get; set; } = null!;
@@ -10,8 +9,5 @@ public class KetQuaHocTap
     public float DiemHocTap { get; set; }
     public int SoTC { get; set; }
     public bool CoDiemF { get; set; }
-    public int? MaCB_Nhap { get; set; }
-
-    public SinhVien SinhVien { get; set; } = null!;
-    public CanBo? CanBoNhap { get; set; }
+    public int DiemSoDRL { get; set; }
 }

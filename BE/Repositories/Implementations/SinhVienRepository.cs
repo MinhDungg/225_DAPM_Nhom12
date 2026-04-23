@@ -33,5 +33,27 @@ public class SinhVienRepository : ISinhVienRepository
 
         return tonTai.ToHashSet(StringComparer.OrdinalIgnoreCase);
     }
+
+    public async Task<List<(string MaSV, string HoTen)>> LayDanhSachTheoMaSVAsync(
+        IEnumerable<string> danhSachMaSV)
+    {
+        var maSvHopLe = danhSachMaSV
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x.Trim())
+            .Distinct()
+            .ToList();
+
+        if (maSvHopLe.Count == 0)
+        {
+            return new List<(string, string)>();
+        }
+
+        return await _context.SinhViens
+            .Where(sv => maSvHopLe.Contains(sv.MaSV))
+            .Select(sv => new { sv.MaSV, sv.HoTen })
+            .AsNoTracking()
+            .ToListAsync()
+            .ContinueWith(t => t.Result.Select(x => (x.MaSV, x.HoTen)).ToList());
+    }
 }
 
