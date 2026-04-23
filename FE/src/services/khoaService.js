@@ -44,7 +44,7 @@ const khoaService = {
             const response = await axiosInstance.post(
                 '/khoa/xephang',
                 { maDot, nganSach },
-                { 
+                {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -70,7 +70,7 @@ const khoaService = {
             const response = await axiosInstance.put(
                 '/khoa/dexuat',
                 { maDot, danhSachMaHoSo },
-                { 
+                {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }

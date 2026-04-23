@@ -48,7 +48,7 @@ const Login = () => {
                         break;
                     case 'HoiDong':
                     case 'HDXD':
-                        navigate('/hoi-dong'); // Chuyển đến HDXDDashboard
+                        navigate('/hdxd'); // Chuyển đến HDXDDashboard
                         break;
                     case 'DaoTao':
                         navigate('/dao-tao'); // Chuyển đến DaoTaoDashboard

@@ -38,6 +38,7 @@ namespace BE.Services.Implementations
                 HoTen = p.SinhVien?.HoTen,
                 TenLop = p.SinhVien?.Lop?.TenLop,
                 GPA = p.DiemHocTap,
+                DiemRenLuyen = p.DiemRenLuyen,
                 XepLoaiHB = p.XepLoaiHB,
                 TrangThai = p.TrangThai
             });
