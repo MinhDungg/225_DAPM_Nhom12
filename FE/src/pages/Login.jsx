@@ -25,10 +25,10 @@ const Login = () => {
             if (response.data.success) {
                 const { token, userInfo, role } = response.data.data;
 
-                // 2. Lưu Token và thông tin Actor vào LocalStorage
-                localStorage.setItem('token', token);
-                localStorage.setItem('role', role);
-                localStorage.setItem('userInfo', JSON.stringify(userInfo));
+                // 2. Lưu Token và thông tin Actor vào sessionStorage
+                sessionStorage.setItem('token', token);
+                sessionStorage.setItem('role', role);
+                sessionStorage.setItem('userInfo', JSON.stringify(userInfo));
 
                 // 3. Phân luồng điều hướng dựa vào VaiTro (Role) của Actor
                 const vaiTro = role;

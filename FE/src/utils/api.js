@@ -11,7 +11,7 @@ const api = axios.create({
 // Thêm interceptor nếu cần (như thêm token vào header request)
 api.interceptors.request.use(
     (config) => {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
@@ -34,8 +34,8 @@ api.interceptors.response.use(
             // Xử lý lỗi 401: Token hết hạn hoặc chưa đăng nhập
             if (status === 401) {
                 console.error("Token hết hạn hoặc không hợp lệ. Đang chuyển hướng về Login...");
-                localStorage.removeItem('token');
-                localStorage.removeItem('user'); // Xóa thông tin user nếu có lưu
+                sessionStorage.removeItem('token');
+                sessionStorage.removeItem('user'); // Xóa thông tin user nếu có lưu
                 
                 // Tránh loop chuyển hướng nếu đang ở sẵn trang login
                 if (window.location.pathname !== '/login') {
