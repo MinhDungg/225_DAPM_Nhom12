@@ -1,8 +1,11 @@
+using BE.Data;
 using BE.DTOs.Request;
 using BE.DTOs.Response;
+using BE.Helpers;
 using BE.Models;
 using BE.Repositories.Interfaces;
 using BE.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace BE.Services.Implementations;
@@ -13,6 +16,7 @@ public class DiemService : IDiemService
     private readonly IKetQuaHocTapRepository _ketQuaHocTapRepository;
     private readonly IDiemRenLuyenRepository _diemRenLuyenRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly AppDbContext _context;
     private readonly ILogger<DiemService> _logger;
 
     public DiemService(
@@ -20,18 +24,20 @@ public class DiemService : IDiemService
         IKetQuaHocTapRepository ketQuaHocTapRepository,
         IDiemRenLuyenRepository diemRenLuyenRepository,
         IUnitOfWork unitOfWork,
+        AppDbContext context,
         ILogger<DiemService> logger)
     {
         _sinhVienRepository = sinhVienRepository;
         _ketQuaHocTapRepository = ketQuaHocTapRepository;
         _diemRenLuyenRepository = diemRenLuyenRepository;
         _unitOfWork = unitOfWork;
+        _context = context;
         _logger = logger;
     }
 
-    public async Task<ImportResultDTO> ImportGpaAsync(List<ImportGpaRequest> requests)
+    public async Task<ImportResultDTO> ImportDuLieuHocVuAsync(List<ImportHocVuRequest> requests)
     {
-        _logger.LogInformation("ImportGpaAsync start. Count={Count}", requests?.Count ?? 0);
+        _logger.LogInformation("ImportDuLieuHocVuAsync start. Count={Count}", requests?.Count ?? 0);
 
         if (requests == null || requests.Count == 0)
         {
@@ -41,11 +47,34 @@ public class DiemService : IDiemService
         await using var transaction = await _unitOfWork.BeginTransactionAsync();
         try
         {
-            var danhSachMaSV = requests.Select(x => x.MaSV).ToList();
+            var danhSachMaSV = requests.Select(x => x.MaSV).Distinct().ToList();
             var maSVTonTai = await _sinhVienRepository.LayDanhSachMaSVTonTaiAsync(danhSachMaSV);
 
+            // Lấy thông tin Học kỳ và Năm học để làm điều kiện xóa dữ liệu cũ
+            var firstItem = requests.FirstOrDefault(r => !string.IsNullOrWhiteSpace(r.MaSV));
+            if (firstItem != null)
+            {
+                var hocKy = firstItem.HocKy;
+                var namHoc = firstItem.NamHoc?.Trim();
+
+                // 1. XÓA DỮ LIỆU CŨ: Ngăn chặn lỗi Tích Đề-các (Cartesian Product) nhân bản dữ liệu
+                var oldKQHT = await _context.KetQuaHocTaps
+                    .Where(k => k.HocKy == hocKy && k.NamHoc == namHoc && danhSachMaSV.Contains(k.MaSV))
+                    .ToListAsync();
+                if (oldKQHT.Any()) _context.KetQuaHocTaps.RemoveRange(oldKQHT);
+
+                var oldDRL = await _context.DiemRenLuyens
+                    .Where(d => d.HocKy == hocKy && d.NamHoc == namHoc && danhSachMaSV.Contains(d.MaSV))
+                    .ToListAsync();
+                if (oldDRL.Any()) _context.DiemRenLuyens.RemoveRange(oldDRL);
+
+                // Lưu thay đổi xóa trước khi Insert cái mới
+                await _context.SaveChangesAsync();
+            }
+
             var danhSachLoi = new List<string>();
-            var danhSachThem = new List<KetQuaHocTap>();
+            var danhSachKetQua = new List<KetQuaHocTap>();
+            var danhSachDRL = new List<DiemRenLuyen>();
 
             foreach (var item in requests)
             {
@@ -56,104 +85,64 @@ public class DiemService : IDiemService
                     continue;
                 }
 
-                danhSachThem.Add(new KetQuaHocTap
+                danhSachKetQua.Add(new KetQuaHocTap
                 {
                     MaSV = maSv,
                     HocKy = item.HocKy,
                     NamHoc = item.NamHoc,
                     GPA = item.GPA,
+                    DiemHocTap = item.DiemHocTap,
                     SoTC = item.SoTC,
+                    CoDiemF = item.CoDiemF,
                     MaCB_Nhap = null
                 });
-            }
 
-            await _ketQuaHocTapRepository.ThemNhieuAsync(danhSachThem);
-            await _unitOfWork.SaveChangesAsync();
-            await transaction.CommitAsync();
-
-            var result = new ImportResultDTO
-            {
-                ThanhCong = danhSachThem.Count,
-                ThatBai = danhSachLoi.Count,
-                DanhSachLoi = danhSachLoi
-            };
-
-            _logger.LogInformation(
-                "ImportGpaAsync done. ThanhCong={ThanhCong} ThatBai={ThatBai}",
-                result.ThanhCong,
-                result.ThatBai);
-
-            return result;
-        }
-        catch (Exception ex)
-        {
-            await transaction.RollbackAsync();
-            _logger.LogError(ex, "ImportGpaAsync failed.");
-            throw;
-        }
-    }
-
-    public async Task<ImportResultDTO> ImportDrlAsync(List<ImportDrlRequest> requests)
-    {
-        _logger.LogInformation("ImportDrlAsync start. Count={Count}", requests?.Count ?? 0);
-
-        if (requests == null || requests.Count == 0)
-        {
-            return new ImportResultDTO();
-        }
-
-        await using var transaction = await _unitOfWork.BeginTransactionAsync();
-        try
-        {
-            var danhSachMaSV = requests.Select(x => x.MaSV).ToList();
-            var maSVTonTai = await _sinhVienRepository.LayDanhSachMaSVTonTaiAsync(danhSachMaSV);
-
-            var danhSachLoi = new List<string>();
-            var danhSachThem = new List<DiemRenLuyen>();
-
-            foreach (var item in requests)
-            {
-                var maSv = item.MaSV?.Trim();
-                if (string.IsNullOrWhiteSpace(maSv) || !maSVTonTai.Contains(maSv))
-                {
-                    danhSachLoi.Add(item.MaSV ?? string.Empty);
-                    continue;
-                }
-
-                danhSachThem.Add(new DiemRenLuyen
+                danhSachDRL.Add(new DiemRenLuyen
                 {
                     MaSV = maSv,
                     HocKy = item.HocKy,
                     NamHoc = item.NamHoc,
-                    DiemSo = item.DiemSo,
+                    DiemSo = item.DiemSoDRL,
                     MaCB_Nhap = null
                 });
             }
 
-            await _diemRenLuyenRepository.ThemNhieuAsync(danhSachThem);
+            // 2. THÊM DỮ LIỆU MỚI
+            await _ketQuaHocTapRepository.ThemNhieuAsync(danhSachKetQua);
+            await _diemRenLuyenRepository.ThemNhieuAsync(danhSachDRL);
             await _unitOfWork.SaveChangesAsync();
+
+            // 3. TRIGGER CHUYỂN TRẠNG THÁI DOT_HOC_BONG
+            if (danhSachKetQua.Count > 0 && firstItem != null)
+            {
+                var dotKhoiTao = await _context.DotHocBongs
+                    .Where(d => d.HocKy == firstItem.HocKy
+                            && d.NamHoc == firstItem.NamHoc
+                            && d.TrangThai == TrangThaiHocBong.KhoiTao)
+                    .FirstOrDefaultAsync();
+
+                if (dotKhoiTao != null)
+                {
+                    dotKhoiTao.TrangThai = TrangThaiHocBong.DaCoDiem;
+                    await _context.SaveChangesAsync();
+                    _logger.LogInformation("Trigger: DotHocBong MaDot={MaDot} chuyen sang DaCoDiem.", dotKhoiTao.MaDot);
+                }
+            }
+
             await transaction.CommitAsync();
 
-            var result = new ImportResultDTO
+            return new ImportResultDTO
             {
-                ThanhCong = danhSachThem.Count,
+                ThanhCong = danhSachKetQua.Count,
                 ThatBai = danhSachLoi.Count,
                 DanhSachLoi = danhSachLoi
             };
-
-            _logger.LogInformation(
-                "ImportDrlAsync done. ThanhCong={ThanhCong} ThatBai={ThatBai}",
-                result.ThanhCong,
-                result.ThatBai);
-
-            return result;
         }
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
-            _logger.LogError(ex, "ImportDrlAsync failed.");
+            _logger.LogError(ex, "ImportDuLieuHocVuAsync failed.");
             throw;
         }
     }
 }
-

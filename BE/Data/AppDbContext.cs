@@ -1,4 +1,4 @@
-﻿using BE.Models;
+using BE.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace BE.Data;
@@ -160,9 +160,16 @@ public class AppDbContext : DbContext
                 .HasMaxLength(20)
                 .IsUnicode(false);
             entity.Property(e => e.GPA)
-                .IsRequired();
+                .IsRequired()
+                .HasColumnType("real");
+            entity.Property(e => e.DiemHocTap)
+                .IsRequired()
+                .HasColumnType("real");
             entity.Property(e => e.SoTC)
                 .IsRequired();
+            entity.Property(e => e.CoDiemF)
+                .IsRequired()
+                .HasDefaultValue(false);
 
             entity.HasOne(e => e.SinhVien)
                 .WithMany(e => e.KetQuaHocTaps)
@@ -251,6 +258,9 @@ public class AppDbContext : DbContext
                 .IsUnicode(false);
             entity.Property(e => e.NgayNop)
                 .HasDefaultValueSql("GETDATE()");
+            entity.Property(e => e.GPA)
+                .IsRequired()
+                .HasColumnType("real");
             entity.Property(e => e.DiemHocTap)
                 .IsRequired()
                 .HasColumnType("real");
@@ -262,6 +272,9 @@ public class AppDbContext : DbContext
                 .HasMaxLength(50)
                 .IsUnicode(false)
                 .HasDefaultValue("ChoXet");
+            entity.Property(e => e.GhiChu)
+                .HasColumnType("nvarchar(max)")
+                .IsRequired(false);
 
             entity.HasOne(e => e.SinhVien)
                 .WithMany(e => e.HoSoXetHocBongs)
@@ -293,6 +306,9 @@ public class AppDbContext : DbContext
                 .HasMaxLength(50)
                 .IsUnicode(false)
                 .HasDefaultValue("ChoXuLy");
+            entity.Property(e => e.NoiDungPhanHoi)
+                .HasColumnType("nvarchar(max)");
+            entity.Property(e => e.NgayPhanHoi);
 
             entity.HasOne(e => e.HoSoXetHocBong)
                 .WithMany(e => e.KhieuNais)

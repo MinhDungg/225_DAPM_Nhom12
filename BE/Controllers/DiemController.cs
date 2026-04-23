@@ -19,69 +19,33 @@ public class DiemController : ControllerBase
         _logger = logger;
     }
 
-    [HttpPost("import-gpa")]
+    [HttpPost("import-du-lieu-hoc-vu")]
     [Authorize(Roles = "DaoTao")]
-    public async Task<IActionResult> ImportGpa([FromBody] List<ImportGpaRequest> requests)
+    public async Task<IActionResult> ImportDuLieuHocVu([FromBody] List<ImportHocVuRequest> requests)
     {
         if (requests == null)
         {
             return BadRequest(new BaseResponse<ImportResultDTO>
             {
                 Success = false,
-                Message = "Du lieu import GPA khong hop le",
+                Message = "Du lieu import hoc vu khong hop le",
                 Data = null
             });
         }
 
         try
         {
-            var result = await _diemService.ImportGpaAsync(requests);
+            var result = await _diemService.ImportDuLieuHocVuAsync(requests);
             return Ok(new BaseResponse<ImportResultDTO>
             {
                 Success = true,
-                Message = "Import GPA thanh cong",
+                Message = "Import du lieu hoc vu thanh cong",
                 Data = result
             });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "ImportGpa failed.");
-            return StatusCode(500, new BaseResponse<ImportResultDTO>
-            {
-                Success = false,
-                Message = "Loi he thong",
-                Data = null
-            });
-        }
-    }
-
-    [HttpPost("import-drl")]
-    [Authorize(Roles = "CTSV")]
-    public async Task<IActionResult> ImportDrl([FromBody] List<ImportDrlRequest> requests)
-    {
-        if (requests == null)
-        {
-            return BadRequest(new BaseResponse<ImportResultDTO>
-            {
-                Success = false,
-                Message = "Du lieu import DRL khong hop le",
-                Data = null
-            });
-        }
-
-        try
-        {
-            var result = await _diemService.ImportDrlAsync(requests);
-            return Ok(new BaseResponse<ImportResultDTO>
-            {
-                Success = true,
-                Message = "Import DRL thanh cong",
-                Data = result
-            });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "ImportDrl failed.");
+            _logger.LogError(ex, "ImportDuLieuHocVu failed.");
             return StatusCode(500, new BaseResponse<ImportResultDTO>
             {
                 Success = false,
@@ -91,4 +55,3 @@ public class DiemController : ControllerBase
         }
     }
 }
-

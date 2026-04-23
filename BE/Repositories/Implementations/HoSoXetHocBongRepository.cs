@@ -1,4 +1,5 @@
 using BE.Data;
+using BE.DTOs.Response;
 using BE.Models;
 using BE.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -18,6 +19,13 @@ public class HoSoXetHocBongRepository : IHoSoXetHocBongRepository
     {
         return _context.HoSoXetHocBongs
             .Where(h => h.MaDot == maDot && h.TrangThai == trangThaiChoXet)
+            .ExecuteDeleteAsync();
+    }
+
+    public Task XoaTatCaHoSoTheoMaDotAsync(int maDot)
+    {
+        return _context.HoSoXetHocBongs
+            .Where(h => h.MaDot == maDot)
             .ExecuteDeleteAsync();
     }
 
@@ -132,10 +140,37 @@ public class HoSoXetHocBongRepository : IHoSoXetHocBongRepository
                 .ToListAsync();
         }
 
-      
-        /// <param name="maCB_PheDuyet">Mã cán bộ (Hiệu trưởng) thực hiện phê duyệt</param>
-        /// <returns>True nếu giao dịch thành công</returns>
-        public async Task<bool> FinalizeScholarshipRoundAsync(int maDot, int maCB_PheDuyet)
+
+
+    public async Task<HoSoXetHocBong?> GetByIdAsync(int id)
+    {
+        return await _context.HoSoXetHocBongs.FirstOrDefaultAsync(h => h.MaHoSo == id);
+    }
+
+    public async Task<List<UngVienResponseDTO>> LayDanhSachUngVienTheoMaDotAsync(int maDot)
+    {
+        return await _context.HoSoXetHocBongs
+            .Where(h => h.MaDot == maDot)
+            .Include(h => h.SinhVien)
+            .AsNoTracking()
+            .Select(h => new UngVienResponseDTO
+            {
+                MaSV = h.MaSV,
+                HoTen = h.SinhVien.HoTen,
+                GPA = h.GPA,
+                DiemHocTap = h.DiemHocTap,
+                DiemRenLuyen = h.DiemRenLuyen,
+                GhiChu = h.GhiChu,
+                TrangThai = h.TrangThai
+            })
+            .OrderBy(h => h.TrangThai)
+            .ThenBy(h => h.MaSV)
+            .ToListAsync();
+    }
+
+    /// <param name="maCB_PheDuyet">Mã cán bộ (Hiệu trưởng) thực hiện phê duyệt</param>
+    /// <returns>True nếu giao dịch thành công</returns>
+    public async Task<bool> FinalizeScholarshipRoundAsync(int maDot, int maCB_PheDuyet)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
             try

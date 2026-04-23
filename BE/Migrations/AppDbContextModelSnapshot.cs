@@ -45,6 +45,9 @@ namespace BE.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 
+                    b.Property<int?>("MaKhoa")
+                        .HasColumnType("int");
+
                     b.Property<int?>("MaPhong")
                         .HasColumnType("int");
 
@@ -52,6 +55,8 @@ namespace BE.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("MaCB");
+
+                    b.HasIndex("MaKhoa");
 
                     b.HasIndex("MaPhong");
 
@@ -222,11 +227,17 @@ namespace BE.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MaHoSo"));
 
-                    b.Property<double>("DiemHocTap")
-                        .HasColumnType("float");
+                    b.Property<float>("DiemHocTap")
+                        .HasColumnType("real");
 
                     b.Property<int>("DiemRenLuyen")
                         .HasColumnType("int");
+
+                    b.Property<float>("GPA")
+                        .HasColumnType("real");
+
+                    b.Property<string>("GhiChu")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int?>("MaCB_Duyet")
                         .HasColumnType("int");
@@ -276,8 +287,16 @@ namespace BE.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MaDiem"));
 
-                    b.Property<double>("GPA")
-                        .HasColumnType("float");
+                    b.Property<bool>("CoDiemF")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<float>("DiemHocTap")
+                        .HasColumnType("real");
+
+                    b.Property<float>("GPA")
+                        .HasColumnType("real");
 
                     b.Property<int>("HocKy")
                         .HasColumnType("int");
@@ -333,8 +352,14 @@ namespace BE.Migrations
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("GETDATE()");
 
+                    b.Property<DateTime?>("NgayPhanHoi")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("NoiDung")
                         .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("NoiDungPhanHoi")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("TrangThai")
@@ -527,6 +552,10 @@ namespace BE.Migrations
 
             modelBuilder.Entity("BE.Models.CanBo", b =>
                 {
+                    b.HasOne("BE.Models.Khoa", "Khoa")
+                        .WithMany("CanBos")
+                        .HasForeignKey("MaKhoa");
+
                     b.HasOne("BE.Models.PhongBan", "PhongBan")
                         .WithMany("CanBos")
                         .HasForeignKey("MaPhong");
@@ -534,6 +563,8 @@ namespace BE.Migrations
                     b.HasOne("BE.Models.TaiKhoan", "TaiKhoan")
                         .WithOne("CanBo")
                         .HasForeignKey("BE.Models.CanBo", "MaTK");
+
+                    b.Navigation("Khoa");
 
                     b.Navigation("PhongBan");
 
@@ -740,6 +771,8 @@ namespace BE.Migrations
 
             modelBuilder.Entity("BE.Models.Khoa", b =>
                 {
+                    b.Navigation("CanBos");
+
                     b.Navigation("Lops");
 
                     b.Navigation("PhanBoKinhPhis");
