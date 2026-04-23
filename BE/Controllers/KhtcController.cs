@@ -64,5 +64,50 @@ public class KhtcController : ControllerBase
             });
         }
     }
+
+    /// <summary>
+    /// POST /api/khtc/thiet-lap-kinh-phi-bulk — Thiết lập kinh phí cho nhiều Khoa cùng lúc.
+    /// </summary>
+    [HttpPost("thiet-lap-kinh-phi-bulk")]
+    [Authorize(Roles = "KHTC")]
+    public async Task<IActionResult> ThietLapKinhPhiBulk([FromBody] List<ThietLapKinhPhiRequest> requests)
+    {
+        if (requests == null || requests.Count == 0)
+        {
+            return BadRequest(new BaseResponse<object>
+            {
+                Success = false,
+                Message = "Danh sach kinh phi khong duoc de trong",
+                Data = null
+            });
+        }
+
+        try
+        {
+            var results = new List<PhanBoKinhPhiResponseDTO>();
+            foreach (var req in requests)
+            {
+                var result = await _kinhPhiService.ThietLapKinhPhiAsync(req);
+                if (result != null) results.Add(result);
+            }
+
+            return Ok(new BaseResponse<List<PhanBoKinhPhiResponseDTO>>
+            {
+                Success = true,
+                Message = $"Thiet lap kinh phi thanh cong cho {results.Count} khoa",
+                Data = results
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "ThietLapKinhPhiBulk failed.");
+            return StatusCode(500, new BaseResponse<object>
+            {
+                Success = false,
+                Message = "Loi he thong",
+                Data = null
+            });
+        }
+    }
 }
 

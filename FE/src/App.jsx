@@ -17,6 +17,7 @@ import {
 import TaoDotHocBong from './pages/CTSV/TaoDotHocBong.jsx';
 import DaoTaoImport from './pages/DaoTao/DaoTaoImport.jsx';
 import DaoTaoDanhSachDot from './pages/DaoTao/DaoTaoDanhSachDot.jsx';
+import TaiChinhKinhPhi from './pages/TaiChinh/TaiChinhKinhPhi.jsx';
 
 function App() {
   const [role, setRole] = useState('SinhVien');
@@ -52,6 +53,9 @@ function App() {
 
           {/* Đào Tạo: Import điểm cho đợt cụ thể (nhận state từ DaoTaoDanhSachDot) */}
           <Route path="dao-tao/import/:maDot" element={<DaoTaoImport />} />
+
+          {/* KHTC: Thiết lập kinh phí học bổng */}
+          <Route path="tai-chinh/kinh-phi" element={<TaiChinhKinhPhi />} />
 
           {/* Nếu gõ đường dẫn root (/) sẽ tự động chuyển hướng về trang login */}
           <Route index element={<Navigate to="/login" replace />} />

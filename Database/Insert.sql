@@ -10,6 +10,8 @@ SELECT TOP 10 * FROM KETQUAHOCTAP ORDER BY MaDiem DESC;
 -- Xem 10 dòng điểm rèn luyện mới nhất được nạp vào
 SELECT TOP 10 * FROM DIEMRENLUYEN ORDER BY MaDRL DESC;
 go
+SELECT * FROM PHANBOKINHPHI;
+go
 -- Thêm Phòng ban
 INSERT INTO [PHONGBAN] (TenPhong) VALUES 
 (N'Phòng Đào tạo'),             -- ID: 1
@@ -33,27 +35,27 @@ INSERT INTO [LOP] (TenLop, MaKhoa) VALUES
 -- =================================================================================
 
 -- 1. Tác nhân: Đào Tạo
-INSERT INTO [TAIKHOAN] (TenDangNhap, MatKhau, VaiTro, TrangThai) VALUES ('daotao', '123456', 'DaoTao', 1);
+INSERT INTO [TAIKHOAN] (TenDangNhap, MatKhau, VaiTro, TrangThai) VALUES ('daotao', '123', 'DaoTao', 1);
 INSERT INTO [CANBO] (HoTen, Email, ChucVu, MaPhong, MaTK) VALUES (N'Phạm Thị Đào Tạo', 'daotao@ute.edu.vn', N'Chuyên viên Đào tạo', 1, IDENT_CURRENT('TAIKHOAN'));
 
 -- 2. Tác nhân: CTSV
-INSERT INTO [TAIKHOAN] (TenDangNhap, MatKhau, VaiTro, TrangThai) VALUES ('ctsv', '123456', 'CTSV', 1);
+INSERT INTO [TAIKHOAN] (TenDangNhap, MatKhau, VaiTro, TrangThai) VALUES ('ctsv', '123', 'CTSV', 1);
 INSERT INTO [CANBO] (HoTen, Email, ChucVu, MaPhong, MaTK) VALUES (N'Trần Thị CTSV', 'ctsv@ute.edu.vn', N'Chuyên viên CTSV', 2, IDENT_CURRENT('TAIKHOAN'));
 
 -- 3. Tác nhân: KHTC
-INSERT INTO [TAIKHOAN] (TenDangNhap, MatKhau, VaiTro, TrangThai) VALUES ('khtc', '123456', 'KHTC', 1);
+INSERT INTO [TAIKHOAN] (TenDangNhap, MatKhau, VaiTro, TrangThai) VALUES ('khtc', '123', 'KHTC', 1);
 INSERT INTO [CANBO] (HoTen, Email, ChucVu, MaPhong, MaTK) VALUES (N'Lê Văn KHTC', 'khtc@ute.edu.vn', N'Chuyên viên KHTC', 3, IDENT_CURRENT('TAIKHOAN'));
 
 -- 4. Tác nhân: Khoa
-INSERT INTO [TAIKHOAN] (TenDangNhap, MatKhau, VaiTro, TrangThai) VALUES ('khoacntt', '123456', 'Khoa', 1);
+INSERT INTO [TAIKHOAN] (TenDangNhap, MatKhau, VaiTro, TrangThai) VALUES ('khoacntt', '123', 'Khoa', 1);
 INSERT INTO [CANBO] (HoTen, Email, ChucVu, MaPhong, MaKhoa, MaTK) VALUES (N'Nguyễn Văn Khoa', 'khoacntt@ute.edu.vn', N'Trưởng Khoa', NULL, 1, IDENT_CURRENT('TAIKHOAN'));
 
 -- 5. Tác nhân: Hội đồng
-INSERT INTO [TAIKHOAN] (TenDangNhap, MatKhau, VaiTro, TrangThai) VALUES ('hoidong', '123456', 'HoiDong', 1);
+INSERT INTO [TAIKHOAN] (TenDangNhap, MatKhau, VaiTro, TrangThai) VALUES ('hoidong', '123', 'HoiDong', 1);
 INSERT INTO [CANBO] (HoTen, Email, ChucVu, MaPhong, MaTK) VALUES (N'Hội Đồng Trường', 'hoidong@ute.edu.vn', N'Chủ tịch Hội đồng', 4, IDENT_CURRENT('TAIKHOAN'));
 
 -- 6. Tác nhân: Hiệu trưởng
-INSERT INTO [TAIKHOAN] (TenDangNhap, MatKhau, VaiTro, TrangThai) VALUES ('hieutruong', '123456', 'HieuTruong', 1);
+INSERT INTO [TAIKHOAN] (TenDangNhap, MatKhau, VaiTro, TrangThai) VALUES ('hieutruong', '123', 'HieuTruong', 1);
 INSERT INTO [CANBO] (HoTen, Email, ChucVu, MaPhong, MaTK) VALUES (N'Nguyễn Hiệu Trưởng', 'hieutruong@ute.edu.vn', N'Hiệu trưởng', 4, IDENT_CURRENT('TAIKHOAN'));
 
 -- =================================================================================
@@ -116,9 +118,9 @@ INSERT INTO [DOTHOCBONG] (LoaiDot, HocKy, NamHoc, TrangThai) VALUES
 (N'Khuyến khích học tập HK1', 1, '2023-2024', 'ChinhThuc'),
 (N'Khuyến khích học tập HK2', 2, '2023-2024', 'DangXetDuyet');
 
-INSERT INTO [PHANBOKINHPHI] (MaDot, MaKhoa, KinhPhi, MucHBLoaiKha) VALUES 
-(1, 1, 200000000, 5000000), (1, 2, 150000000, 5000000), (1, 3, 100000000, 4500000),
-(2, 1, 250000000, 5500000), (2, 2, 150000000, 5000000);
+-- INSERT INTO [PHANBOKINHPHI] (MaDot, MaKhoa, KinhPhi, MucHBLoaiKha) VALUES 
+-- (1, 1, 200000000, 5000000), (1, 2, 150000000, 5000000), (1, 3, 100000000, 4500000),
+-- (2, 1, 250000000, 5500000), (2, 2, 150000000, 5000000);
 
 -- =================================================================================
 -- 6. HỒ SƠ XÉT HỌC BỔNG (Sau khi đã tự động quét)

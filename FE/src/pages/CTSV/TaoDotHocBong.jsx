@@ -4,9 +4,9 @@ import { toast } from 'react-toastify';
 import {
   PlusCircle, Loader2, X, BookOpen, Calendar, Zap,
   AlertTriangle, RefreshCw, Pencil, Trash2, Users,
-  ChevronDown, CheckCircle, XCircle,
 } from 'lucide-react';
 import dotHocBongService from '../../services/dotHocBongService.js';
+import DanhSachUngVienView from './components/DanhSachUngVienView.jsx';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const NAM_HOC_OPTIONS = ['2023-2024', '2024-2025', '2025-2026', '2026-2027'];
@@ -22,22 +22,38 @@ const TRANG_THAI_BADGE = {
   DaKetThuc:    { label: 'Đã kết thúc',    cls: 'bg-gray-100 text-gray-500 border border-gray-200' },
 };
 
-const TRANG_THAI_UV_BADGE = {
-  ChoXet: { label: 'Chờ xét',  cls: 'bg-blue-100 text-blue-700' },
-  Loai:   { label: 'Loại',     cls: 'bg-red-100 text-red-600' },
+// ─── Animation variants ───────────────────────────────────────────────────────
+// List view: exits to the left, enters from the left
+const listVariants = {
+  initial: { opacity: 0, x: -20 },
+  animate: { opacity: 1, x: 0 },
+  exit:    { opacity: 0, x: -20 },
 };
 
-// ─── Confirm Modal (generic) ──────────────────────────────────────────────────
+// Detail view: enters from the right, exits to the right
+const detailVariants = {
+  initial: { opacity: 0, x: 20 },
+  animate: { opacity: 1, x: 0 },
+  exit:    { opacity: 0, x: 20 },
+};
+
+const transitionConfig = { duration: 0.22, ease: 'easeOut' };
+
+// ─── Generic Confirm Modal ────────────────────────────────────────────────────
 const ConfirmModal = ({ title, body, confirmLabel, confirmCls, onConfirm, onCancel, loading }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-    <motion.div className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+    <motion.div
+      className="absolute inset-0 bg-black/40 backdrop-blur-sm"
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      onClick={onCancel} />
-    <motion.div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 z-10"
+      onClick={onCancel}
+    />
+    <motion.div
+      className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 z-10"
       initial={{ opacity: 0, scale: 0.92, y: 20 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.92, y: 20 }}
-      transition={{ type: 'spring', stiffness: 300, damping: 25 }}>
+      transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+    >
       <div className="flex items-center gap-3 mb-4">
         <div className="bg-amber-50 p-2.5 rounded-xl">
           <AlertTriangle className="text-amber-500 w-6 h-6" />
@@ -52,139 +68,14 @@ const ConfirmModal = ({ title, body, confirmLabel, confirmCls, onConfirm, onCanc
         </button>
         <button onClick={onConfirm} disabled={loading}
           className={`flex-1 py-2.5 ${confirmCls} text-white rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition active:scale-95`}>
-          {loading ? <><Loader2 className="w-4 h-4 animate-spin" />Đang xử lý...</> : confirmLabel}
+          {loading
+            ? <><Loader2 className="w-4 h-4 animate-spin" />Đang xử lý...</>
+            : confirmLabel}
         </button>
       </div>
     </motion.div>
   </div>
 );
-
-// ─── Candidates Modal (Master-Detail) ────────────────────────────────────────
-const CandidatesModal = ({ dot, onClose }) => {
-  const [danhSach, setDanhSach] = useState([]);
-  const [dangTai, setDangTai] = useState(true);
-  const [filterTrangThai, setFilterTrangThai] = useState('TatCa');
-
-  useEffect(() => {
-    const fetch = async () => {
-      try {
-        const res = await dotHocBongService.getDanhSachUngVien(dot.maDot);
-        if (res.success) setDanhSach(res.data || []);
-        else toast.error(res.message || 'Không thể tải danh sách ứng viên.');
-      } catch {
-        toast.error('Lỗi kết nối khi tải danh sách ứng viên.');
-      } finally {
-        setDangTai(false);
-      }
-    };
-    fetch();
-  }, [dot.maDot]);
-
-  // Local filter — no API call
-  const filtered = filterTrangThai === 'TatCa'
-    ? danhSach
-    : danhSach.filter(uv => uv.trangThai === filterTrangThai);
-
-  const soChoXet = danhSach.filter(uv => uv.trangThai === 'ChoXet').length;
-  const soLoai   = danhSach.filter(uv => uv.trangThai === 'Loai').length;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <motion.div className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        onClick={onClose} />
-      <motion.div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col z-10"
-        initial={{ opacity: 0, scale: 0.95, y: 24 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 24 }}
-        transition={{ type: 'spring', stiffness: 280, damping: 26 }}>
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
-          <div>
-            <h2 className="font-bold text-slate-800 text-lg">
-              Danh sách ứng viên — {dot.loaiDot}
-            </h2>
-            <p className="text-sm text-slate-500 mt-0.5">
-              HK {dot.hocKy} · {dot.namHoc} ·{' '}
-              <span className="text-blue-600 font-semibold">{soChoXet} chờ xét</span>
-              {' · '}
-              <span className="text-red-500 font-semibold">{soLoai} loại</span>
-            </p>
-          </div>
-          <button onClick={onClose} className="p-2 rounded-xl hover:bg-slate-100 text-slate-400 transition">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Filter bar */}
-        <div className="px-6 py-3 border-b border-gray-100 flex items-center gap-2 shrink-0">
-          <span className="text-xs font-semibold text-slate-500 mr-1">Lọc:</span>
-          {[
-            { val: 'TatCa', label: 'Tất cả', count: danhSach.length },
-            { val: 'ChoXet', label: 'Chờ xét', count: soChoXet },
-            { val: 'Loai', label: 'Loại', count: soLoai },
-          ].map(opt => (
-            <button key={opt.val}
-              onClick={() => setFilterTrangThai(opt.val)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
-                filterTrangThai === opt.val
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}>
-              {opt.label} ({opt.count})
-            </button>
-          ))}
-        </div>
-
-        {/* Table */}
-        <div className="flex-1 overflow-auto">
-          {dangTai ? (
-            <div className="flex items-center justify-center py-20">
-              <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="text-center py-16 text-slate-400 text-sm">Không có dữ liệu.</div>
-          ) : (
-            <table className="min-w-full divide-y divide-gray-200 text-sm">
-              <thead className="bg-gray-50 sticky top-0">
-                <tr>
-                  {['#', 'Mã SV', 'Họ tên', 'GPA', 'Điểm HT', 'Điểm RL', 'Trạng thái', 'Ghi chú'].map(h => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-100">
-                {filtered.map((uv, idx) => {
-                  const badge = TRANG_THAI_UV_BADGE[uv.trangThai] || { label: uv.trangThai, cls: 'bg-gray-100 text-gray-600' };
-                  return (
-                    <tr key={uv.maSV} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-4 py-2.5 text-gray-400 font-mono text-xs">{idx + 1}</td>
-                      <td className="px-4 py-2.5 font-mono text-xs text-slate-600">{uv.maSV}</td>
-                      <td className="px-4 py-2.5 font-medium text-slate-800 whitespace-nowrap">{uv.hoTen}</td>
-                      <td className="px-4 py-2.5 text-slate-700">{uv.gpa?.toFixed(2)}</td>
-                      <td className="px-4 py-2.5 text-slate-700">{uv.diemHocTap?.toFixed(2)}</td>
-                      <td className="px-4 py-2.5 text-slate-700">{uv.diemRenLuyen}</td>
-                      <td className="px-4 py-2.5">
-                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${badge.cls}`}>
-                          {badge.label}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2.5 text-slate-500 text-xs max-w-[200px] truncate" title={uv.ghiChu || ''}>
-                        {uv.ghiChu || '—'}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </motion.div>
-    </div>
-  );
-};
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 const FORM_DEFAULT = { loaiDot: LOAI_DOT_OPTIONS[0], hocKy: 1, namHoc: '2025-2026' };
@@ -192,20 +83,20 @@ const FORM_DEFAULT = { loaiDot: LOAI_DOT_OPTIONS[0], hocKy: 1, namHoc: '2025-202
 const TaoDotHocBong = () => {
   const [showForm, setShowForm] = useState(true);
   const [form, setForm] = useState(FORM_DEFAULT);
-  const [editingMaDot, setEditingMaDot] = useState(null); // null = create mode
+  const [editingMaDot, setEditingMaDot] = useState(null);
   const [dangGui, setDangGui] = useState(false);
 
   const [danhSachDot, setDanhSachDot] = useState([]);
   const [dangTai, setDangTai] = useState(true);
 
-  // Modals
-  const [scanModal, setScanModal] = useState(null);   // dot to scan
-  const [deleteModal, setDeleteModal] = useState(null); // dot to delete
+  // Confirm modals
+  const [scanModal, setScanModal] = useState(null);
+  const [deleteModal, setDeleteModal] = useState(null);
   const [dangQuet, setDangQuet] = useState(false);
   const [dangXoa, setDangXoa] = useState(false);
 
-  // Master-Detail
-  const [candidatesDot, setCandidatesDot] = useState(null);
+  // Drill-down: replaces the old candidatesDot / CandidatesModal
+  const [selectedDot, setSelectedDot] = useState(null);
 
   // ─── Fetch ──────────────────────────────────────────────────────────────────
   const taiDanhSach = useCallback(async () => {
@@ -225,6 +116,17 @@ const TaoDotHocBong = () => {
   }, []);
 
   useEffect(() => { taiDanhSach(); }, [taiDanhSach]);
+
+  // ─── Drill-down navigation ───────────────────────────────────────────────────
+  const chonDot = (dot) => {
+    setSelectedDot(dot);
+    setShowForm(false);   // auto-collapse sidebar → full width for table
+  };
+
+  const quayLai = () => {
+    setSelectedDot(null);
+    setShowForm(true);    // restore sidebar
+  };
 
   // ─── Form ────────────────────────────────────────────────────────────────────
   const xuLyThayDoi = (e) => {
@@ -250,12 +152,10 @@ const TaoDotHocBong = () => {
     setDangGui(true);
     try {
       const payload = { loaiDot: form.loaiDot, hocKy: form.hocKy, namHoc: form.namHoc.trim() };
-      let res;
-      if (editingMaDot) {
-        res = await dotHocBongService.updateDotHocBong(editingMaDot, payload);
-      } else {
-        res = await dotHocBongService.createDotHocBong(payload);
-      }
+      const res = editingMaDot
+        ? await dotHocBongService.updateDotHocBong(editingMaDot, payload)
+        : await dotHocBongService.createDotHocBong(payload);
+
       if (res.success) {
         toast.success(res.message || (editingMaDot ? 'Cập nhật thành công!' : 'Tạo đợt thành công!'));
         huyForm();
@@ -314,15 +214,17 @@ const TaoDotHocBong = () => {
   return (
     <div className="flex w-full overflow-hidden h-full gap-0">
 
-      {/* Sidebar */}
+      {/* ── Sidebar (Framer Motion, auto-collapses on drill-down) ───────────── */}
       <AnimatePresence initial={false}>
         {showForm && (
-          <motion.div key="sidebar"
+          <motion.div
+            key="sidebar"
             initial={{ width: 0, opacity: 0 }}
             animate={{ width: 400, opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 260, damping: 28 }}
-            className="overflow-hidden shrink-0">
+            className="overflow-hidden shrink-0"
+          >
             <div className="w-[400px] h-full bg-white border-r border-gray-100 shadow-sm flex flex-col">
               <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
                 <div className="flex items-center gap-2.5">
@@ -335,8 +237,10 @@ const TaoDotHocBong = () => {
                     {editingMaDot ? 'Cập nhật đợt' : 'Tạo đợt mới'}
                   </span>
                 </div>
-                <button onClick={() => { setShowForm(false); huyForm(); }}
-                  className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 transition">
+                <button
+                  onClick={() => { setShowForm(false); huyForm(); }}
+                  className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 transition"
+                >
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -385,109 +289,164 @@ const TaoDotHocBong = () => {
         )}
       </AnimatePresence>
 
-      {/* Main Content */}
+      {/* ── Main Content (flex-1) ────────────────────────────────────────────── */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 bg-white shrink-0">
-          <div>
-            <h1 className="text-xl font-bold text-slate-800">Quản lý Đợt Học Bổng</h1>
-            <p className="text-sm text-slate-500 mt-0.5">
-              {danhSachDot.length} đợt · Nút <span className="font-semibold text-teal-600">Quét ứng viên</span> chỉ hiện khi đợt ở trạng thái <span className="font-semibold text-teal-600">Đã có điểm</span>
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button onClick={taiDanhSach} disabled={dangTai}
-              className="p-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-500 transition" title="Làm mới">
-              <RefreshCw className={`w-4 h-4 ${dangTai ? 'animate-spin' : ''}`} />
-            </button>
-            <button onClick={() => { setShowForm(v => !v); if (showForm) huyForm(); }}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition active:scale-95">
-              {showForm ? <><X className="w-4 h-4" />Đóng Form</> : <><PlusCircle className="w-4 h-4" />Thêm đợt mới</>}
-            </button>
-          </div>
-        </div>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-3">
-          {dangTai && (
-            <div className="flex items-center justify-center py-20">
-              <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+        {/* Static top-bar — only shown on List View */}
+        {!selectedDot && (
+          <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 bg-white shrink-0">
+            <div>
+              <h1 className="text-xl font-bold text-slate-800">Quản lý Đợt Học Bổng</h1>
+              <p className="text-sm text-slate-500 mt-0.5">
+                {danhSachDot.length} đợt · Nhấn vào đợt đã quét để xem danh sách ứng viên
+              </p>
             </div>
-          )}
-          {!dangTai && danhSachDot.length === 0 && (
-            <div className="bg-white border border-gray-100 rounded-2xl p-12 text-center shadow-sm">
-              <div className="bg-slate-50 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <BookOpen className="w-8 h-8 text-slate-400" />
-              </div>
-              <h3 className="font-semibold text-slate-700 mb-1">Chưa có đợt nào</h3>
-              <p className="text-sm text-slate-500">Nhấn <span className="font-semibold text-blue-600">Thêm đợt mới</span> để bắt đầu.</p>
+            <div className="flex items-center gap-2">
+              <button onClick={taiDanhSach} disabled={dangTai}
+                className="p-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-500 transition" title="Làm mới">
+                <RefreshCw className={`w-4 h-4 ${dangTai ? 'animate-spin' : ''}`} />
+              </button>
+              <button
+                onClick={() => { setShowForm(v => !v); if (showForm) huyForm(); }}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition active:scale-95"
+              >
+                {showForm
+                  ? <><X className="w-4 h-4" />Đóng Form</>
+                  : <><PlusCircle className="w-4 h-4" />Thêm đợt mới</>}
+              </button>
             </div>
+          </div>
+        )}
+
+        {/* ── AnimatePresence mode="wait": List ↔ Detail ─────────────────── */}
+        <AnimatePresence mode="wait">
+          {selectedDot === null ? (
+            /* ── LIST VIEW ─────────────────────────────────────────────────── */
+            <motion.div
+              key="list-view"
+              variants={listVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={transitionConfig}
+              className="flex-1 overflow-y-auto p-6 space-y-3"
+            >
+              {dangTai && (
+                <div className="flex items-center justify-center py-20">
+                  <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                </div>
+              )}
+
+              {!dangTai && danhSachDot.length === 0 && (
+                <div className="bg-white border border-gray-100 rounded-2xl p-12 text-center shadow-sm">
+                  <div className="bg-slate-50 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <BookOpen className="w-8 h-8 text-slate-400" />
+                  </div>
+                  <h3 className="font-semibold text-slate-700 mb-1">Chưa có đợt nào</h3>
+                  <p className="text-sm text-slate-500">
+                    Nhấn <span className="font-semibold text-blue-600">Thêm đợt mới</span> để bắt đầu.
+                  </p>
+                </div>
+              )}
+
+              {!dangTai && danhSachDot.map((dot) => {
+                const badge = TRANG_THAI_BADGE[dot.trangThai] || {
+                  label: dot.trangThai,
+                  cls: 'bg-gray-100 text-gray-500 border border-gray-200',
+                };
+                const coTheQuet = dot.trangThai === 'DaCoDiem';
+                const coTheXoa  = dot.trangThai === 'KhoiTao' || dot.trangThai === 'DaCoDiem';
+                const coTheSua  = dot.trangThai === 'KhoiTao' || dot.trangThai === 'DaCoDiem';
+                // Drill-down available for scanned periods
+                const coTheDrillDown = dot.trangThai === 'DangXetDuyet'
+                  || dot.trangThai === 'DuKien'
+                  || dot.trangThai === 'ChinhThuc';
+
+                return (
+                  <motion.div
+                    key={dot.maDot}
+                    layout
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2 }}
+                    onClick={() => coTheDrillDown && chonDot(dot)}
+                    className={`bg-white border border-gray-100 rounded-2xl px-5 py-4 shadow-sm flex items-center gap-4 transition-all duration-200 ${
+                      coTheDrillDown ? 'hover:shadow-md hover:border-blue-100 cursor-pointer' : ''
+                    }`}
+                  >
+                    <div className="bg-blue-50 p-2.5 rounded-xl shrink-0">
+                      <BookOpen className="text-blue-600 w-5 h-5" />
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-slate-800 text-sm truncate">{dot.loaiDot}</p>
+                      <span className="flex items-center gap-1 text-xs text-slate-500 mt-1">
+                        <Calendar className="w-3 h-3" />HK {dot.hocKy} · {dot.namHoc}
+                      </span>
+                    </div>
+
+                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full shrink-0 ${badge.cls}`}>
+                      {badge.label}
+                    </span>
+
+                    {/* Action buttons — stopPropagation prevents card drill-down */}
+                    <div className="flex items-center gap-1.5 shrink-0" onClick={e => e.stopPropagation()}>
+                      {coTheDrillDown && (
+                        <button
+                          onClick={() => chonDot(dot)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold transition active:scale-95"
+                        >
+                          <Users className="w-3.5 h-3.5" />Ứng viên
+                        </button>
+                      )}
+                      {coTheQuet && (
+                        <button
+                          onClick={() => setScanModal(dot)}
+                          className="flex items-center gap-1.5 px-3.5 py-2 bg-teal-500 hover:bg-teal-600 text-white rounded-xl text-xs font-bold transition active:scale-95"
+                        >
+                          <Zap className="w-3.5 h-3.5" />Quét ứng viên
+                        </button>
+                      )}
+                      {coTheSua && (
+                        <button
+                          onClick={(e) => batDauSua(dot, e)}
+                          className="p-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-600 transition active:scale-95"
+                          title="Sửa"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      {coTheXoa && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setDeleteModal(dot); }}
+                          className="p-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-500 transition active:scale-95"
+                          title="Xóa"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </motion.div>
+          ) : (
+            /* ── DETAIL VIEW (Drill-down) ───────────────────────────────────── */
+            <DanhSachUngVienView
+              key={`detail-${selectedDot.maDot}`}
+              dot={selectedDot}
+              onBack={quayLai}
+            />
           )}
-
-          {!dangTai && danhSachDot.map((dot) => {
-            const badge = TRANG_THAI_BADGE[dot.trangThai] || { label: dot.trangThai, cls: 'bg-gray-100 text-gray-500 border border-gray-200' };
-            const coTheQuet = dot.trangThai === 'DaCoDiem';
-            const coTheXoa  = dot.trangThai === 'KhoiTao' || dot.trangThai === 'DaCoDiem';
-            const coTheSua  = dot.trangThai === 'KhoiTao' || dot.trangThai === 'DaCoDiem';
-            const coThemXemUngVien = dot.trangThai === 'DangXetDuyet' || dot.trangThai === 'DuKien' || dot.trangThai === 'ChinhThuc';
-
-            return (
-              <motion.div key={dot.maDot} layout
-                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.2 }}
-                onClick={() => coThemXemUngVien && setCandidatesDot(dot)}
-                className={`bg-white border border-gray-100 rounded-2xl px-5 py-4 shadow-sm flex items-center gap-4 transition-all duration-200 ${coThemXemUngVien ? 'hover:shadow-md hover:border-blue-100 cursor-pointer' : ''}`}>
-                <div className="bg-blue-50 p-2.5 rounded-xl shrink-0">
-                  <BookOpen className="text-blue-600 w-5 h-5" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-slate-800 text-sm truncate">{dot.loaiDot}</p>
-                  <span className="flex items-center gap-1 text-xs text-slate-500 mt-1">
-                    <Calendar className="w-3 h-3" />HK {dot.hocKy} · {dot.namHoc}
-                  </span>
-                </div>
-
-                <span className={`text-xs font-bold px-2.5 py-1 rounded-full shrink-0 ${badge.cls}`}>
-                  {badge.label}
-                </span>
-
-                {/* Action buttons — stopPropagation to avoid triggering card click */}
-                <div className="flex items-center gap-1.5 shrink-0" onClick={e => e.stopPropagation()}>
-                  {coThemXemUngVien && (
-                    <button onClick={() => setCandidatesDot(dot)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold transition active:scale-95">
-                      <Users className="w-3.5 h-3.5" />Ứng viên
-                    </button>
-                  )}
-                  {coTheQuet && (
-                    <button onClick={() => setScanModal(dot)}
-                      className="flex items-center gap-1.5 px-3.5 py-2 bg-teal-500 hover:bg-teal-600 text-white rounded-xl text-xs font-bold transition active:scale-95">
-                      <Zap className="w-3.5 h-3.5" />Quét ứng viên
-                    </button>
-                  )}
-                  {coTheSua && (
-                    <button onClick={(e) => batDauSua(dot, e)}
-                      className="p-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-600 transition active:scale-95" title="Sửa">
-                      <Pencil className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                  {coTheXoa && (
-                    <button onClick={(e) => { e.stopPropagation(); setDeleteModal(dot); }}
-                      className="p-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-500 transition active:scale-95" title="Xóa">
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
+        </AnimatePresence>
       </div>
 
-      {/* Scan Confirm Modal */}
+      {/* ── Scan Confirm Modal ───────────────────────────────────────────────── */}
       <AnimatePresence>
         {scanModal && (
           <ConfirmModal
             title="Xác nhận Quét ứng viên"
-            body={`Hệ thống sẽ chốt dữ liệu điểm đầu vào và tự động tạo hồ sơ xét duyệt. Phòng Đào tạo sẽ không thể sửa điểm sau bước này. Bạn có chắc chắn muốn thực hiện?`}
+            body="Hệ thống sẽ chốt dữ liệu điểm đầu vào và tự động tạo hồ sơ xét duyệt. Phòng Đào tạo sẽ không thể sửa điểm sau bước này. Bạn có chắc chắn muốn thực hiện?"
             confirmLabel={<><Zap className="w-4 h-4" />Xác nhận quét</>}
             confirmCls="bg-teal-500 hover:bg-teal-600 disabled:bg-teal-300"
             onConfirm={xuLyQuet}
@@ -497,7 +456,7 @@ const TaoDotHocBong = () => {
         )}
       </AnimatePresence>
 
-      {/* Delete Confirm Modal */}
+      {/* ── Delete Confirm Modal ─────────────────────────────────────────────── */}
       <AnimatePresence>
         {deleteModal && (
           <ConfirmModal
@@ -509,13 +468,6 @@ const TaoDotHocBong = () => {
             onCancel={() => { if (!dangXoa) setDeleteModal(null); }}
             loading={dangXoa}
           />
-        )}
-      </AnimatePresence>
-
-      {/* Candidates Master-Detail Modal */}
-      <AnimatePresence>
-        {candidatesDot && (
-          <CandidatesModal dot={candidatesDot} onClose={() => setCandidatesDot(null)} />
         )}
       </AnimatePresence>
     </div>
