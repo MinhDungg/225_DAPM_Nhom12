@@ -109,5 +109,34 @@ public class KhtcController : ControllerBase
             });
         }
     }
+
+    /// <summary>
+    /// GET /api/khtc/phan-bo/{maDot} — Lấy danh sách phân bổ kinh phí đã lưu của một đợt.
+    /// </summary>
+    [HttpGet("phan-bo/{maDot:int}")]
+    [Authorize(Roles = "KHTC,CTSV")]
+    public async Task<IActionResult> GetPhanBo([FromRoute] int maDot)
+    {
+        try
+        {
+            var result = await _kinhPhiService.LayPhanBoTheoMaDotAsync(maDot);
+            return Ok(new BaseResponse<List<PhanBoKinhPhiResponseDTO>>
+            {
+                Success = true,
+                Message = $"Lay phan bo kinh phi thanh cong. So luong: {result.Count}",
+                Data = result
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "GetPhanBo failed. MaDot={MaDot}", maDot);
+            return StatusCode(500, new BaseResponse<List<PhanBoKinhPhiResponseDTO>>
+            {
+                Success = false,
+                Message = "Loi he thong",
+                Data = null
+            });
+        }
+    }
 }
 

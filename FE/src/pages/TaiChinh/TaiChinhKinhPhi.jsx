@@ -16,8 +16,9 @@ const tx = { duration: 0.22, ease: 'easeOut' };
 
 // ─── Badge config ─────────────────────────────────────────────────────────────
 const BADGE = {
-  DangXetDuyet: { label: 'Đang xét duyệt', cls: 'bg-yellow-100 text-yellow-700 border border-yellow-200' },
-  DuKien:       { label: 'Dự kiến',         cls: 'bg-purple-100 text-purple-700 border border-purple-200' },
+  KhoiTao:   { label: 'Mới khởi tạo', cls: 'bg-blue-100 text-blue-700 border border-blue-200' },
+  DaCoDiem:  { label: 'Đã có điểm',   cls: 'bg-teal-100 text-teal-700 border border-teal-200' },
+  ChinhThuc: { label: 'Đã hoàn tất',  cls: 'bg-slate-100 text-slate-700 border border-slate-200' },
 };
 
 // ─── Currency helpers ─────────────────────────────────────────────────────────
@@ -67,7 +68,7 @@ const ConfirmModal = ({ title, body, onConfirm, onCancel, loading }) => (
 );
 
 // ─── Editable currency cell ───────────────────────────────────────────────────
-const CurrencyCell = ({ value, onChange }) => {
+const CurrencyCell = ({ value, onChange, disabled = false }) => {
   const [display, setDisplay] = useState(formatVND(value));
   const [focused, setFocused] = useState(false);
 
@@ -77,11 +78,13 @@ const CurrencyCell = ({ value, onChange }) => {
   }, [value, focused]);
 
   const handleFocus = () => {
+    if (disabled) return;
     setFocused(true);
     setDisplay(value === 0 ? '' : String(value));
   };
 
   const handleChange = (e) => {
+    if (disabled) return;
     const raw = e.target.value.replace(/[^0-9]/g, '');
     setDisplay(raw);
     onChange(raw === '' ? 0 : parseInt(raw, 10));
@@ -100,7 +103,12 @@ const CurrencyCell = ({ value, onChange }) => {
       onFocus={handleFocus}
       onChange={handleChange}
       onBlur={handleBlur}
-      className="w-full text-right border border-gray-200 rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 transition"
+      disabled={disabled}
+      className={`w-full text-right border rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
+        disabled
+          ? 'bg-slate-50 border-slate-200 text-slate-400 cursor-not-allowed'
+          : 'bg-white border-gray-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-400'
+      }`}
       placeholder="0"
     />
   );
@@ -144,25 +152,43 @@ const TaiChinhKinhPhi = () => {
 
   useEffect(() => { taiDanhSachDot(); }, [taiDanhSachDot]);
 
-  // ─── Fetch Khoa list when a dot is selected ─────────────────────────────────
-  const taiDanhSachKhoa = useCallback(async () => {
+  // ─── Fetch Khoa list + existing allocations when a dot is selected ──────────
+  const taiDanhSachKhoa = useCallback(async (dot) => {
     setDangTaiKhoa(true);
     try {
-      const res = await kinhPhiService.getDanhSachKhoa();
-      if (res.success && Array.isArray(res.data)) {
-        setDanhSachKhoa(res.data);
-        // Initialize rows with 0 values
-        setRows(res.data.map(k => ({
+      // Fetch Khoa list and existing allocations in parallel
+      const [resKhoa, resPhanBo] = await Promise.all([
+        kinhPhiService.getDanhSachKhoa(),
+        kinhPhiService.getPhanBoTheoMaDot(dot.maDot),
+      ]);
+
+      if (!resKhoa.success || !Array.isArray(resKhoa.data)) {
+        toast.error(resKhoa.message || 'Không thể tải danh sách Khoa.');
+        return;
+      }
+
+      setDanhSachKhoa(resKhoa.data);
+
+      // Build lookup map: maKhoa → existing allocation
+      const phanBoMap = {};
+      if (resPhanBo.success && Array.isArray(resPhanBo.data)) {
+        resPhanBo.data.forEach(p => {
+          phanBoMap[p.maKhoa] = p;
+        });
+      }
+
+      // Merge: use existing values if available, otherwise default to 0
+      setRows(resKhoa.data.map(k => {
+        const existing = phanBoMap[k.maKhoa];
+        return {
           maKhoa: k.maKhoa,
           tenKhoa: k.tenKhoa,
-          kinhPhi: 0,
-          mucHBLoaiKha: 0,
-        })));
-      } else {
-        toast.error(res.message || 'Không thể tải danh sách Khoa.');
-      }
+          kinhPhi: existing ? Number(existing.kinhPhi) : 0,
+          mucHBLoaiKha: existing ? Number(existing.mucHBLoaiKha) : 0,
+        };
+      }));
     } catch {
-      toast.error('Lỗi kết nối khi tải danh sách Khoa.');
+      toast.error('Lỗi kết nối khi tải dữ liệu kinh phí.');
     } finally {
       setDangTaiKhoa(false);
     }
@@ -172,7 +198,7 @@ const TaiChinhKinhPhi = () => {
   const chonDot = (dot) => {
     setSelectedDot(dot);
     setTenFile('');
-    taiDanhSachKhoa();
+    taiDanhSachKhoa(dot);
   };
 
   const quayLai = () => {
@@ -188,6 +214,9 @@ const TaiChinhKinhPhi = () => {
 
   // ─── Real-time total ─────────────────────────────────────────────────────────
   const tongKinhPhi = rows.reduce((sum, r) => sum + (r.kinhPhi || 0), 0);
+
+  // ─── Read-only guard ─────────────────────────────────────────────────────────
+  const isReadOnly = selectedDot?.trangThai === 'ChinhThuc';
 
   // ─── Template generator ──────────────────────────────────────────────────────
   const taiFileMau = () => {
@@ -353,9 +382,9 @@ const TaiChinhKinhPhi = () => {
                   <div className="bg-slate-50 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4">
                     <BookOpen className="w-8 h-8 text-slate-400" />
                   </div>
-                  <h3 className="font-semibold text-slate-700 mb-1">Không có đợt nào đang xét duyệt</h3>
+                  <h3 className="font-semibold text-slate-700 mb-1">Không có đợt nào phù hợp</h3>
                   <p className="text-sm text-slate-500">
-                    Chỉ hiển thị đợt ở trạng thái <span className="font-semibold text-yellow-600">Đang xét duyệt</span> hoặc <span className="font-semibold text-purple-600">Dự kiến</span>.
+                    Chỉ hiển thị đợt ở trạng thái <span className="font-semibold text-blue-600">Mới khởi tạo</span>, <span className="font-semibold text-teal-600">Đã có điểm</span> hoặc <span className="font-semibold text-slate-600">Đã hoàn tất</span>.
                   </p>
                 </div>
               )}
@@ -412,17 +441,23 @@ const TaiChinhKinhPhi = () => {
 
             {/* Action bar */}
             <div className="flex flex-wrap items-center gap-3 mb-4 shrink-0">
-              <button onClick={taiFileMau} disabled={dangTaiKhoa}
-                className="flex items-center gap-2 px-4 py-2.5 border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl text-sm font-semibold transition active:scale-95 disabled:opacity-50">
-                <Download className="w-4 h-4" />Tải file mẫu (.xlsx)
-              </button>
-              <button onClick={() => fileInputRef.current?.click()} disabled={dangTaiKhoa}
-                className="flex items-center gap-2 px-4 py-2.5 border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-sm font-semibold transition active:scale-95 disabled:opacity-50">
-                <Upload className="w-4 h-4" />Import Excel
-              </button>
-              <input ref={fileInputRef} type="file" accept=".xlsx,.xls" onChange={xuLyChonFile} className="hidden" />
+              {!isReadOnly && (
+                <button onClick={taiFileMau} disabled={dangTaiKhoa}
+                  className="flex items-center gap-2 px-4 py-2.5 border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl text-sm font-semibold transition active:scale-95 disabled:opacity-50">
+                  <Download className="w-4 h-4" />Tải file mẫu (.xlsx)
+                </button>
+              )}
+              {!isReadOnly && (
+                <>
+                  <button onClick={() => fileInputRef.current?.click()} disabled={dangTaiKhoa}
+                    className="flex items-center gap-2 px-4 py-2.5 border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-sm font-semibold transition active:scale-95 disabled:opacity-50">
+                    <Upload className="w-4 h-4" />Import Excel
+                  </button>
+                  <input ref={fileInputRef} type="file" accept=".xlsx,.xls" onChange={xuLyChonFile} className="hidden" />
+                </>
+              )}
 
-              {tenFile && (
+              {tenFile && !isReadOnly && (
                 <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
                   <FileSpreadsheet className="w-4 h-4 text-slate-500 shrink-0" />
                   <span className="text-xs text-slate-700 font-medium truncate max-w-[180px]">{tenFile}</span>
@@ -432,12 +467,23 @@ const TaiChinhKinhPhi = () => {
                 </div>
               )}
 
-              <div className="ml-auto">
-                <button onClick={() => setShowConfirm(true)} disabled={dangTaiKhoa}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white rounded-xl text-sm font-semibold transition active:scale-95">
-                  <CheckCircle className="w-4 h-4" />Chốt Ngân Sách
-                </button>
-              </div>
+              {/* Read-only badge */}
+              {isReadOnly && (
+                <div className="flex items-center gap-2 bg-slate-100 border border-slate-200 rounded-xl px-4 py-2">
+                  <span className="text-sm font-semibold text-slate-600">
+                    🔒 Đợt học bổng đã hoàn tất (Chỉ xem)
+                  </span>
+                </div>
+              )}
+
+              {!isReadOnly && (
+                <div className="ml-auto">
+                  <button onClick={() => setShowConfirm(true)} disabled={dangTaiKhoa}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white rounded-xl text-sm font-semibold transition active:scale-95">
+                    <CheckCircle className="w-4 h-4" />Chốt Ngân Sách
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Editable Spreadsheet */}
@@ -465,12 +511,14 @@ const TaiChinhKinhPhi = () => {
                           <CurrencyCell
                             value={row.kinhPhi}
                             onChange={(v) => capNhatRow(row.maKhoa, 'kinhPhi', v)}
+                            disabled={isReadOnly}
                           />
                         </td>
                         <td className="px-4 py-2.5">
                           <CurrencyCell
                             value={row.mucHBLoaiKha}
                             onChange={(v) => capNhatRow(row.maKhoa, 'mucHBLoaiKha', v)}
+                            disabled={isReadOnly}
                           />
                         </td>
                       </tr>

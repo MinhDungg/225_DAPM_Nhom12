@@ -1,41 +1,28 @@
-# TÀI LIỆU ĐẶC TẢ V13: MODULE KHTC - QUẢN LÝ NGÂN SÁCH & TÍCH HỢP SMART EXCEL
+# TÀI LIỆU ĐẶC TẢ V15: ĐIỀU CHỈNH LOGIC HIỂN THỊ VÀ QUYỀN TRUY CẬP MODULE KHTC
 
-**Gửi Gemini PM / Codex:** Tech Lead yêu cầu xây dựng toàn diện giao diện Dashboard cho Phòng Kế hoạch - Tài chính (KHTC). Giao diện này sử dụng cấu trúc "Inline Drill-down" (ẩn danh sách, hiện chi tiết trên cùng 1 trang) và kết hợp song song 2 phương pháp nhập liệu: Nhập thủ công trên bảng và Import bằng file Excel.
+**Gửi Gemini PM / Codex:** Tech Lead yêu cầu điều chỉnh lại logic hiển thị danh sách đợt học bổng và quyền thao tác (Nhập/Chỉ xem) của phòng Kế hoạch - Tài chính (KHTC). Hãy thực hiện chính xác các task sau:
 
-## TASK 1: LAYOUT & DANH SÁCH ĐỢT XÉT
-- **File làm việc:** `FE/src/pages/TaiChinh/TaiChinhKinhPhi.jsx` (tạo mới) (Route: `/tai-chinh/kinh-phi`).
-- **Trạng thái mặc định:** Hiển thị danh sách đợt học bổng dạng List/Card.
-- **Lọc Dữ liệu:** Chỉ fetch và hiển thị các đợt đang ở trạng thái **`DangXetDuyet`** (Cần cấp tiền) hoặc **`DaKetThuc`** (Để xem lại).
-- **Hành vi (Drill-down):** Khi click vào một Đợt, sử dụng Framer Motion trượt sang Màn hình Phân bổ Kinh phí (Task 3), đồng thời có nút "Quay lại" để trở về danh sách.
+## TASK 1: CẬP NHẬT SERVICE LỌC DANH SÁCH ĐỢT
+- **File làm việc:** `FE/src/services/kinhPhiService.js`
+- **Hàm cần sửa:** `getDotHocBongKHTC()`
+- **Yêu cầu:** Sửa đổi logic `.filter()`. KHTC hiện tại cần nhìn thấy các đợt ở 3 trạng thái: 
+  - `KhoiTao` (Để nạp dữ liệu kinh phí).
+  - `DaCoDiem` (Để nạp dữ liệu kinh phí).
+  - `ChinhThuc` (Để xem lại lịch sử phân bổ).
+- *(Xóa bỏ logic lọc theo `DangXetDuyet` và `DuKien` cũ).*
 
-## TASK 2: LUỒNG XỬ LÝ SMART EXCEL (TEMPLATE & IMPORT)
-- **Cấu trúc file Excel quy ước:**
-  - Ô `A1`: "HocKy" | Ô `B1`: [Giá trị Học kỳ]
-  - Ô `A2`: "NamHoc" | Ô `B2`: [Giá trị Năm học]
-  - Dòng 3: Bỏ trống.
-  - Dòng 4 (Header): `MaKhoa`, `TenKhoa`, `KinhPhi`, `MucHBLoaiKha`.
-- **Nút "Tải file mẫu":**
-  - Khi bấm, tự động lấy `HocKy` và `NamHoc` của đợt đang chọn điền vào B1, B2.
-  - Gọi API `GET /api/khoa` lấy danh sách Khoa, điền sẵn vào các cột `MaKhoa`, `TenKhoa` từ dòng 5 trở đi. Để trống 2 cột tiền.
-- **Vùng Upload Excel:**
-  - Hỗ trợ chọn file. Khi chọn xong, đọc ô `B1`, `B2`.
-  - **Validate:** Nếu `HocKy` / `NamHoc` trong file KHÔNG KHỚP với đợt đang mở -> Báo lỗi Toast, hủy thao tác.
-  - Nếu hợp lệ: Parse dữ liệu từ dòng 4 trở đi, và nạp (fill) vào Bảng nhập liệu ở Task 3.
+## TASK 2: BỔ SUNG CẤU HÌNH BADGE TRẠNG THÁI
+- **File làm việc:** `FE/src/pages/TaiChinh/TaiChinhKinhPhi.jsx`
+- **Yêu cầu:** Cập nhật biến `BADGE` (hoặc `TRANG_THAI_BADGE`) để hiển thị đúng màu sắc cho 3 trạng thái mới:
+  - `KhoiTao`: `{ label: 'Mới khởi tạo', cls: 'bg-blue-100 text-blue-700 border border-blue-200' }`
+  - `DaCoDiem`: `{ label: 'Đã có điểm', cls: 'bg-teal-100 text-teal-700 border border-teal-200' }`
+  - `ChinhThuc`: `{ label: 'Đã hoàn tất', cls: 'bg-slate-100 text-slate-700 border border-slate-200' }`
 
-## TASK 3: BẢNG NHẬP LIỆU ĐA NĂNG (EDITABLE SPREADSHEET)
-- **Nguồn dữ liệu:** Bảng này sẽ hiển thị dữ liệu gốc (lấy từ API danh sách Khoa với số tiền = 0) HOẶC hiển thị dữ liệu sau khi Import từ Excel.
-- **Giao diện Bảng:**
-  - Các cột: `STT`, `Tên Khoa`, `Tổng kinh phí (VNĐ)`, `Mức HB Loại Khá (VNĐ)`.
-  - **Trải nghiệm UX:** Cột `Tổng kinh phí` và `Mức HB Loại Khá` sử dụng `<input>` có thể gõ trực tiếp. Khi người dùng gõ, tự động format hiển thị dấu phẩy hàng nghìn (VD: `100,000,000`) nhưng State lưu trữ vẫn phải là số nguyên (Integer).
-- **Auto-sum Footer:**
-  - Tại dòng cuối cùng của bảng, thêm một hàng "TỔNG CỘNG".
-  - Dùng hàm `reduce` tính tổng tự động (Real-time) cột `Tổng kinh phí` mỗi khi người dùng thay đổi dữ liệu ở bất kỳ ô input nào.
-
-## TASK 4: LƯU DỮ LIỆU & GỌI API
-- **Nút "Chốt Ngân Sách":** Nằm ở góc dưới cùng bên phải.
-- **Logic khi Click:**
-  1. Hiển thị Modal Xác nhận: *"Hệ thống sẽ lưu rổ ngân sách này và gửi xuống cho các Khoa để bắt đầu xếp hạng. Bạn xác nhận thao tác này?"*
-  2. Map dữ liệu từ Bảng thành mảng `chiTietPhanBo` chuẩn DTO:
-     `{ maKhoa: number, kinhPhi: number, mucHBLoaiKha: number }`
-  3. Gọi API `POST /api/khtc/thiet-lap-kinh-phi` (Cần bổ sung vào `kinhPhiService.js`).
-  4. Nếu thành công: Bắn Toast xanh, có thể vô hiệu hóa (disable) bảng để tránh sửa đổi hoặc cho phép chuyển thẳng về màn hình Danh sách đợt.
+## TASK 3: TÍCH HỢP CHẾ ĐỘ CHỈ XEM (READ-ONLY) CHO LỊCH SỬ
+- **File làm việc:** `TaiChinhKinhPhi.jsx`
+- **Yêu cầu Logic:** Khai báo một biến kiểm tra trạng thái: `const isReadOnly = selectedDot?.trangThai === 'ChinhThuc';`
+- **Cập nhật Giao diện (UI):**
+  1. **Khóa Bảng nhập liệu:** Tại các ô `<input>` nhập tiền (`kinhPhi`, `mucHBLoaiKha`), truyền prop `disabled={isReadOnly}`. Đổi màu nền sang xám (`bg-slate-50`) và cursor thành `not-allowed` nếu đang bị khóa.
+  2. **Ẩn Nút thao tác:** Nếu `isReadOnly === true`, **KHÔNG** hiển thị cụm nút "Tải file mẫu" và "Upload Excel".
+  3. **Ẩn Nút Submit:** Tương tự, **KHÔNG** hiển thị nút "Chốt Ngân Sách" ở dưới cùng bảng nếu đang ở chế độ Chỉ xem.
+  4. Thay vào đó, có thể hiển thị một Badge nhỏ góc trên bảng: *"🔒 Đợt học bổng đã hoàn tất (Chỉ xem)"*.

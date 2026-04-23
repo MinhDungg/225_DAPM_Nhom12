@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import {
   PlusCircle, Loader2, X, BookOpen, Calendar, Zap,
   AlertTriangle, RefreshCw, Pencil, Trash2, Users,
+  Database, Banknote,
 } from 'lucide-react';
 import dotHocBongService from '../../services/dotHocBongService.js';
 import DanhSachUngVienView from './components/DanhSachUngVienView.jsx';
@@ -354,7 +355,7 @@ const TaoDotHocBong = () => {
                   label: dot.trangThai,
                   cls: 'bg-gray-100 text-gray-500 border border-gray-200',
                 };
-                const coTheQuet = dot.trangThai === 'DaCoDiem';
+                const coTheQuet = dot.daCoDiem && dot.daCoKinhPhi && dot.trangThai !== 'DangXetDuyet';
                 const coTheXoa  = dot.trangThai === 'KhoiTao' || dot.trangThai === 'DaCoDiem';
                 const coTheSua  = dot.trangThai === 'KhoiTao' || dot.trangThai === 'DaCoDiem';
                 // Drill-down available for scanned periods
@@ -388,6 +389,36 @@ const TaoDotHocBong = () => {
                     <span className={`text-xs font-bold px-2.5 py-1 rounded-full shrink-0 ${badge.cls}`}>
                       {badge.label}
                     </span>
+
+                    {/* ── Ready-check indicators ─────────────────────────── */}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {/* Điểm indicator */}
+                      <div
+                        title={dot.daCoDiem
+                          ? 'Đã có dữ liệu điểm học vụ'
+                          : 'Chờ phòng Đào tạo nạp điểm'}
+                        className="cursor-help"
+                      >
+                        <Database
+                          className={`w-4 h-4 transition-colors ${
+                            dot.daCoDiem ? 'text-teal-500' : 'text-slate-300'
+                          }`}
+                        />
+                      </div>
+                      {/* Kinh phí indicator */}
+                      <div
+                        title={dot.daCoKinhPhi
+                          ? 'Đã có phân bổ kinh phí'
+                          : 'Chờ phòng KHTC cấp kinh phí'}
+                        className="cursor-help"
+                      >
+                        <Banknote
+                          className={`w-4 h-4 transition-colors ${
+                            dot.daCoKinhPhi ? 'text-emerald-500' : 'text-slate-300'
+                          }`}
+                        />
+                      </div>
+                    </div>
 
                     {/* Action buttons — stopPropagation prevents card drill-down */}
                     <div className="flex items-center gap-1.5 shrink-0" onClick={e => e.stopPropagation()}>

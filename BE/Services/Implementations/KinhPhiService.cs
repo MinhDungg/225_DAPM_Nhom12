@@ -82,5 +82,18 @@ public class KinhPhiService : IKinhPhiService
             MucHBLoaiKha = phanBo.MucHBLoaiKha
         };
     }
+
+    public async Task<List<PhanBoKinhPhiResponseDTO>> LayPhanBoTheoMaDotAsync(int maDot)
+    {
+        var danhSach = await _phanBoKinhPhiRepository.LayTheoMaDotAsync(maDot);
+        return danhSach.Select(p => new PhanBoKinhPhiResponseDTO
+        {
+            MaPhanBo = p.MaPhanBo,
+            MaDot = p.MaDot,
+            MaKhoa = p.MaKhoa,
+            KinhPhi = p.KinhPhi,
+            MucHBLoaiKha = p.MucHBLoaiKha
+        }).ToList();
+    }
 }
 

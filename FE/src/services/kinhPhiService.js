@@ -3,7 +3,7 @@ import api from '../utils/api.js';
 const kinhPhiService = {
   /**
    * Lấy danh sách đợt học bổng dành cho KHTC.
-   * GET /api/dothocbong — lọc DangXetDuyet hoặc DuKien ở client.
+   * GET /api/dothocbong — chỉ giữ KhoiTao, DaCoDiem, ChinhThuc.
    */
   getDotHocBongKHTC: async () => {
     const response = await api.get('/api/dothocbong');
@@ -11,8 +11,10 @@ const kinhPhiService = {
     if (res.success && Array.isArray(res.data)) {
       return {
         ...res,
-        data: res.data.filter(
-          d => d.trangThai === 'DangXetDuyet' || d.trangThai === 'DuKien'
+        data: res.data.filter(d =>
+          d.trangThai === 'KhoiTao' ||
+          d.trangThai === 'DaCoDiem' ||
+          d.trangThai === 'ChinhThuc'
         ),
       };
     }
@@ -35,6 +37,16 @@ const kinhPhiService = {
    */
   thietLapKinhPhi: async (payload) => {
     const response = await api.post('/api/khtc/thiet-lap-kinh-phi-bulk', payload);
+    return response.data;
+  },
+
+  /**
+   * Lấy danh sách phân bổ kinh phí đã lưu của một đợt.
+   * GET /api/khtc/phan-bo/:maDot
+   * @param {number} maDot
+   */
+  getPhanBoTheoMaDot: async (maDot) => {
+    const response = await api.get(`/api/khtc/phan-bo/${maDot}`);
     return response.data;
   },
 };

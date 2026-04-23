@@ -1,9 +1,11 @@
-﻿using BE.DTOs.Request;
+﻿using BE.Data;
+using BE.DTOs.Request;
 using BE.DTOs.Response;
 using BE.Helpers;
 using BE.Models;
 using BE.Repositories.Interfaces;
 using BE.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace BE.Services.Implementations;
@@ -14,6 +16,7 @@ public class DotHocBongService : IDotHocBongService
     private readonly IKetQuaHocTapRepository _ketQuaHocTapRepository;
     private readonly IHoSoXetHocBongRepository _hoSoXetHocBongRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly AppDbContext _context;
     private readonly ILogger<DotHocBongService> _logger;
 
     public DotHocBongService(
@@ -21,12 +24,14 @@ public class DotHocBongService : IDotHocBongService
         IKetQuaHocTapRepository ketQuaHocTapRepository,
         IHoSoXetHocBongRepository hoSoXetHocBongRepository,
         IUnitOfWork unitOfWork,
+        AppDbContext context,
         ILogger<DotHocBongService> logger)
     {
         _dotHocBongRepository = dotHocBongRepository;
         _ketQuaHocTapRepository = ketQuaHocTapRepository;
         _hoSoXetHocBongRepository = hoSoXetHocBongRepository;
         _unitOfWork = unitOfWork;
+        _context = context;
         _logger = logger;
     }
 
@@ -48,7 +53,9 @@ public class DotHocBongService : IDotHocBongService
             LoaiDot = created.LoaiDot,
             HocKy = created.HocKy,
             NamHoc = created.NamHoc,
-            TrangThai = created.TrangThai
+            TrangThai = created.TrangThai,
+            DaCoDiem = false,
+            DaCoKinhPhi = false
         };
     }
 
@@ -69,7 +76,9 @@ public class DotHocBongService : IDotHocBongService
             LoaiDot = dot.LoaiDot,
             HocKy = dot.HocKy,
             NamHoc = dot.NamHoc,
-            TrangThai = dot.TrangThai
+            TrangThai = dot.TrangThai,
+            DaCoDiem = await _context.KetQuaHocTaps.AnyAsync(k => k.HocKy == dot.HocKy && k.NamHoc == dot.NamHoc),
+            DaCoKinhPhi = await _context.PhanBoKinhPhis.AnyAsync(p => p.MaDot == dot.MaDot)
         };
     }
 
@@ -92,14 +101,32 @@ public class DotHocBongService : IDotHocBongService
     public async Task<IEnumerable<DotHocBongResponseDTO>> GetAllDotHocBongAsync()
     {
         var dsDotHocBong = await _dotHocBongRepository.LayDanhSachAsync();
-        return dsDotHocBong.Select(d => new DotHocBongResponseDTO
+
+        // Build result with EXISTS checks — one query per dot using LINQ .Any()
+        var result = new List<DotHocBongResponseDTO>();
+        foreach (var d in dsDotHocBong)
         {
-            MaDot = d.MaDot,
-            LoaiDot = d.LoaiDot,
-            HocKy = d.HocKy,
-            NamHoc = d.NamHoc,
-            TrangThai = d.TrangThai
-        });
+            // EXISTS: có điểm cho học kỳ/năm học này không?
+            var daCoDiem = await _context.KetQuaHocTaps
+                .AnyAsync(k => k.HocKy == d.HocKy && k.NamHoc == d.NamHoc);
+
+            // EXISTS: có phân bổ kinh phí cho đợt này không?
+            var daCoKinhPhi = await _context.PhanBoKinhPhis
+                .AnyAsync(p => p.MaDot == d.MaDot);
+
+            result.Add(new DotHocBongResponseDTO
+            {
+                MaDot = d.MaDot,
+                LoaiDot = d.LoaiDot,
+                HocKy = d.HocKy,
+                NamHoc = d.NamHoc,
+                TrangThai = d.TrangThai,
+                DaCoDiem = daCoDiem,
+                DaCoKinhPhi = daCoKinhPhi
+            });
+        }
+
+        return result;
     }
 
     public async Task<List<UngVienResponseDTO>> GetDanhSachUngVienAsync(int maDot)

@@ -47,8 +47,30 @@ public class DiemService : IDiemService
         await using var transaction = await _unitOfWork.BeginTransactionAsync();
         try
         {
-            var danhSachMaSV = requests.Select(x => x.MaSV).ToList();
+            var danhSachMaSV = requests.Select(x => x.MaSV).Distinct().ToList();
             var maSVTonTai = await _sinhVienRepository.LayDanhSachMaSVTonTaiAsync(danhSachMaSV);
+
+            // Lấy thông tin Học kỳ và Năm học để làm điều kiện xóa dữ liệu cũ
+            var firstItem = requests.FirstOrDefault(r => !string.IsNullOrWhiteSpace(r.MaSV));
+            if (firstItem != null)
+            {
+                var hocKy = firstItem.HocKy;
+                var namHoc = firstItem.NamHoc?.Trim();
+
+                // 1. XÓA DỮ LIỆU CŨ: Ngăn chặn lỗi Tích Đề-các (Cartesian Product) nhân bản dữ liệu
+                var oldKQHT = await _context.KetQuaHocTaps
+                    .Where(k => k.HocKy == hocKy && k.NamHoc == namHoc && danhSachMaSV.Contains(k.MaSV))
+                    .ToListAsync();
+                if (oldKQHT.Any()) _context.KetQuaHocTaps.RemoveRange(oldKQHT);
+
+                var oldDRL = await _context.DiemRenLuyens
+                    .Where(d => d.HocKy == hocKy && d.NamHoc == namHoc && danhSachMaSV.Contains(d.MaSV))
+                    .ToListAsync();
+                if (oldDRL.Any()) _context.DiemRenLuyens.RemoveRange(oldDRL);
+
+                // Lưu thay đổi xóa trước khi Insert cái mới
+                await _context.SaveChangesAsync();
+            }
 
             var danhSachLoi = new List<string>();
             var danhSachKetQua = new List<KetQuaHocTap>();
@@ -85,48 +107,36 @@ public class DiemService : IDiemService
                 });
             }
 
+            // 2. THÊM DỮ LIỆU MỚI
             await _ketQuaHocTapRepository.ThemNhieuAsync(danhSachKetQua);
             await _diemRenLuyenRepository.ThemNhieuAsync(danhSachDRL);
             await _unitOfWork.SaveChangesAsync();
 
-            // ── Trigger: Tự động chuyển DotHocBong KhoiTao → DaCoDiem ──────────
-            if (danhSachKetQua.Count > 0)
+            // 3. TRIGGER CHUYỂN TRẠNG THÁI DOT_HOC_BONG
+            if (danhSachKetQua.Count > 0 && firstItem != null)
             {
-                var firstItem = requests.First(r => !string.IsNullOrWhiteSpace(r.MaSV));
-                var hocKy = firstItem.HocKy;
-                var namHoc = firstItem.NamHoc?.Trim();
-
                 var dotKhoiTao = await _context.DotHocBongs
-                    .Where(d => d.HocKy == hocKy
-                             && d.NamHoc == namHoc
-                             && d.TrangThai == TrangThaiHocBong.KhoiTao)
+                    .Where(d => d.HocKy == firstItem.HocKy
+                            && d.NamHoc == firstItem.NamHoc
+                            && d.TrangThai == TrangThaiHocBong.KhoiTao)
                     .FirstOrDefaultAsync();
 
                 if (dotKhoiTao != null)
                 {
                     dotKhoiTao.TrangThai = TrangThaiHocBong.DaCoDiem;
                     await _context.SaveChangesAsync();
-                    _logger.LogInformation(
-                        "Trigger: DotHocBong MaDot={MaDot} chuyen sang DaCoDiem.",
-                        dotKhoiTao.MaDot);
+                    _logger.LogInformation("Trigger: DotHocBong MaDot={MaDot} chuyen sang DaCoDiem.", dotKhoiTao.MaDot);
                 }
             }
 
             await transaction.CommitAsync();
 
-            var result = new ImportResultDTO
+            return new ImportResultDTO
             {
                 ThanhCong = danhSachKetQua.Count,
                 ThatBai = danhSachLoi.Count,
                 DanhSachLoi = danhSachLoi
             };
-
-            _logger.LogInformation(
-                "ImportDuLieuHocVuAsync done. ThanhCong={ThanhCong} ThatBai={ThatBai}",
-                result.ThanhCong,
-                result.ThatBai);
-
-            return result;
         }
         catch (Exception ex)
         {
