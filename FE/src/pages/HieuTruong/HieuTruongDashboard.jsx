@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, Users, DollarSign, Eye, CheckCircle, XCircle, Loader2, AlertCircle, CalendarClock } from 'lucide-react';
 import api from '../../utils/api';
+import FinalDecisionService from '../../services/finalDecisionService';
 
 const HieuTruongDashboard = () => {
     // State cho danh sách các đợt học bổng
@@ -13,16 +14,19 @@ const HieuTruongDashboard = () => {
     const [isApproving, setIsApproving] = useState(false);
     const [showList, setShowList] = useState(false);
 
+    // Modal trả hồ sơ
+    const [showRejectModal, setShowRejectModal] = useState(false);
+    const [lyDoTraVe, setLyDoTraVe] = useState('');
+    const [isRejecting, setIsRejecting] = useState(false);
+
     // 1. Gọi API lấy danh sách đợt học bổng khi trang vừa load
     useEffect(() => {
         const fetchDotHocBong = async () => {
             try {
-                // Giả định bạn có API GET /api/dothocbong để lấy danh sách đợt
                 const response = await api.get('/api/dothocbong');
                 if (response.data.success && response.data.data.length > 0) {
                     const dsDot = response.data.data;
                     setDsDotHocBong(dsDot);
-                    // Mặc định chọn đợt đầu tiên
                     setSelectedMaDot(dsDot[0].maDot.toString());
                 }
             } catch (error) {
@@ -63,8 +67,8 @@ const HieuTruongDashboard = () => {
         try {
             const res = await api.put(`/api/hieutruong/pheduyet/${selectedMaDot}`);
             if (res.data.success) {
-                alert("Phê duyệt thành công! Danh sách đã được chuyển sang Tài chính.");
-                fetchRoundData(selectedMaDot); // Tải lại dữ liệu để cập nhật UI sang màu xanh
+                alert("✅ Phê duyệt thành công! Danh sách đã được chuyển sang Tài chính.");
+                fetchRoundData(selectedMaDot);
             } else {
                 alert(res.data.message || "Phê duyệt thất bại.");
             }
@@ -72,6 +76,32 @@ const HieuTruongDashboard = () => {
             alert("Có lỗi xảy ra khi phê duyệt.");
         } finally {
             setIsApproving(false);
+        }
+    };
+
+    // 4. Hàm xử lý Trả hồ sơ
+    const handleReject = async () => {
+        if (!lyDoTraVe.trim()) {
+            alert("Vui lòng nhập lý do trả hồ sơ.");
+            return;
+        }
+
+        setIsRejecting(true);
+        try {
+            const res = await FinalDecisionService.traHoSo(selectedMaDot, lyDoTraVe);
+            if (res.success) {
+                alert("✅ Đã trả hồ sơ về CTSV kèm lý do.");
+                setShowRejectModal(false);
+                setLyDoTraVe('');
+                fetchRoundData(selectedMaDot);
+            } else {
+                alert(res.message || "Trả hồ sơ thất bại.");
+            }
+        } catch (error) {
+            console.error(error);
+            alert("Có lỗi xảy ra khi trả hồ sơ.");
+        } finally {
+            setIsRejecting(false);
         }
     };
 
@@ -184,18 +214,20 @@ const HieuTruongDashboard = () => {
                                             <th className="p-4">MSSV</th>
                                             <th className="p-4">Họ và Tên</th>
                                             <th className="p-4 text-center">GPA</th>
+                                            <th className="p-4 text-center">Điểm RL</th>
                                             <th className="p-4 text-center">Xếp loại</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
                                         {data.danhSach.length === 0 ? (
-                                            <tr><td colSpan="4" className="text-center p-4 text-slate-500">Chưa có sinh viên nào.</td></tr>
+                                            <tr><td colSpan="5" className="text-center p-4 text-slate-500">Chưa có sinh viên nào.</td></tr>
                                         ) : (
                                             data.danhSach.map((sv) => (
                                                 <tr key={sv.maHoSo} className="hover:bg-slate-50/50 transition-colors text-sm text-slate-700 font-medium">
                                                     <td className="p-4 text-slate-500">{sv.maSV}</td>
                                                     <td className="p-4 font-bold text-slate-900">{sv.hoTen}</td>
-                                                    <td className="p-4 text-center">{sv.gpa.toFixed(2)}</td>
+                                                    <td className="p-4 text-center">{sv.gpa?.toFixed(2)}</td>
+                                                    <td className="p-4 text-center">{sv.diemRenLuyen}</td>
                                                     <td className="p-4 text-center">
                                                         <span className={`px-3 py-1.5 rounded-lg text-xs font-bold ${sv.xepLoaiHB === 'Xuất sắc' ? 'bg-amber-100 text-amber-700' :
                                                                 sv.xepLoaiHB === 'Giỏi' ? 'bg-blue-100 text-blue-700' :
@@ -225,11 +257,54 @@ const HieuTruongDashboard = () => {
                                     {isApproving ? 'Đang chốt sổ...' : 'Phê duyệt & Ban hành Quyết định'}
                                 </button>
 
-                                <button className="flex-1 border-2 border-red-100 text-red-500 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 hover:bg-red-50 active:scale-95">
+                                <button
+                                    onClick={() => setShowRejectModal(true)}
+                                    className="flex-1 border-2 border-red-100 text-red-500 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 hover:bg-red-50 active:scale-95"
+                                >
                                     <XCircle size={22} /> Trả hồ sơ / Yêu cầu giải trình
                                 </button>
                             </div>
                         )}
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Trả hồ sơ */}
+            {showRejectModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg mx-4 p-8 animate-in zoom-in-95 duration-200">
+                        <h3 className="text-xl font-black text-slate-900 mb-2">Trả hồ sơ về CTSV</h3>
+                        <p className="text-slate-500 text-sm mb-6">
+                            Nhập lý do trả hồ sơ. CTSV sẽ nhận được thông báo và có thể chỉnh sửa lại danh sách trước khi trình lại.
+                        </p>
+
+                        <textarea
+                            value={lyDoTraVe}
+                            onChange={(e) => setLyDoTraVe(e.target.value)}
+                            placeholder="Ví dụ: Cần kiểm tra lại hồ sơ của SV 23115053122105, điểm rèn luyện chưa khớp..."
+                            className="w-full border border-slate-200 rounded-2xl p-4 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-red-300 focus:border-red-400 resize-none h-32 transition-all"
+                            autoFocus
+                        />
+
+                        <div className="flex gap-3 mt-6">
+                            <button
+                                onClick={() => { setShowRejectModal(false); setLyDoTraVe(''); }}
+                                className="flex-1 py-3 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 transition-all"
+                            >
+                                Hủy
+                            </button>
+                            <button
+                                onClick={handleReject}
+                                disabled={isRejecting || !lyDoTraVe.trim()}
+                                className={`flex-1 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2
+                                    ${isRejecting || !lyDoTraVe.trim()
+                                        ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                                        : 'bg-red-600 text-white hover:bg-red-700 shadow-lg shadow-red-200'}`}
+                            >
+                                {isRejecting ? <Loader2 size={18} className="animate-spin" /> : <XCircle size={18} />}
+                                {isRejecting ? 'Đang xử lý...' : 'Xác nhận Trả hồ sơ'}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

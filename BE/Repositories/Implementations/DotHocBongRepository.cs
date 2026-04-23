@@ -1,4 +1,4 @@
-﻿using BE.Data;
+using BE.Data;
 using BE.Models;
 using BE.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -30,6 +30,12 @@ public class DotHocBongRepository : IDotHocBongRepository
     public void CapNhat(DotHocBong dotHocBong)
     {
         _context.DotHocBongs.Update(dotHocBong);
+    }
+
+    public async Task UpdateAsync(DotHocBong dotHocBong)
+    {
+        _context.DotHocBongs.Update(dotHocBong);
+        await _context.SaveChangesAsync();
     }
 
     public async Task<bool> XoaAsync(int maDot)

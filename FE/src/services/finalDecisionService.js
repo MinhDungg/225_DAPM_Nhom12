@@ -1,49 +1,80 @@
-import axios from 'axios';
+// src/services/finalDecisionService.js
+import api from '../utils/api'; // Đảm bảo import đúng file axios config của bạn
 
-const API_BASE_URL = 'http://localhost:5163/api';
+const FinalDecisionService = {
+    // ==========================================================
+    // DÀNH CHO CTSV & HỘI ĐỒNG
+    // ==========================================================
 
-const axiosInstance = axios.create({
-    baseURL: API_BASE_URL,
-    timeout: 10000,
-    headers: {
-        'Content-Type': 'application/json'
-    }
-});
-
-const finalDecisionService = {
-    // Task 3.1: Tổng hợp dữ liệu toàn trường (CTSV / Hội Đồng)
-    layTongHopToanTruong: async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await axiosInstance.get('/ctsv/tonghop', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            return response.data;
-        } catch (error) {
-            console.error('Lỗi khi tổng hợp hồ sơ:', error);
-            if (error.response) throw new Error(error.response.data.message || 'Lỗi từ server');
-            if (error.request) throw new Error('Không kết nối được server.');
-            throw new Error('Lỗi không xác định');
-        }
+    // Lấy danh sách tổng hợp toàn trường (từ các Khoa đề xuất lên)
+    getTongHopToanTruong: async () => {
+        const response = await api.get('/api/ctsv/tonghop');
+        return response.data;
     },
 
-    // Task 3.2: Hội đồng chốt danh sách dự kiến
-    hoiDongXetChon: async (danhSachMaHoSo) => {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await axiosInstance.put(
-                '/hoidong/xetchon',
-                danhSachMaHoSo,
-                { headers: { 'Authorization': `Bearer ${token}` } }
-            );
-            return response.data;
-        } catch (error) {
-            console.error('Lỗi khi Hội đồng xét chọn:', error);
-            if (error.response) throw new Error(error.response.data.message || 'Lỗi từ server');
-            if (error.request) throw new Error('Không kết nối được server.');
-            throw new Error('Lỗi không xác định');
-        }
+    // Hội đồng duyệt danh sách
+    hoiDongXetChon: async (profileIds) => {
+        const response = await api.put('/api/hoidong/xetchon', profileIds);
+        return response.data;
+    },
+
+    // CTSV khóa danh sách và nộp Tờ trình lên BGH
+    trinhHieuTruong: async (maDot) => {
+        const response = await api.put(`/api/ctsv/trinh-hieu-truong/${maDot}`);
+        return response.data;
+    },
+
+
+    // ==========================================================
+    // DÀNH CHO HIỆU TRƯỞNG (BAN GIÁM HIỆU)
+    // ==========================================================
+
+    // Xem Tờ trình (Chỉ lấy được khi CTSV đã Trình lên)
+    getToTrinhHieuTruong: async (maDot) => {
+        const response = await api.get(`/api/hieutruong/tong-hop/${maDot}`);
+        return response.data;
+    },
+
+    // Ký phê duyệt (Chốt danh sách chính thức)
+    pheDuyetCaDot: async (maDot) => {
+        const response = await api.put(`/api/hieutruong/pheduyet/${maDot}`);
+        return response.data;
+    },
+
+    // Hiệu trưởng trả hồ sơ kèm lý do
+    traHoSo: async (maDot, lyDo) => {
+        const response = await api.put(`/api/hieutruong/tra-ho-so/${maDot}`, JSON.stringify(lyDo), {
+            headers: { 'Content-Type': 'application/json' }
+        });
+        return response.data;
+    },
+
+    // ==========================================================
+    // DÀNH CHO CTSV - QUẢN LÝ HỒ SƠ
+    // ==========================================================
+
+    // Xóa hồ sơ
+    xoaHoSo: async (maHoSo) => {
+        const response = await api.delete(`/api/ctsv/ho-so/${maHoSo}`);
+        return response.data;
+    },
+
+    // Lấy danh sách đợt học bổng
+    layDsDotHocBong: async () => {
+        const response = await api.get('/api/dothocbong');
+        return response.data;
+    },
+
+
+    // ==========================================================
+    // DÀNH CHO SINH VIÊN
+    // ==========================================================
+
+    // Tra cứu trạng thái hồ sơ của cá nhân
+    traCuuTienDo: async () => {
+        const response = await api.get('/api/sinhvien/tracuu');
+        return response.data;
     }
 };
 
-export default finalDecisionService;
+export default FinalDecisionService;

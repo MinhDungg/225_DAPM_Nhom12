@@ -6,10 +6,13 @@ namespace BE.Services.Interfaces
 {
     public interface IFinalDecisionService
     {
-        Task<IEnumerable<HoSoResponseDTO>> GetRecommendedProfilesAsync();
-        Task<bool> ApproveExpectedListAsync(List<int> profileIds);
+        Task<IEnumerable<HoSoResponseDTO>> GetRecommendedProfilesAsync(bool isHoiDong); Task<bool> ApproveExpectedListAsync(List<int> profileIds);
         Task<IEnumerable<HoSoResponseDTO>> GetStudentProgressAsync(string maSV);
         Task<bool> RectorApproveAsync(int maDot, int maCB);
-        Task<TongHopHieuTruongResponseDTO?> GetToTrinhHieuTruongAsync(int maDot);
+        Task<BaseResponse<bool>> CTSVTrinhHieuTruongAsync(int maDot);
+        Task<BaseResponse<bool>> XoaHoSoAsync(int maHoSo);
+        Task<BaseResponse<bool>> TraHoSoAsync(int maDot, string lyDo);
+        // Thêm tham số bool isHieuTruong
+        Task<TongHopHieuTruongResponseDTO?> GetToTrinhHieuTruongAsync(int maDot, bool isHieuTruong);
     }
 }

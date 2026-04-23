@@ -1,4 +1,4 @@
-﻿namespace BE.Models;
+namespace BE.Models;
 
 public class DotHocBong
 {
@@ -7,6 +7,7 @@ public class DotHocBong
     public int HocKy { get; set; }
     public string NamHoc { get; set; } = null!;
     public string? TrangThai { get; set; }
+    public string? LyDoTraVe { get; set; }
 
     public ICollection<HoSoXetHocBong> HoSoXetHocBongs { get; set; } = new List<HoSoXetHocBong>();
     public ICollection<DSHocBong> DSHocBongs { get; set; } = new List<DSHocBong>();
