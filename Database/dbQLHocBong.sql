@@ -115,7 +115,8 @@ CREATE TABLE [DOTHOCBONG] (
   [LoaiDot] nvarchar(150) NOT NULL, 
   [HocKy] int NOT NULL,
   [NamHoc] varchar(20) NOT NULL,
-  [TrangThai] varchar(50) DEFAULT 'KhoiTao' CONSTRAINT CHK_TrangThai_Dot CHECK ([TrangThai] IN ('KhoiTao', 'DangXetDuyet', 'DuKien', 'ChinhThuc'))
+  [TrangThai] varchar(50) DEFAULT 'KhoiTao' CONSTRAINT CHK_TrangThai_Dot CHECK ([TrangThai] IN ('KhoiTao', 'DangXetDuyet', 'DuKien', 'ChoPheDuyet', 'ChinhThuc')),
+  [LyDoTraVe] nvarchar(MAX) NULL
 );
 GO
 
