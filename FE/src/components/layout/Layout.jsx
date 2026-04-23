@@ -104,9 +104,7 @@ const Layout = ({ role }) => {
                     <ul className="space-y-1.5">
                         {currentMenus.map((menu, index) => {
                             const Icon = menu.icon;
-                            // Kiểm tra chính xác đường dẫn để active đẹp hơn
-                            const isActive = location.pathname === menu.path || location.pathname.startsWith(menu.path + '/');
-
+                            const isActive = location.pathname === menu.path;
                             return (
                                 <li key={index}>
                                     <Link
