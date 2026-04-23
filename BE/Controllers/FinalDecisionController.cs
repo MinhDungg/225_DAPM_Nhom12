@@ -67,12 +67,21 @@ namespace BE.Controllers
         [Authorize(Roles = "CTSV")]
         public async Task<ActionResult<BaseResponse<bool>>> CTSVTrinhHieuTruong(int maDot)
         {
+            // Gọi logic xử lý chuyển trạng thái đợt sang 'ChoPheDuyet'
             var result = await _service.CTSVTrinhHieuTruongAsync(maDot);
+
+            if (!result.Success)
+            {
+                return BadRequest(result);
+            }
+
             return Ok(result);
         }
 
+  
+
         [HttpGet("/api/hieutruong/tong-hop/{maDot}")]
-        [Authorize(Roles = "HieuTruong")]
+        [Authorize(Roles = "HieuTruong,CTSV")]
         public async Task<ActionResult<BaseResponse<TongHopHieuTruongResponseDTO>>> GetToTrinhHieuTruong(int maDot)
         {
             var result = await _service.GetToTrinhHieuTruongAsync(maDot);
@@ -111,6 +120,45 @@ namespace BE.Controllers
                 Message = result ? "Phê duyệt đợt học bổng và chốt danh sách chính thức thành công." : "Phê duyệt thất bại.",
                 Data = result
             });
+        }
+
+        // =======================================================
+        // Task 3.6: Hiệu trưởng trả hồ sơ
+        // =======================================================
+        [HttpPut("/api/hieutruong/tra-ho-so/{maDot}")]
+        [Authorize(Roles = "HieuTruong")]
+        public async Task<ActionResult<BaseResponse<bool>>> TraHoSo(int maDot, [FromBody] string lyDo)
+        {
+            if (string.IsNullOrWhiteSpace(lyDo))
+            {
+                return BadRequest(new BaseResponse<bool> { Success = false, Message = "Vui lòng nhập lý do trả hồ sơ." });
+            }
+
+            var result = await _service.TraHoSoAsync(maDot, lyDo);
+
+            if (!result.Success)
+            {
+                return BadRequest(result);
+            }
+
+            return Ok(result);
+        }
+
+        // =======================================================
+        // Xóa hồ sơ (CTSV)
+        // =======================================================
+        [HttpDelete("/api/ctsv/ho-so/{maHoSo}")]
+        [Authorize(Roles = "CTSV")]
+        public async Task<ActionResult<BaseResponse<bool>>> XoaHoSo(int maHoSo)
+        {
+            var result = await _service.XoaHoSoAsync(maHoSo);
+
+            if (!result.Success)
+            {
+                return BadRequest(result);
+            }
+
+            return Ok(result);
         }
     }
 }
