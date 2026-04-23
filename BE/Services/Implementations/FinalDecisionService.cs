@@ -13,15 +13,18 @@ namespace BE.Services.Implementations
         private readonly IHoSoXetHocBongRepository _hoSoRepository;
         private readonly IDotHocBongRepository _dotHocBongRepository;
         private readonly IPhanBoKinhPhiRepository _phanBoKinhPhiRepository;
+        private readonly IDiemRenLuyenRepository _diemRenLuyenRepository;
 
         public FinalDecisionService(
             IHoSoXetHocBongRepository hoSoRepository,
             IDotHocBongRepository dotHocBongRepository,
-            IPhanBoKinhPhiRepository phanBoKinhPhiRepository)
+            IPhanBoKinhPhiRepository phanBoKinhPhiRepository,
+            IDiemRenLuyenRepository diemRenLuyenRepository)
         {
             _hoSoRepository = hoSoRepository;
             _dotHocBongRepository = dotHocBongRepository;
             _phanBoKinhPhiRepository = phanBoKinhPhiRepository;
+            _diemRenLuyenRepository = diemRenLuyenRepository;
         }
 
         // ====================================================================
@@ -92,8 +95,8 @@ namespace BE.Services.Implementations
             var dotHocBong = await _dotHocBongRepository.LayTheoIdAsync(maDot);
             if (dotHocBong == null) return null;
 
-            // CHẶN BẢO MẬT: Nếu CTSV chưa trình (ChoPheDuyet) và đợt chưa chốt (ChinhThuc) thì Hiệu trưởng không thấy gì
-            if (dotHocBong.TrangThai != "ChoPheDuyet" && dotHocBong.TrangThai != "ChinhThuc")
+            // CHẶN BẢO MẬT: Mở rộng cho phép CTSV xem trước danh sách khi đợt đang ở trạng thái DangXetDuyet
+            if (dotHocBong.TrangThai != "ChoPheDuyet" && dotHocBong.TrangThai != "ChinhThuc" && dotHocBong.TrangThai != "DangXetDuyet")
             {
                 return null;
             }
@@ -110,6 +113,28 @@ namespace BE.Services.Implementations
 
             var profilesForRound = allProfiles.Where(h => h.MaDot == maDot).ToList();
 
+            // Lấy điểm rèn luyện tuần tự (tránh lỗi DbContext concurrency)
+            var danhSachDTO = new List<HoSoResponseDTO>();
+            foreach (var h in profilesForRound)
+            {
+                var diemRL = await _diemRenLuyenRepository.GetDiemRenLuyenAsync(
+                    h.MaSV, dotHocBong.HocKy, dotHocBong.NamHoc);
+
+                danhSachDTO.Add(new HoSoResponseDTO
+                {
+                    MaHoSo = h.MaHoSo,
+                    MaSV = h.MaSV,
+                    HoTen = h.SinhVien?.HoTen,
+                    TenLop = h.SinhVien?.Lop?.TenLop,
+                    TenKhoa = h.SinhVien?.Lop?.Khoa?.TenKhoa,
+                    GPA = h.DiemHocTap,
+                    DiemHocTap = h.DiemHocTap,
+                    DiemRenLuyen = diemRL ?? h.DiemRenLuyen,
+                    XepLoaiHB = h.XepLoaiHB,
+                    TrangThai = h.TrangThai
+                });
+            }
+
             return new TongHopHieuTruongResponseDTO
             {
                 ThongTinDot = new ThongTinDotDTO
@@ -117,20 +142,12 @@ namespace BE.Services.Implementations
                     LoaiDot = dotHocBong.LoaiDot,
                     HocKy = dotHocBong.HocKy,
                     NamHoc = dotHocBong.NamHoc,
-                    TrangThai = dotHocBong.TrangThai
+                    TrangThai = dotHocBong.TrangThai,
+                    LyDoTraVe = dotHocBong.LyDoTraVe
                 },
                 TongSinhVien = profilesForRound.Count,
                 TongKinhPhi = tongKinhPhi,
-                DanhSach = profilesForRound.Select(h => new HoSoResponseDTO
-                {
-                    MaHoSo = h.MaHoSo,
-                    MaSV = h.MaSV,
-                    HoTen = h.SinhVien?.HoTen,
-                    TenLop = h.SinhVien?.Lop?.TenLop,
-                    GPA = h.DiemHocTap,
-                    XepLoaiHB = h.XepLoaiHB,
-                    TrangThai = h.TrangThai
-                })
+                DanhSach = danhSachDTO
             };
         }
 
@@ -160,6 +177,49 @@ namespace BE.Services.Implementations
                 XepLoaiHB = p.XepLoaiHB,
                 TrangThai = p.TrangThai
             });
+        }
+        // ====================================================================
+        // TASK 3.6: Hiệu trưởng trả lại hồ sơ (Yêu cầu giải trình)
+        // ====================================================================
+        public async Task<BaseResponse<bool>> TraHoSoAsync(int maDot, string lyDo)
+        {
+            var dot = await _dotHocBongRepository.LayTheoIdAsync(maDot);
+            if (dot == null)
+            {
+                return new BaseResponse<bool> { Success = false, Message = "Không tìm thấy đợt học bổng." };
+            }
+
+            if (dot.TrangThai != "ChoPheDuyet")
+            {
+                return new BaseResponse<bool> { Success = false, Message = "Chỉ có thể trả hồ sơ khi đang chờ phê duyệt." };
+            }
+
+            dot.TrangThai = "DangXetDuyet";
+            dot.LyDoTraVe = lyDo;
+            
+            await _dotHocBongRepository.UpdateAsync(dot);
+
+            return new BaseResponse<bool>
+            {
+                Success = true,
+                Message = "Đã trả hồ sơ về cho CTSV.",
+                Data = true
+            };
+        }
+        // ====================================================================
+        // Xóa hồ sơ (CTSV)
+        // ====================================================================
+        public async Task<BaseResponse<bool>> XoaHoSoAsync(int maHoSo)
+        {
+            var hoSo = await _hoSoRepository.GetByIdAsync(maHoSo);
+            if (hoSo == null)
+            {
+                return new BaseResponse<bool> { Success = false, Message = "Không tìm thấy hồ sơ." };
+            }
+
+            await _hoSoRepository.DeleteAsync(maHoSo);
+
+            return new BaseResponse<bool> { Success = true, Message = "Xóa hồ sơ thành công.", Data = true };
         }
     }
 }

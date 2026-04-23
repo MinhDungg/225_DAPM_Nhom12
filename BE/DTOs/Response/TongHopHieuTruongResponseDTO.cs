@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
 namespace BE.DTOs.Response
 {
@@ -8,6 +8,7 @@ namespace BE.DTOs.Response
         public int HocKy { get; set; }
         public string NamHoc { get; set; } = null!;
         public string? TrangThai { get; set; }
+        public string? LyDoTraVe { get; set; }
     }
 
     public class TongHopHieuTruongResponseDTO

@@ -12,5 +12,7 @@ namespace BE.Services.Interfaces
         Task<bool> RectorApproveAsync(int maDot, int maCB);
         Task<BaseResponse<bool>> CTSVTrinhHieuTruongAsync(int maDot);
         Task<TongHopHieuTruongResponseDTO?> GetToTrinhHieuTruongAsync(int maDot);
+        Task<BaseResponse<bool>> XoaHoSoAsync(int maHoSo);
+        Task<BaseResponse<bool>> TraHoSoAsync(int maDot, string lyDo);
     }
 }
