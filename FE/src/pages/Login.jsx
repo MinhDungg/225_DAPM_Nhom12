@@ -8,6 +8,7 @@ const Login = () => {
 
     const handleLogin = (e) => {
         e.preventDefault();
+<<<<<<< Updated upstream
         // Mô phỏng logic đăng nhập: Chuyển hướng người dùng dựa trên role đã chọn
         const routeMap = {
             'SinhVien': '/sinh-vien',
@@ -19,6 +20,69 @@ const Login = () => {
             'HieuTruong': '/hieu-truong'
         };
         navigate(routeMap[role]);
+=======
+        setError('');
+        setLoading(true);
+
+        try {
+            // 1. Gọi API đăng nhập (Điều chỉnh endpoint khớp với Backend của bạn)
+            const response = await api.post('/api/auth/login', {
+                Username: tenDangNhap, // Sửa lại key cho khớp với BE
+                Password: matKhau      // Sửa lại key cho khớp với BE
+            });
+
+            if (response.data.success) {
+                const { token, userInfo, role } = response.data.data;
+
+                // 2. Lưu Token và thông tin Actor vào localStorage
+                localStorage.setItem('token', token);
+                localStorage.setItem('role', role);
+                localStorage.setItem('userInfo', JSON.stringify(userInfo));
+
+                // 3. Phân luồng điều hướng dựa vào VaiTro (Role) của Actor
+                const vaiTro = role;
+
+                switch (vaiTro) {
+                    case 'SinhVien':
+                        navigate('/sinh-vien'); // Chuyển đến StudentDashboard
+                        break;
+                    case 'Khoa':
+                        navigate('/khoa'); // Chuyển đến KhoaDashboard
+                        break;
+                    case 'CTSV':
+                        navigate('/ctsv'); // Chuyển đến CTSVDashboard
+                        break;
+                    case 'HieuTruong':
+                        navigate('/hieu-truong'); // Chuyển đến HieuTruongDashboard
+                        break;
+                    case 'HoiDong':
+                    case 'HDXD':
+                        navigate('/hoi-dong'); // Chuyển đến HDXDDashboard
+                        break;
+                    case 'DaoTao':
+                        navigate('/dao-tao'); // Chuyển đến DaoTaoDashboard
+                        break;
+                    case 'KHTC':
+                    case 'TaiChinh':
+                        navigate('/tai-chinh'); // Chuyển đến TaiChinhDashboard
+                        break;
+                    case 'Admin':
+                        navigate('/admin');
+                        break;
+                    default:
+                        setError('Tài khoản của bạn chưa được cấp quyền truy cập hệ thống.');
+                        break;
+                }
+            } else {
+                setError(response.data.message || 'Sai tên đăng nhập hoặc mật khẩu.');
+            }
+        } catch (err) {
+            console.error("Login Error:", err);
+            setError(err.response?.data?.message || 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra Backend.');
+        } finally {
+            setLoading(false);
+        }
+>>>>>>> Stashed changes
     };
 
     return (

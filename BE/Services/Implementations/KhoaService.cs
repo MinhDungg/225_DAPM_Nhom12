@@ -48,7 +48,11 @@ public class KhoaService : IKhoaService
             MaSV = h.MaSV,
             HoTenSinhVien = h.SinhVien.HoTen,
             TenLop = h.SinhVien.Lop.TenLop,
+<<<<<<< Updated upstream
             GPA = h.GPA,
+=======
+            GPA = Math.Round(h.DiemHocTap, 2), // Làm tròn 2 chữ số thập phân
+>>>>>>> Stashed changes
             DiemRenLuyen = h.SinhVien.DiemRenLuyens
                 .OrderByDescending(d => d.NamHoc)
                 .ThenByDescending(d => d.HocKy)
@@ -121,8 +125,8 @@ public class KhoaService : IKhoaService
             var item = danhSachDaSapXep[i];
             bool duocNhan = false;
 
-            // Kiểm tra ngân sách còn đủ không
-            if (tongChiTieu + item.MucHocBong <= request.NganSach)
+            // Chỉ xét những sinh viên đủ điều kiện (MucHocBong > 0)
+            if (item.MucHocBong > 0 && tongChiTieu + item.MucHocBong <= request.NganSach)
             {
                 tongChiTieu += item.MucHocBong;
                 soLuongDuocNhan++;
@@ -137,7 +141,11 @@ public class KhoaService : IKhoaService
                 MaSV = item.HoSo.MaSV,
                 HoTen = item.HoSo.SinhVien.HoTen,
                 TenLop = item.HoSo.SinhVien.Lop.TenLop,
+<<<<<<< Updated upstream
                 GPA = item.HoSo.GPA,
+=======
+                GPA = Math.Round(item.HoSo.DiemHocTap, 2), // Làm tròn 2 chữ số
+>>>>>>> Stashed changes
                 DiemRenLuyen = item.DiemDRL,
                 XepLoai = item.XepLoai,
                 MucHocBong = item.MucHocBong,
@@ -156,23 +164,23 @@ public class KhoaService : IKhoaService
         };
     }
 
-    // Helper method: Phân loại học bổng dựa trên GPA và ĐRL
-    private (string XepLoai, decimal MucHocBong) PhanLoaiHocBong(double gpa, int diemDRL)
+    // Helper method: Phân loại học bổng dựa trên Điểm học tập (thang 10) và ĐRL
+    private (string XepLoai, decimal MucHocBong) PhanLoaiHocBong(double diemHocTap, int diemDRL)
     {
-        // Xuất sắc: GPA >= 3.6 VÀ ĐRL >= 90
-        if (gpa >= 3.6 && diemDRL >= 90)
+        // Xuất sắc: Điểm >= 9.0 VÀ ĐRL >= 90
+        if (diemHocTap >= 9.0 && diemDRL >= 90)
         {
             return ("XuatSac", MUC_SAN * TY_LE_XUAT_SAC); // 11,550,000
         }
 
-        // Giỏi: GPA 3.2-3.59 VÀ ĐRL >= 80
-        if (gpa >= 3.2 && gpa < 3.6 && diemDRL >= 80)
+        // Giỏi: Điểm 8.0-8.99 VÀ ĐRL >= 80
+        if (diemHocTap >= 8.0 && diemHocTap < 9.0 && diemDRL >= 80)
         {
             return ("Gioi", MUC_SAN * TY_LE_GIOI); // 9,900,000
         }
 
-        // Khá: GPA 2.5-3.19 VÀ ĐRL >= 70
-        if (gpa >= 2.5 && gpa < 3.2 && diemDRL >= 70)
+        // Khá: Điểm 6.5-7.99 VÀ ĐRL >= 70
+        if (diemHocTap >= 6.5 && diemHocTap < 8.0 && diemDRL >= 70)
         {
             return ("Kha", MUC_SAN * TY_LE_KHA); // 8,250,000
         }
