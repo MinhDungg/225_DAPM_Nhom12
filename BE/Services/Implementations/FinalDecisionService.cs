@@ -44,7 +44,7 @@ namespace BE.Services.Implementations
                 HoTen = p.SinhVien?.HoTen,
                 TenLop = p.SinhVien?.Lop?.TenLop,
                 TenKhoa = p.SinhVien?.Lop?.Khoa?.TenKhoa,
-                GPA = p.DiemHocTap,
+                GPA = p.GPA,
                 DiemHocTap = p.DiemHocTap,
                 DiemRenLuyen = p.DiemRenLuyen,
                 XepLoaiHB = p.XepLoaiHB,
@@ -116,7 +116,7 @@ namespace BE.Services.Implementations
                     HoTen = h.SinhVien?.HoTen,
                     TenLop = h.SinhVien?.Lop?.TenLop,
                     TenKhoa = h.SinhVien?.Lop?.Khoa?.TenKhoa,
-                    GPA = h.DiemHocTap,
+                    GPA = h.GPA,
                     DiemHocTap = h.DiemHocTap,
                     DiemRenLuyen = diemRL ?? h.DiemRenLuyen,
                     XepLoaiHB = h.XepLoaiHB,
@@ -157,7 +157,9 @@ namespace BE.Services.Implementations
                 MaSV = p.MaSV,
                 HoTen = p.SinhVien?.HoTen,
                 TenLop = p.SinhVien?.Lop?.TenLop,
-                GPA = p.DiemHocTap,
+                GPA = p.GPA,
+                DiemHocTap = p.DiemHocTap,
+                DiemRenLuyen = p.DiemRenLuyen,
                 XepLoaiHB = p.XepLoaiHB,
                 TrangThai = p.TrangThai
             });

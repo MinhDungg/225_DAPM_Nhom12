@@ -162,7 +162,7 @@ const CTSVDashboard = () => {
                     >
                         {loading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                         {trangThai === 'ChoPheDuyet' ? 'ĐÃ TRÌNH BGH' :
-                         trangThai === 'ChinhThuc' ? 'ĐÃ CHỐT' : 'LẬP TỜ TRÌNH & TRÌNH BGH'}
+                            trangThai === 'ChinhThuc' ? 'ĐÃ CHỐT' : 'LẬP TỜ TRÌNH & TRÌNH BGH'}
                     </button>
                 </div>
             </div>
@@ -199,11 +199,11 @@ const CTSVDashboard = () => {
                     {trangThai && (
                         <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider
                             ${trangThai === 'ChinhThuc' ? 'bg-emerald-100 text-emerald-700' :
-                              trangThai === 'ChoPheDuyet' ? 'bg-amber-100 text-amber-700' :
-                              'bg-blue-100 text-blue-700'}`}>
+                                trangThai === 'ChoPheDuyet' ? 'bg-amber-100 text-amber-700' :
+                                    'bg-blue-100 text-blue-700'}`}>
                             {trangThai === 'ChinhThuc' ? 'Đã phê duyệt' :
-                             trangThai === 'ChoPheDuyet' ? 'Đang chờ BGH' :
-                             trangThai === 'DangXetDuyet' ? 'Đang xét duyệt' : trangThai}
+                                trangThai === 'ChoPheDuyet' ? 'Đang chờ BGH' :
+                                    trangThai === 'DangXetDuyet' ? 'Đang xét duyệt' : trangThai}
                         </span>
                     )}
                 </div>
@@ -240,8 +240,12 @@ const CTSVDashboard = () => {
                                             <div className="text-[10px] text-slate-400 uppercase font-bold">{item.tenKhoa}</div>
                                         </td>
                                         <td className="p-4 text-center">
-                                            <div className="font-black text-blue-600">{item.gpa}</div>
-                                            <div className="text-[10px] text-slate-400">HT: {item.diemHocTap}</div>
+                                            <div className="font-black text-blue-600">
+                                                {item.gpa ? Number(item.gpa).toFixed(2) : '0.00'}
+                                            </div>
+                                            <div className="text-[10px] text-slate-400">
+                                                HT: {item.diemHocTap ? Number(item.diemHocTap).toFixed(2) : '0.00'}
+                                            </div>
                                         </td>
                                         <td className="p-4 text-center font-bold text-slate-700">{item.diemRenLuyen}</td>
                                         <td className="p-4 text-center">
