@@ -5,7 +5,7 @@ import { toast } from 'react-toastify';
 import {
   Landmark, BookOpen, Calendar, ArrowLeft, Download,
   Upload, Loader2, AlertTriangle, CheckCircle, RefreshCw,
-  FileSpreadsheet, X,
+  FileSpreadsheet, X, FileUp,
 } from 'lucide-react';
 import kinhPhiService from '../../services/kinhPhiService.js';
 
@@ -127,7 +127,9 @@ const TaiChinhKinhPhi = () => {
 
   // Excel import
   const fileInputRef = useRef(null);
+  const tableRef = useRef(null);
   const [tenFile, setTenFile] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
 
   // Confirm modal
   const [showConfirm, setShowConfirm] = useState(false);
@@ -237,10 +239,9 @@ const TaiChinhKinhPhi = () => {
     toast.info(`Đã tải file mẫu: ${tenFileXuat}`);
   };
 
-  // ─── Excel import ─────────────────────────────────────────────────────────────
-  const xuLyChonFile = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // ─── Excel import (decoupled — accepts any File object) ─────────────────────
+  const xuLyImportExcel = useCallback((file) => {
+    if (!file || !selectedDot) return;
     setTenFile(file.name);
 
     const reader = new FileReader();
@@ -257,7 +258,6 @@ const TaiChinhKinhPhi = () => {
         if (hocKyFile === undefined || namHocFile === undefined) {
           toast.error('File không đúng cấu trúc: Thiếu HocKy (B1) hoặc NamHoc (B2).');
           setTenFile('');
-          e.target.value = '';
           return;
         }
 
@@ -271,7 +271,6 @@ const TaiChinhKinhPhi = () => {
             `Đợt: HK${selectedDot.hocKy} - ${selectedDot.namHoc}`
           );
           setTenFile('');
-          e.target.value = '';
           return;
         }
 
@@ -280,7 +279,6 @@ const TaiChinhKinhPhi = () => {
 
         if (dataRows.length === 0) {
           toast.warning('File không có dữ liệu Khoa.');
-          e.target.value = '';
           return;
         }
 
@@ -296,6 +294,11 @@ const TaiChinhKinhPhi = () => {
         }));
 
         toast.success(`Import thành công: ${dataRows.length} dòng dữ liệu.`);
+
+        // Auto-scroll to table after successful import
+        setTimeout(() => {
+          tableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
       } catch (err) {
         toast.error('Lỗi khi đọc file Excel. Vui lòng kiểm tra định dạng.');
         console.error(err);
@@ -303,7 +306,43 @@ const TaiChinhKinhPhi = () => {
       }
     };
     reader.readAsArrayBuffer(file);
+  }, [selectedDot]);
+
+  // ─── File input handler (delegates to xuLyImportExcel) ───────────────────────
+  const xuLyChonFile = (e) => {
+    const file = e.target.files?.[0];
+    if (file) xuLyImportExcel(file);
     e.target.value = '';
+  };
+
+  // ─── Drag & Drop handlers ─────────────────────────────────────────────────────
+  const onDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const onDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const onDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (!['xlsx', 'xls'].includes(ext)) {
+      toast.error('Chỉ chấp nhận file .xlsx hoặc .xls. Vui lòng thử lại.');
+      return;
+    }
+
+    xuLyImportExcel(file);
   };
 
   // ─── Submit ───────────────────────────────────────────────────────────────────
@@ -486,8 +525,37 @@ const TaiChinhKinhPhi = () => {
               )}
             </div>
 
+            {/* ── Drop Zone (only shown when not read-only and no file loaded) ── */}
+            {!isReadOnly && !dangTaiKhoa && (
+              <div
+                onDragOver={onDragOver}
+                onDragLeave={onDragLeave}
+                onDrop={onDrop}
+                onClick={() => fileInputRef.current?.click()}
+                className={`mb-4 shrink-0 border-2 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all duration-200 select-none ${
+                  isDragging
+                    ? 'bg-blue-50 border-blue-500'
+                    : 'bg-gray-50 border-gray-300 hover:bg-emerald-50 hover:border-emerald-400'
+                }`}
+              >
+                <FileUp
+                  className={`w-8 h-8 transition-colors ${
+                    isDragging ? 'text-blue-500 animate-bounce' : 'text-slate-400'
+                  }`}
+                />
+                <p className={`text-sm font-semibold transition-colors ${
+                  isDragging ? 'text-blue-600' : 'text-slate-500'
+                }`}>
+                  {isDragging
+                    ? 'Thả file vào đây...'
+                    : 'Kéo thả file Excel tại đây hoặc click để chọn file'}
+                </p>
+                <p className="text-xs text-slate-400">Chỉ chấp nhận .xlsx hoặc .xls</p>
+              </div>
+            )}
+
             {/* Editable Spreadsheet */}
-            <div className="flex-1 overflow-auto bg-white border border-gray-100 rounded-2xl shadow-sm">
+            <div ref={tableRef} className="flex-1 overflow-auto bg-white border border-gray-100 rounded-2xl shadow-sm">
               {dangTaiKhoa ? (
                 <div className="flex items-center justify-center py-20">
                   <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
