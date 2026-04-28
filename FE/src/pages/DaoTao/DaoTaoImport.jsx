@@ -468,6 +468,8 @@ const DaoTaoImport = () => {
                             ) : (
                               <span className="text-green-600 font-semibold">Không</span>
                             )
+                          ) : (h === 'GPA' || h === 'DiemHocTap') && val != null ? (
+                            Number(val).toLocaleString('vi-VN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                           ) : (
                             String(val ?? '')
                           )}
