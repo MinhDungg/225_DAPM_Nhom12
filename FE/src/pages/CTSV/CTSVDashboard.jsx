@@ -10,11 +10,9 @@ const CTSVDashboard = () => {
     });
     const [loading, setLoading] = useState(false);
 
-    // Quản lý đa đợt
     const [dsDotHocBong, setDsDotHocBong] = useState([]);
     const [selectedMaDot, setSelectedMaDot] = useState('');
 
-    // 1. Load danh sách đợt khi trang vừa mở
     useEffect(() => {
         const fetchDotHocBong = async () => {
             try {
@@ -30,7 +28,6 @@ const CTSVDashboard = () => {
         fetchDotHocBong();
     }, []);
 
-    // 2. Load dữ liệu khi chọn đợt
     useEffect(() => {
         if (selectedMaDot) {
             fetchData(selectedMaDot);
@@ -59,13 +56,11 @@ const CTSVDashboard = () => {
         }
     };
 
-    // 3. Trình lên BGH
     const handleTrinhBGH = async () => {
         if (!window.confirm('Bạn có chắc chắn muốn trình danh sách này lên Ban Giám Hiệu?')) return;
 
         setLoading(true);
         try {
-            // Kiểm tra khiếu nại
             const khieuNaiRes = await KhieuNaiService.layTatCaKhieuNai();
             if (khieuNaiRes.success) {
                 const chuaXuLy = khieuNaiRes.data.some(kn => kn.trangThai === 'ChoXuLy');
@@ -91,7 +86,6 @@ const CTSVDashboard = () => {
         }
     };
 
-    // 4. Xóa hồ sơ
     const handleXoaHoSo = async (maHoSo, hoTen) => {
         if (!window.confirm(`Bạn có chắc chắn muốn xóa hồ sơ của "${hoTen}" khỏi danh sách?`)) return;
 
@@ -114,33 +108,34 @@ const CTSVDashboard = () => {
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
-            {/* Header + Dropdown Chọn Đợt */}
-            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            {/* Header Control Panel */}
+            <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                 <div className="flex items-center gap-4">
-                    <div className="bg-indigo-100 p-3 rounded-2xl text-indigo-600">
-                        <Landmark size={28} />
+                    <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center shrink-0">
+                        <Landmark size={24} />
                     </div>
                     <div>
-                        <h2 className="text-xl font-black text-slate-800 uppercase">
+                        <h2 className="text-lg font-bold text-gray-900 leading-tight">
                             {data.thongTinDot.loaiDot || 'Chọn đợt học bổng'}
                         </h2>
-                        <p className="text-sm text-slate-500 font-bold">
-                            Học kỳ: {data.thongTinDot.hocKy} | Năm học: {data.thongTinDot.namHoc}
+                        <p className="text-sm text-gray-500 mt-0.5">
+                            Học kỳ: <span className="font-medium text-gray-700">{data.thongTinDot.hocKy || '-'}</span> |
+                            Năm học: <span className="font-medium text-gray-700">{data.thongTinDot.namHoc || '-'}</span>
                         </p>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                    {/* Dropdown chọn đợt */}
-                    <div className="flex items-center gap-2 bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-200">
-                        <CalendarClock size={18} className="text-blue-500" />
+                <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+                    {/* Dropdown chọn đợt - Giao diện Form Input chuẩn */}
+                    <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-gray-300 w-full lg:w-auto hover:border-blue-400 transition-colors focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-500">
+                        <CalendarClock size={16} className="text-gray-400" />
                         <select
                             value={selectedMaDot}
                             onChange={(e) => setSelectedMaDot(e.target.value)}
-                            className="bg-transparent outline-none font-bold text-slate-700 cursor-pointer pr-2 text-sm"
+                            className="bg-transparent border-none outline-none text-sm font-medium text-gray-700 w-full lg:min-w-[200px] cursor-pointer focus:ring-0 p-0"
                         >
                             {dsDotHocBong.length === 0 ? (
-                                <option value="">Đang tải...</option>
+                                <option value="">Đang tải dữ liệu...</option>
                             ) : (
                                 dsDotHocBong.map((dot) => (
                                     <option key={dot.maDot} value={dot.maDot}>
@@ -155,121 +150,128 @@ const CTSVDashboard = () => {
                     <button
                         onClick={handleTrinhBGH}
                         disabled={loading || isReadOnly || data.danhSachCho.length === 0}
-                        className={`px-5 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 text-sm
+                        className={`flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-colors w-full lg:w-auto
                             ${(loading || isReadOnly || data.danhSachCho.length === 0)
-                                ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                                : 'bg-indigo-600 text-white hover:shadow-lg hover:bg-indigo-700'}`}
+                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
+                                : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm border border-transparent'}`}
                     >
                         {loading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                         {trangThai === 'ChoPheDuyet' ? 'ĐÃ TRÌNH BGH' :
-                            trangThai === 'ChinhThuc' ? 'ĐÃ CHỐT' : 'LẬP TỜ TRÌNH & TRÌNH BGH'}
+                            trangThai === 'ChinhThuc' ? 'ĐÃ CHỐT' : 'TRÌNH BGH'}
                     </button>
                 </div>
             </div>
 
             {/* Thông báo Lý do trả về từ Hiệu trưởng */}
             {data.thongTinDot.lyDoTraVe && trangThai === 'DangXetDuyet' && (
-                <div className="bg-red-50 border border-red-200 rounded-2xl p-5 flex items-start gap-4">
-                    <div className="bg-red-100 p-2 rounded-xl text-red-600 mt-0.5">
-                        <AlertTriangle size={22} />
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+                    <div className="text-red-600 shrink-0 mt-0.5">
+                        <AlertTriangle size={20} />
                     </div>
                     <div>
-                        <h4 className="font-black text-red-800 text-sm uppercase tracking-wider mb-1">
-                            ⚠️ Hồ sơ bị trả lại từ Ban Giám Hiệu
+                        <h4 className="font-semibold text-red-800 text-sm mb-1">
+                            Hồ sơ bị trả lại từ Ban Giám Hiệu
                         </h4>
-                        <p className="text-red-700 font-medium text-sm">
-                            <strong>Lý do:</strong> {data.thongTinDot.lyDoTraVe}
+                        <p className="text-red-700 text-sm mb-1">
+                            <span className="font-medium">Lý do:</span> {data.thongTinDot.lyDoTraVe}
                         </p>
-                        <p className="text-red-500 text-xs mt-2">
-                            Vui lòng rà soát, chỉnh sửa hoặc xóa các hồ sơ không hợp lệ, sau đó trình lại.
+                        <p className="text-red-600/80 text-xs">
+                            Vui lòng rà soát, chỉnh sửa hoặc xóa các hồ sơ không hợp lệ, sau đó thực hiện trình lại.
                         </p>
                     </div>
                 </div>
             )}
 
-            {/* BẢNG DỮ LIỆU */}
-            <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
-                <div className="px-6 py-4 border-b border-slate-50 bg-slate-50/30 flex items-center justify-between">
+            {/* BẢNG DỮ LIỆU CHUẨN ADMIN */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                {/* Table Header Section */}
+                <div className="px-6 py-4 border-b border-gray-200 flex flex-wrap items-center justify-between gap-4">
                     <div className="flex items-center gap-2">
-                        <Info size={18} className="text-blue-500" />
-                        <h3 className="font-bold text-slate-700 text-sm uppercase tracking-wider">
-                            Danh sách Hội đồng đã duyệt ({data.danhSachCho.length} hồ sơ)
+                        <Info size={18} className="text-gray-400" />
+                        <h3 className="font-semibold text-gray-900 text-base">
+                            Danh sách Hội đồng đã duyệt
+                            <span className="ml-2 text-sm font-normal text-gray-500">
+                                ({data.danhSachCho.length} hồ sơ)
+                            </span>
                         </h3>
                     </div>
                     {trangThai && (
-                        <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider
-                            ${trangThai === 'ChinhThuc' ? 'bg-emerald-100 text-emerald-700' :
-                                trangThai === 'ChoPheDuyet' ? 'bg-amber-100 text-amber-700' :
-                                    'bg-blue-100 text-blue-700'}`}>
+                        <span className={`px-2.5 py-1 rounded-md text-xs font-medium border
+                            ${trangThai === 'ChinhThuc' ? 'bg-green-50 text-green-700 border-green-200' :
+                                trangThai === 'ChoPheDuyet' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                                    'bg-blue-50 text-blue-700 border-blue-200'}`}>
                             {trangThai === 'ChinhThuc' ? 'Đã phê duyệt' :
                                 trangThai === 'ChoPheDuyet' ? 'Đang chờ BGH' :
                                     trangThai === 'DangXetDuyet' ? 'Đang xét duyệt' : trangThai}
                         </span>
                     )}
                 </div>
+
+                {/* Table Data Section */}
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                        <thead className="bg-slate-50 text-[11px] font-black text-slate-400 uppercase tracking-widest">
+                    <table className="w-full text-left border-collapse whitespace-nowrap">
+                        <thead className="bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wider">
                             <tr>
-                                <th className="p-4">Mã SV / Họ Tên</th>
-                                <th className="p-4">Lớp / Khoa</th>
-                                <th className="p-4 text-center">GPA / Học Tập</th>
-                                <th className="p-4 text-center">Rèn Luyện</th>
-                                <th className="p-4 text-center">Điểm F</th>
-                                <th className="p-4">Xếp Loại</th>
-                                <th className="p-4 text-right">Số Tiền (VNĐ)</th>
-                                {!isReadOnly && <th className="p-4 text-center">Thao Tác</th>}
+                                <th className="px-6 py-3">Mã SV / Họ Tên</th>
+                                <th className="px-6 py-3">Lớp / Khoa</th>
+                                <th className="px-6 py-3 text-right">GPA</th>
+                                <th className="px-6 py-3 text-right">Học Tập</th>
+                                <th className="px-6 py-3 text-center">Rèn Luyện</th>
+                                <th className="px-6 py-3 text-center">Điểm F</th>
+                                <th className="px-6 py-3">Xếp Loại</th>
+                                <th className="px-6 py-3 text-right">Số Tiền (VNĐ)</th>
+                                {!isReadOnly && <th className="px-6 py-3 text-center">Thao Tác</th>}
                             </tr>
                         </thead>
-                        <tbody className="text-sm">
+                        <tbody className="text-sm text-gray-700 divide-y divide-gray-100">
                             {data.danhSachCho.length === 0 ? (
                                 <tr>
-                                    <td colSpan={isReadOnly ? 7 : 8} className="text-center p-8 text-slate-400 font-medium">
+                                    <td colSpan={isReadOnly ? 8 : 9} className="text-center py-12 text-gray-500">
                                         Chưa có hồ sơ nào được Hội đồng duyệt cho đợt này.
                                     </td>
                                 </tr>
                             ) : (
                                 data.danhSachCho.map((item) => (
-                                    <tr key={item.maHoSo} className="border-t border-slate-50 hover:bg-blue-50/30 transition-colors">
-                                        <td className="p-4">
-                                            <div className="font-bold text-slate-800">{item.maSV}</div>
-                                            <div className="text-xs text-slate-500">{item.hoTen}</div>
+                                    <tr key={item.maHoSo} className="hover:bg-gray-50 transition-colors">
+                                        <td className="px-6 py-4">
+                                            <div className="font-medium text-gray-900">{item.maSV}</div>
+                                            <div className="text-xs text-gray-500 mt-0.5">{item.hoTen}</div>
                                         </td>
-                                        <td className="p-4">
-                                            <div className="text-slate-700">{item.tenLop}</div>
-                                            <div className="text-[10px] text-slate-400 uppercase font-bold">{item.tenKhoa}</div>
+                                        <td className="px-6 py-4">
+                                            <div className="text-gray-700">{item.tenLop}</div>
+                                            <div className="text-xs text-gray-500 mt-0.5">{item.tenKhoa}</div>
                                         </td>
-                                        <td className="p-4 text-center">
-                                            <div className="font-black text-blue-600">
-                                                {item.gpa ? Number(item.gpa).toFixed(2) : '0.00'}
-                                            </div>
-                                            <div className="text-[10px] text-slate-400">
-                                                HT: {item.diemHocTap ? Number(item.diemHocTap).toFixed(2) : '0.00'}
-                                            </div>
+                                        <td className="px-6 py-4 text-right font-medium">
+                                            {item.gpa ? Number(item.gpa).toLocaleString('vi-VN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0,00'}
                                         </td>
-                                        <td className="p-4 text-center font-bold text-slate-700">{item.diemRenLuyen}</td>
-                                        <td className="p-4 text-center">
+                                        <td className="px-6 py-4 text-right font-medium text-gray-900">
+                                            {item.diemHocTap ? Number(item.diemHocTap).toLocaleString('vi-VN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0,00'}
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            {item.diemRenLuyen}
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
                                             {item.coDiemF ?
-                                                <span className="text-red-500 font-black">CÓ</span> :
-                                                <span className="text-slate-300">Không</span>
+                                                <span className="text-red-600 font-medium">Có</span> :
+                                                <span className="text-gray-400">-</span>
                                             }
                                         </td>
-                                        <td className="p-4">
-                                            <span className="bg-emerald-50 text-emerald-700 px-2 py-1 rounded-lg text-[11px] font-black uppercase">
+                                        <td className="px-6 py-4">
+                                            <span className="bg-gray-100 text-gray-700 px-2.5 py-1 rounded-md text-xs font-medium">
                                                 {item.xepLoaiHB}
                                             </span>
                                         </td>
-                                        <td className="p-4 text-right font-black text-slate-800">
+                                        <td className="px-6 py-4 text-right font-medium text-gray-900">
                                             {item.soTien?.toLocaleString('vi-VN')}
                                         </td>
                                         {!isReadOnly && (
-                                            <td className="p-4 text-center">
+                                            <td className="px-6 py-4 text-center">
                                                 <button
                                                     onClick={() => handleXoaHoSo(item.maHoSo, item.hoTen)}
-                                                    className="text-red-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg transition-all"
-                                                    title="Xóa hồ sơ này"
+                                                    className="text-gray-400 hover:text-red-600 p-1.5 rounded-md hover:bg-red-50 transition-colors"
+                                                    title="Xóa hồ sơ"
                                                 >
-                                                    <Trash2 size={16} />
+                                                    <Trash2 size={18} />
                                                 </button>
                                             </td>
                                         )}

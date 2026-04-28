@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { ShieldCheck, UserX, CheckCircle, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { ShieldCheck, UserX, CheckCircle, AlertTriangle, Users, GraduationCap, Award } from 'lucide-react';
 import finalDecisionService from '../../services/finalDecisionService';
 import { useSelection } from '../../utils/useSelection';
 
@@ -11,15 +11,13 @@ const HDXDDashboard = () => {
     // 1. Khởi tạo Hook quản lý Checkbox
     const { selectedIds, toggleSelection, selectAll, clearSelection, isAllSelected } = useSelection(hoSos);
 
-    // 2. Load dữ liệu từ Backend khi mở trang
+    // 2. Load dữ liệu
     const fetchHoSo = async () => {
         try {
             const res = await finalDecisionService.getTongHopToanTruong();
             if (res.success) {
                 setHoSos(res.data);
-                // Tích chọn sẵn tất cả sinh viên
                 const allIds = res.data.map(hs => hs.maHoSo);
-                // Trick nhỏ gọi hàm tự động
                 if (allIds.length > 0 && selectedIds.length === 0) {
                     allIds.forEach(id => toggleSelection(id));
                 }
@@ -33,117 +31,215 @@ const HDXDDashboard = () => {
         fetchHoSo();
     }, []);
 
-    // 3. Hàm gửi danh sách ID lên BE để duyệt
+    // 3. Hàm gửi danh sách
     const handleApprove = async () => {
         if (selectedIds.length === 0) return alert("Vui lòng chọn ít nhất 1 sinh viên!");
         try {
             const res = await finalDecisionService.hoiDongXetChon(selectedIds);
             if (res.success) {
                 alert("Đã chốt danh sách dự kiến thành công!");
-                fetchHoSo(); // Load lại bảng
+                fetchHoSo();
             }
         } catch (error) {
             alert(error.message);
         }
     };
 
+    // 4. Tính toán thống kê nhanh (Làm dữ liệu đỡ nhàm chán)
+    const stats = useMemo(() => {
+        if (!hoSos.length) return { total: 0, selected: 0, avgGpa: 0, xuatSac: 0 };
+        const avg = hoSos.reduce((sum, hs) => sum + (Number(hs.gpa) || 0), 0) / hoSos.length;
+        const xuatSac = hoSos.filter(hs => hs.xepLoaiHB === 'Xuất sắc' || hs.xepLoaiHB === 'XuatSac').length;
+        return {
+            total: hoSos.length,
+            selected: selectedIds.length,
+            avgGpa: avg.toFixed(2),
+            xuatSac
+        };
+    }, [hoSos, selectedIds]);
+
     return (
-        <div className="space-y-8 animate-fade-in">
-            <div className="flex justify-between items-center">
+        <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500">
+            {/* Header Section */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
                 <div>
-                    <h2 className="text-3xl font-extrabold text-gray-900">Hội đồng Xét duyệt</h2>
-                    <p className="text-gray-500 mt-1">Thẩm định danh sách và phê duyệt kết quả cuối cùng.</p>
+                    <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                        <ShieldCheck className="text-blue-600" size={24} />
+                        Hội đồng Xét duyệt
+                    </h2>
+                    <p className="text-sm text-gray-500 mt-1">
+                        Thẩm định danh sách đề xuất và phê duyệt kết quả học bổng cuối cùng.
+                    </p>
                 </div>
                 <button
                     onClick={handleApprove}
-                    className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-xl font-bold shadow-lg transition-all flex items-center gap-2"
+                    disabled={selectedIds.length === 0}
+                    className={`flex items-center gap-2 px-6 py-2.5 rounded-lg font-medium text-sm transition-all shadow-sm
+                        ${selectedIds.length === 0
+                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
+                            : 'bg-green-600 hover:bg-green-700 text-white border border-transparent'}`}
                 >
-                    <CheckCircle size={20} /> Chốt danh sách duyệt ({selectedIds.length} SV)
+                    <CheckCircle size={18} />
+                    Chốt danh sách ({selectedIds.length})
                 </button>
             </div>
 
-            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-                <table className="w-full text-left border-collapse">
-                    <thead>
-                        <tr className="bg-gray-50/50 border-b border-gray-100">
-                            <th className="p-6 text-center w-16">
-                                <input
-                                    type="checkbox"
-                                    className="w-5 h-5 cursor-pointer rounded border-gray-300"
-                                    checked={isAllSelected}
-                                    onChange={isAllSelected ? clearSelection : selectAll}
-                                />
-                            </th>
-                            <th className="p-6 font-bold text-gray-700 text-sm uppercase">Sinh viên</th>
-                            <th className="p-6 font-bold text-gray-700 text-sm uppercase text-center">GPA / ĐRL</th>
-                            <th className="p-6 font-bold text-gray-700 text-sm uppercase text-center">Xếp Loại</th>
-                            <th className="p-6 font-bold text-gray-700 text-sm uppercase text-center">Thao tác</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50">
-                        {hoSos.length === 0 ? (
-                            <tr><td colSpan="5" className="p-6 text-center text-gray-500">Chưa có hồ sơ chờ duyệt</td></tr>
-                        ) : (
-                            hoSos.map((hs) => (
-                                <tr key={hs.maHoSo} className="hover:bg-blue-50/20 transition-colors">
-                                    <td className="p-6 text-center">
-                                        <input
-                                            type="checkbox"
-                                            className="w-5 h-5 cursor-pointer rounded border-gray-300"
-                                            checked={selectedIds.includes(hs.maHoSo)}
-                                            onChange={() => toggleSelection(hs.maHoSo)}
-                                        />
-                                    </td>
-                                    <td className="p-6">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-blue-700 font-bold">SV</div>
-                                            <div>
-                                                <p className="font-bold text-gray-900 text-base">{hs.hoTen}</p>
-                                                <p className="text-xs text-gray-500 font-medium">MSSV: {hs.maSV} - Lớp: {hs.tenLop}</p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="p-6 text-center">
-                                        <span className="font-bold text-gray-800">{Number(hs.gpa).toFixed(2)}</span> <span className="text-gray-400">/</span> <span className="font-bold text-gray-800">{hs.diemRenLuyen || 0}</span>
-                                    </td>
+            {/* Quick Stats Overview - Điểm nhấn UI */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
+                        <Users size={20} />
+                    </div>
+                    <div>
+                        <p className="text-sm font-medium text-gray-500">Tổng hồ sơ trình</p>
+                        <h3 className="text-2xl font-bold text-gray-900">{stats.total}</h3>
+                    </div>
+                </div>
 
-                                    <td className="p-6 text-center">
-                                        <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold">{hs.xepLoaiHB}</span>
-                                    </td>
-                                    <td className="p-6">
-                                        <div className="flex justify-center gap-3">
-                                            <button onClick={() => {
-                                                setSelectedStudentToReject(hs);
-                                                setShowModal(true);
-                                            }} className="p-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition-all shadow-sm">
-                                                <UserX size={18} />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
+                <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">
+                        <CheckCircle size={20} />
+                    </div>
+                    <div>
+                        <p className="text-sm font-medium text-gray-500">Đang chọn duyệt</p>
+                        <h3 className="text-2xl font-bold text-gray-900">{stats.selected}</h3>
+                    </div>
+                </div>
+
+                <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
+                        <GraduationCap size={20} />
+                    </div>
+                    <div>
+                        <p className="text-sm font-medium text-gray-500">GPA Trung bình</p>
+                        <h3 className="text-2xl font-bold text-gray-900">{stats.avgGpa}</h3>
+                    </div>
+                </div>
+
+                <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center text-amber-500 shrink-0">
+                        <Award size={20} />
+                    </div>
+                    <div>
+                        <p className="text-sm font-medium text-gray-500">Loại Xuất sắc</p>
+                        <h3 className="text-2xl font-bold text-gray-900">{stats.xuatSac}</h3>
+                    </div>
+                </div>
             </div>
 
-            {/* Modal cảnh báo loại SV */}
+            {/* Bảng Dữ Liệu */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse whitespace-nowrap">
+                        <thead className="bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <tr>
+                                <th className="px-6 py-4 text-center w-16">
+                                    <input
+                                        type="checkbox"
+                                        className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                                        checked={isAllSelected && hoSos.length > 0}
+                                        onChange={isAllSelected ? clearSelection : selectAll}
+                                    />
+                                </th>
+                                <th className="px-6 py-4">Sinh viên</th>
+                                <th className="px-6 py-4 text-right">GPA</th>
+                                <th className="px-6 py-4 text-right">Đ. Rèn luyện</th>
+                                <th className="px-6 py-4 text-center">Xếp Loại</th>
+                                <th className="px-6 py-4 text-center">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100 text-sm text-gray-700">
+                            {hoSos.length === 0 ? (
+                                <tr>
+                                    <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
+                                        Không có dữ liệu hồ sơ chờ duyệt.
+                                    </td>
+                                </tr>
+                            ) : (
+                                hoSos.map((hs) => (
+                                    <tr key={hs.maHoSo} className="hover:bg-gray-50 transition-colors">
+                                        <td className="px-6 py-4 text-center">
+                                            <input
+                                                type="checkbox"
+                                                className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                                                checked={selectedIds.includes(hs.maHoSo)}
+                                                onChange={() => toggleSelection(hs.maHoSo)}
+                                            />
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center font-medium text-xs shrink-0">
+                                                    SV
+                                                </div>
+                                                <div>
+                                                    <p className="font-medium text-gray-900">{hs.hoTen}</p>
+                                                    <p className="text-xs text-gray-500 mt-0.5">{hs.maSV} • Lớp {hs.tenLop}</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-right font-medium text-gray-900">
+                                            {hs.gpa != null ? Number(hs.gpa).toFixed(2) : '0.00'}
+                                        </td>
+                                        <td className="px-6 py-4 text-right font-medium text-gray-900">
+                                            {hs.diemRenLuyen || 0}
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-700">
+                                                {hs.xepLoaiHB}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedStudentToReject(hs);
+                                                    setShowModal(true);
+                                                }}
+                                                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                                                title="Loại khỏi danh sách"
+                                            >
+                                                <UserX size={18} />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {/* Modal cảnh báo chuẩn Enterprise */}
             {showModal && (
-                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8">
-                        <div className="bg-red-50 w-16 h-16 rounded-2xl flex items-center justify-center text-red-600 mb-6">
-                            <AlertTriangle size={32} />
-                        </div>
-                        <h3 className="text-2xl font-bold text-gray-900">Loại bỏ sinh viên?</h3>
-                        <p className="text-gray-500 mt-2">Bạn có chắc muốn bỏ chọn SV <b>{selectedStudentToReject?.hoTen}</b> khỏi danh sách duyệt không?</p>
-                        <div className="flex gap-4 mt-8">
-                            <button onClick={() => setShowModal(false)} className="flex-1 py-3 font-bold text-gray-500 hover:bg-gray-100 rounded-xl transition-all">Hủy</button>
-                            <button onClick={() => {
-                                if (selectedIds.includes(selectedStudentToReject.maHoSo)) {
-                                    toggleSelection(selectedStudentToReject.maHoSo);
-                                }
-                                setShowModal(false);
-                            }} className="flex-1 py-3 font-bold bg-red-600 text-white rounded-xl shadow-md hover:bg-red-700 transition-all">Xác nhận bỏ chọn</button>
+                <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-xl shadow-lg max-w-sm w-full p-6 animate-in zoom-in-95 duration-200">
+                        <div className="flex flex-col items-center text-center">
+                            <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center text-red-600 mb-4">
+                                <AlertTriangle size={24} />
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-900 mb-1">Loại bỏ sinh viên?</h3>
+                            <p className="text-sm text-gray-500 mb-6">
+                                Bỏ chọn sinh viên <span className="font-semibold text-gray-700">{selectedStudentToReject?.hoTen}</span> khỏi danh sách phê duyệt hiện tại?
+                            </p>
+
+                            <div className="flex gap-3 w-full">
+                                <button
+                                    onClick={() => setShowModal(false)}
+                                    className="flex-1 py-2 px-4 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                                >
+                                    Hủy bỏ
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        if (selectedIds.includes(selectedStudentToReject.maHoSo)) {
+                                            toggleSelection(selectedStudentToReject.maHoSo);
+                                        }
+                                        setShowModal(false);
+                                    }}
+                                    className="flex-1 py-2 px-4 bg-red-600 rounded-lg text-sm font-medium text-white hover:bg-red-700 border border-transparent transition-colors"
+                                >
+                                    Xác nhận bỏ
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

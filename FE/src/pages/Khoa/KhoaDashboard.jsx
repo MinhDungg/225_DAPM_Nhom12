@@ -317,7 +317,7 @@ const KhoaDashboard = () => {
                                         <td className="p-4 font-semibold text-gray-800">{hs.maSV}</td>
                                         <td className="p-4">{hs.hoTenSinhVien}</td>
                                         <td className="p-4 text-center">{hs.tenLop}</td>
-                                        <td className="p-4 text-center font-bold text-blue-600">{hs.gpa}</td>
+                                        <td className="p-4 text-center font-bold text-blue-600">{hs.gpa != null ? Number(hs.gpa).toLocaleString('vi-VN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}</td>
                                         <td className="p-4 text-center font-bold text-green-600">{hs.diemRenLuyen}</td>
                                         <td className="p-4 text-center">
                                             <span className="px-3 py-1 rounded-full text-xs font-bold bg-yellow-100 text-yellow-700">
@@ -370,7 +370,7 @@ const KhoaDashboard = () => {
                                         <td className="p-4">{sv.hoTen}</td>
                                         <td className="p-4 text-center">{sv.tenLop}</td>
                                         <td className="p-4 text-center">
-                                            <span className="font-bold text-blue-600">{sv.gpa}</span>
+                                            <span className="font-bold text-blue-600">{sv.gpa != null ? Number(sv.gpa).toLocaleString('vi-VN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}</span>
                                             <span className="text-gray-400"> / </span>
                                             <span className="font-bold text-green-600">{sv.diemRenLuyen}</span>
                                         </td>

@@ -158,8 +158,8 @@ const DanhSachUngVienView = ({ dot, onBack }) => {
                     <td className="px-4 py-2.5 text-gray-400 font-mono text-xs">{idx + 1}</td>
                     <td className="px-4 py-2.5 font-mono text-xs text-slate-600 whitespace-nowrap">{uv.maSV}</td>
                     <td className="px-4 py-2.5 font-medium text-slate-800 whitespace-nowrap">{uv.hoTen}</td>
-                    <td className="px-4 py-2.5 text-slate-700">{uv.gpa?.toFixed(2)}</td>
-                    <td className="px-4 py-2.5 text-slate-700">{uv.diemHocTap?.toFixed(2)}</td>
+                    <td className="px-4 py-2.5 text-slate-700">{uv.gpa != null ? Number(uv.gpa).toLocaleString('vi-VN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}</td>
+                    <td className="px-4 py-2.5 text-slate-700">{uv.diemHocTap != null ? Number(uv.diemHocTap).toLocaleString('vi-VN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}</td>
                     <td className="px-4 py-2.5 text-slate-700">{uv.diemRenLuyen}</td>
                     <td className="px-4 py-2.5">
                       <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${badge.cls}`}>
