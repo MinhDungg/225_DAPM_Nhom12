@@ -14,5 +14,9 @@ namespace BE.Services.Interfaces
         Task<BaseResponse<bool>> TraHoSoAsync(int maDot, string lyDo);
         // Thêm tham số bool isHieuTruong
         Task<TongHopHieuTruongResponseDTO?> GetToTrinhHieuTruongAsync(int maDot, bool isHieuTruong);
+        Task<BaseResponse<bool>> CongBoLayYKienAsync(int maDot);
+        Task<BaseResponse<bool>> TuaNhanhThoiGianDemoAsync(int maDot);
+        Task<BaseResponse<bool>> TuChoiHoSoAsync(int maHoSo, string lyDo);
+
     }
 }

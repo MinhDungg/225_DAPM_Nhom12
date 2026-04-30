@@ -160,5 +160,30 @@ namespace BE.Controllers
 
             return Ok(result);
         }
+
+        [HttpPost("cong-bo-lay-y-kien/{maDot}")]
+        // [Authorize(Roles = "CTSV")] // Bỏ comment nếu dự án có dùng Authorize
+        public async Task<IActionResult> CongBoLayYKien(int maDot)
+        {
+            var result = await _service.CongBoLayYKienAsync(maDot);
+            if (result.Success) return Ok(result);
+            return BadRequest(result);
+        }
+
+        [HttpPut("tua-nhanh-demo/{maDot}")]
+        // [Authorize(Roles = "CTSV")]
+        public async Task<IActionResult> TuaNhanhDemo(int maDot)
+        {
+            var result = await _service.TuaNhanhThoiGianDemoAsync(maDot);
+            if (result.Success) return Ok(result);
+            return BadRequest(result);
+        }
+        [HttpPut("tu-choi-ho-so/{maHoSo}")]
+        public async Task<IActionResult> TuChoiHoSo(int maHoSo, [FromBody] string lyDo)
+        {
+            var result = await _service.TuChoiHoSoAsync(maHoSo, lyDo);
+            if (result.Success) return Ok(result);
+            return BadRequest(result);
+        }
     }
 }

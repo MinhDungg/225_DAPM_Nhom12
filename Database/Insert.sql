@@ -203,3 +203,22 @@ INSERT INTO [DOTHOCBONG] (LoaiDot, HocKy, NamHoc, TrangThai) VALUES
 -- ('23115053122104', @MaDot, GETDATE(), 3.6, 8.8, 88, NULL, 'ChoXet', NULL, NULL),
 -- ('23115053122105', @MaDot, GETDATE(), 3.9, 9.5, 92, NULL, 'ChoXet', NULL, NULL);
 -- GO
+
+DELETE FROM HOSOXETHOCBONG;
+GO
+
+INSERT INTO HOSOXETHOCBONG 
+    (MaSV, MaDot, NgayNop, DiemHocTap, GPA, DiemRenLuyen, XepLoaiHB, TrangThai, GhiChu, MaCB_Duyet)
+VALUES
+-- Xuất sắc
+('23115053122101', 1, '2024-02-10', 9.5, 3.8, 95, N'Xuất sắc', 'KhoaDeXuat', NULL, NULL),
+-- Giỏi
+('23115053122102', 1, '2024-02-10', 8.8, 3.4, 88, N'Giỏi',     'KhoaDeXuat', NULL, NULL),
+-- Giỏi
+('23115053122104', 1, '2024-02-10', 8.5, 3.2, 85, N'Giỏi',     'KhoaDeXuat', NULL, NULL),
+-- Khá
+('23115053122103', 1, '2024-02-10', 8.0, 3.0, 80, N'Khá',      'KhoaDeXuat', NULL, NULL),
+-- Khá
+('23115053122105', 1, '2024-02-10', 7.8, 2.9, 78, N'Khá',      'KhoaDeXuat', NULL, NULL);
+('23115053122109', 1, '2024-02-10', 7.8, 2.9, 78, N'Khá',      'KhoaDeXuat', NULL, NULL);
+GO

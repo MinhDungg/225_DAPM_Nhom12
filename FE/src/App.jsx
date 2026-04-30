@@ -18,6 +18,8 @@ import TaoDotHocBong from './pages/CTSV/TaoDotHocBong.jsx';
 import DaoTaoImport from './pages/DaoTao/DaoTaoImport.jsx';
 import DaoTaoDanhSachDot from './pages/DaoTao/DaoTaoDanhSachDot.jsx';
 import TaiChinhKinhPhi from './pages/TaiChinh/TaiChinhKinhPhi.jsx';
+import XetChonSinhVien from './pages/HDXD/XetChonSinhVien.jsx';
+import XemMinhChung from './pages/HDXD/XemMinhChung.jsx';
 
 function App() {
   const [role, setRole] = useState('SinhVien');
@@ -35,6 +37,8 @@ function App() {
           <Route path="ctsv" element={<CTSVDashboard />} />
           <Route path="dao-tao" element={<DaoTaoDashboard />} />
           <Route path="hdxd" element={<HDXDDashboard />} />
+          <Route path="hdxd/xet-chon" element={<XetChonSinhVien />} />
+          <Route path="hdxd/minh-chung" element={<XemMinhChung />} />
           <Route path="khoa" element={<KhoaDashboard />} />
           <Route path="tai-chinh" element={<TaiChinhDashboard />} />
           <Route path="hieu-truong" element={<HieuTruongDashboard />} />
