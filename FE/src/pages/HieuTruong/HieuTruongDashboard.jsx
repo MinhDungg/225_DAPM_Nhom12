@@ -209,32 +209,52 @@ const HieuTruongDashboard = () => {
                         {showList && (
                             <div className="overflow-hidden rounded-2xl border border-slate-200 shadow-sm animate-in slide-in-from-top-4">
                                 <table className="w-full text-left bg-white">
-                                    <thead className="bg-slate-50 border-b border-slate-200">
-                                        <tr className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                                            <th className="p-4">MSSV</th>
-                                            <th className="p-4">Họ và Tên</th>
-                                            <th className="p-4 text-center">GPA</th>
-                                            <th className="p-4 text-center">Điểm RL</th>
-                                            <th className="p-4 text-center">Xếp loại</th>
+                                    <thead className="bg-slate-50 text-[11px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-200">
+                                        <tr>
+                                            <th className="p-4">Mã SV / Họ Tên</th>
+                                            <th className="p-4">Lớp / Khoa</th>
+                                            <th className="p-4 text-center">GPA / Học Tập</th>
+                                            <th className="p-4 text-center">Rèn Luyện</th>
+                                            <th className="p-4 text-center">Điểm F</th>
+                                            <th className="p-4">Xếp Loại</th>
+                                            <th className="p-4 text-right">Số Tiền (VNĐ)</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
                                         {data.danhSach.length === 0 ? (
-                                            <tr><td colSpan="5" className="text-center p-4 text-slate-500">Chưa có sinh viên nào.</td></tr>
+                                            <tr><td colSpan="7" className="text-center p-4 text-slate-500">Chưa có sinh viên nào.</td></tr>
                                         ) : (
                                             data.danhSach.map((sv) => (
                                                 <tr key={sv.maHoSo} className="hover:bg-slate-50/50 transition-colors text-sm text-slate-700 font-medium">
-                                                    <td className="p-4 text-slate-500">{sv.maSV}</td>
-                                                    <td className="p-4 font-bold text-slate-900">{sv.hoTen}</td>
-                                                    <td className="p-4 text-center">{sv.gpa?.toFixed(2)}</td>
-                                                    <td className="p-4 text-center">{sv.diemRenLuyen}</td>
+                                                    <td className="p-4">
+                                                        <div className="font-bold text-slate-800">{sv.maSV}</div>
+                                                        <div className="text-xs text-slate-500">{sv.hoTen}</div>
+                                                    </td>
+                                                    <td className="p-4">
+                                                        <div className="text-slate-700">{sv.tenLop}</div>
+                                                        <div className="text-[10px] text-slate-400 uppercase font-bold">{sv.tenKhoa}</div>
+                                                    </td>
                                                     <td className="p-4 text-center">
-                                                        <span className={`px-3 py-1.5 rounded-lg text-xs font-bold ${sv.xepLoaiHB === 'Xuất sắc' ? 'bg-amber-100 text-amber-700' :
+                                                        <div className="font-black text-blue-600">{sv.gpa != null ? Number(sv.gpa).toLocaleString('vi-VN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}</div>
+                                                        <div className="text-[10px] text-slate-400">HT: {sv.diemHocTap != null ? Number(sv.diemHocTap).toLocaleString('vi-VN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}</div>
+                                                    </td>
+                                                    <td className="p-4 text-center font-bold text-slate-700">{sv.diemRenLuyen}</td>
+                                                    <td className="p-4 text-center">
+                                                        {sv.coDiemF ?
+                                                            <span className="text-red-500 font-black">CÓ</span> :
+                                                            <span className="text-slate-300">Không</span>
+                                                        }
+                                                    </td>
+                                                    <td className="p-4">
+                                                        <span className={`px-2 py-1.5 rounded-lg text-[11px] font-black uppercase ${sv.xepLoaiHB === 'Xuất sắc' ? 'bg-amber-100 text-amber-700' :
                                                                 sv.xepLoaiHB === 'Giỏi' ? 'bg-blue-100 text-blue-700' :
                                                                     'bg-slate-100 text-slate-700'
                                                             }`}>
                                                             {sv.xepLoaiHB || 'Chưa xét'}
                                                         </span>
+                                                    </td>
+                                                    <td className="p-4 text-right font-black text-slate-800">
+                                                        {sv.soTien?.toLocaleString('vi-VN')}
                                                     </td>
                                                 </tr>
                                             ))

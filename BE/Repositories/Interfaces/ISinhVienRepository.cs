@@ -8,5 +8,7 @@ public interface ISinhVienRepository
     /// Trả về danh sách { MaSV, HoTen } cho các mã SV tồn tại trong DB.
     /// </summary>
     Task<List<(string MaSV, string HoTen)>> LayDanhSachTheoMaSVAsync(IEnumerable<string> danhSachMaSV);
+
+    Task<BE.DTOs.Response.SinhVienProfileDTO?> GetProfileAsync(string maSV);
 }
 

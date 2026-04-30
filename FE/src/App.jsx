@@ -7,6 +7,7 @@ import { KhieuNaiSinhVien, KhieuNaiQuanLy } from './pages';
 import {
   Login,
   StudentDashboard,
+  StudentProfile,
   CTSVDashboard,
   DaoTaoDashboard,
   HDXDDashboard,
@@ -34,6 +35,7 @@ function App() {
 
           {/* Trang Dashboard chính của từng Role */}
           <Route path="sinh-vien" element={<StudentDashboard />} />
+          <Route path="sinh-vien/ho-so" element={<StudentProfile />} />
           <Route path="ctsv" element={<CTSVDashboard />} />
           <Route path="dao-tao" element={<DaoTaoDashboard />} />
           <Route path="hdxd" element={<HDXDDashboard />} />
