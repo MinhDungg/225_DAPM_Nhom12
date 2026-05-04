@@ -5,6 +5,7 @@ using BE.Services.Interfaces;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 
 namespace BE.Services.Implementations
 {
@@ -14,17 +15,19 @@ namespace BE.Services.Implementations
         private readonly IDotHocBongRepository _dotHocBongRepository;
         private readonly IPhanBoKinhPhiRepository _phanBoKinhPhiRepository;
         private readonly IDiemRenLuyenRepository _diemRenLuyenRepository;
-
+        private readonly IConfiguration _configuration;
         public FinalDecisionService(
             IHoSoXetHocBongRepository hoSoRepository,
             IDotHocBongRepository dotHocBongRepository,
             IPhanBoKinhPhiRepository phanBoKinhPhiRepository,
-            IDiemRenLuyenRepository diemRenLuyenRepository)
+            IDiemRenLuyenRepository diemRenLuyenRepository,
+            IConfiguration configuration)
         {
             _hoSoRepository = hoSoRepository;
             _dotHocBongRepository = dotHocBongRepository;
             _phanBoKinhPhiRepository = phanBoKinhPhiRepository;
             _diemRenLuyenRepository = diemRenLuyenRepository;
+            _configuration = configuration;
         }
 
         // Tổng hợp dữ liệu từ Khoa đề xuất
@@ -63,21 +66,44 @@ namespace BE.Services.Implementations
 
         // CTSV lập tờ trình lên Hiệu trưởng
         public async Task<BaseResponse<bool>> CTSVTrinhHieuTruongAsync(int maDot)
+{
+    var dot = await _dotHocBongRepository.LayTheoIdAsync(maDot);
+    if (dot == null) return new BaseResponse<bool> { Success = false, Message = "Không tìm thấy đợt học bổng." };
+
+    // --- ĐOẠN CODE KIỂM TRA 10 NGÀY BẮT ĐẦU TỪ ĐÂY ---
+    // (Lưu ý: Bạn phải thêm thuộc tính public DateTime? NgayCongBo { get; set; } vào file BE/Models/DotHocBong.cs trước nhé)
+    
+    bool isDemoMode = _configuration.GetValue<bool>("AppSettings:IsDemoMode");
+
+    if (dot.TrangThai == "CongBoLayYKien" && dot.NgayCongBo.HasValue)
+    {
+        var soNgayDaQua = (DateTime.Now - dot.NgayCongBo.Value).TotalDays;
+        
+        // Nếu không phải Demo và chưa đủ 10 ngày thì chặn lại
+        if (!isDemoMode && soNgayDaQua < 10)
         {
-            var dot = await _dotHocBongRepository.LayTheoIdAsync(maDot);
-            if (dot == null) return new BaseResponse<bool> { Success = false, Message = "Không tìm thấy đợt học bổng." };
-
-            var hoSos = await _hoSoRepository.GetProfilesByStatusAsync("HoiDongDuyet");
-            if (!hoSos.Any(h => h.MaDot == maDot))
-            {
-                return new BaseResponse<bool> { Success = false, Message = "Chưa có hồ sơ nào được Hội đồng duyệt để trình lên." };
-            }
-
-            dot.TrangThai = "ChoPheDuyet";
-            await _dotHocBongRepository.UpdateAsync(dot);
-
-            return new BaseResponse<bool> { Success = true, Message = "Đã khóa danh sách và gửi Tờ trình lên Ban Giám Hiệu.", Data = true };
+            return new BaseResponse<bool> { Success = false, Message = $"Chưa hết thời hạn 10 ngày lấy ý kiến. (Mới trôi qua {Math.Round(soNgayDaQua, 1)} ngày)." };
         }
+    }
+    else if (dot.TrangThai != "CongBoLayYKien")
+    {
+        // Chưa được công bố thì không cho trình
+        return new BaseResponse<bool> { Success = false, Message = "Đợt này chưa được công bố lấy ý kiến sinh viên." };
+    }
+    // --- KẾT THÚC ĐOẠN CODE KIỂM TRA ---
+
+    var hoSos = await _hoSoRepository.GetProfilesByStatusAsync("HoiDongDuyet"); // Hoặc Get theo CongBoLayYKien tuỳ logic của bạn
+    if (!hoSos.Any(h => h.MaDot == maDot))
+    {
+        return new BaseResponse<bool> { Success = false, Message = "Chưa có hồ sơ nào được duyệt để trình lên." };
+    }
+
+    dot.TrangThai = "ChoPheDuyet";
+    await _dotHocBongRepository.UpdateAsync(dot);
+
+    return new BaseResponse<bool> { Success = true, Message = "Đã khóa danh sách và gửi Tờ trình lên Ban Giám Hiệu.", Data = true };
+}
+
 
         // Lấy dữ liệu Tờ trình cho Hiệu Trưởng xem
         public async Task<TongHopHieuTruongResponseDTO?> GetToTrinhHieuTruongAsync(int maDot, bool isHieuTruong)
@@ -194,5 +220,54 @@ namespace BE.Services.Implementations
 
             return new BaseResponse<bool> { Success = true, Message = "Xóa hồ sơ thành công.", Data = true };
         }
+        // 1. Hàm công bố danh sách
+    public async Task<BaseResponse<bool>> CongBoLayYKienAsync(int maDot)
+    {
+        var dot = await _dotHocBongRepository.LayTheoIdAsync(maDot);
+        if (dot == null) return new BaseResponse<bool> { Success = false, Message = "Không tìm thấy đợt." };
+
+        if (dot.TrangThai != "HoiDongDuyet")
+        {
+            return new BaseResponse<bool> { Success = false, Message = "Hội đồng chưa chốt danh sách, không thể công bố." };
+    }
+    
+        dot.TrangThai = "CongBoLayYKien"; 
+        dot.NgayCongBo = DateTime.Now; // Bắt đầu tính giờ
+        await _dotHocBongRepository.UpdateAsync(dot);
+
+        return new BaseResponse<bool> { Success = true, Message = "Đã công bố danh sách cho Sinh viên phản hồi trong 10 ngày.", Data = true };
+    }
+
+    // 2. Hàm Tua nhanh thời gian cho Demo
+    public async Task<BaseResponse<bool>> TuaNhanhThoiGianDemoAsync(int maDot)
+    {
+        var dot = await _dotHocBongRepository.LayTheoIdAsync(maDot);
+        if (dot == null || !dot.NgayCongBo.HasValue) 
+        {
+            return new BaseResponse<bool> { Success = false, Message = "Chưa công bố nên không thể tua thời gian." };
+        }
+
+        dot.NgayCongBo = dot.NgayCongBo.Value.AddDays(-11);
+        await _dotHocBongRepository.UpdateAsync(dot);
+
+        return new BaseResponse<bool> { Success = true, Message = "Đã tua nhanh qua 10 ngày để Demo!", Data = true };
+    }
+    public async Task<BaseResponse<bool>> TuChoiHoSoAsync(int maHoSo, string lyDo)
+    {
+        var hoSo = await _hoSoRepository.GetByIdAsync(maHoSo);
+        if (hoSo == null) return new BaseResponse<bool> { Success = false, Message = "Không tìm thấy hồ sơ." };
+
+        if (string.IsNullOrWhiteSpace(lyDo)) 
+            return new BaseResponse<bool> { Success = false, Message = "Bắt buộc phải nhập lý do từ chối." };
+
+        // Đổi trạng thái thành Từ Chối và lưu Lý do
+        hoSo.TrangThai = "TuChoi";
+        hoSo.GhiChu = lyDo;
+        await _hoSoRepository.CapNhatXepLoaiVaTrangThaiAsync(new List<HoSoXetHocBong> { hoSo });
+
+
+        return new BaseResponse<bool> { Success = true, Message = "Từ chối hồ sơ thành công.", Data = true };
+    }
+
     }
 }

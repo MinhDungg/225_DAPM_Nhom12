@@ -58,6 +58,16 @@ const FinalDecisionService = {
         const response = await api.delete(`/api/ctsv/ho-so/${maHoSo}`);
         return response.data;
     },
+    // Hội đồng bác bỏ hồ sơ vi phạm (kèm lý do)
+    tuChoiHoSo: async (maHoSo, lyDo) => {
+        const response = await api.put(
+            `/api/tructhuoc/tu-choi-ho-so/${maHoSo}`,   // ← Sửa từ /api/FinalDecision/ thành /api/tructhuoc/
+            JSON.stringify(lyDo),
+            { headers: { 'Content-Type': 'application/json' } }
+        );
+        return response.data;
+    },
+
 
     // Lấy danh sách đợt học bổng
     layDsDotHocBong: async () => {

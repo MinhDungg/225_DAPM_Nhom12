@@ -8,7 +8,7 @@ public class DotHocBong
     public string NamHoc { get; set; } = null!;
     public string? TrangThai { get; set; }
     public string? LyDoTraVe { get; set; }
-
+    public DateTime? NgayCongBo { get; set; }
     public ICollection<HoSoXetHocBong> HoSoXetHocBongs { get; set; } = new List<HoSoXetHocBong>();
     public ICollection<DSHocBong> DSHocBongs { get; set; } = new List<DSHocBong>();
     public ICollection<PhanBoKinhPhi> PhanBoKinhPhis { get; set; } = new List<PhanBoKinhPhi>();

@@ -73,4 +73,55 @@ public class SinhVienController : ControllerBase
             });
         }
     }
+
+    /// <summary>
+    /// Lấy thông tin cá nhân của sinh viên đang đăng nhập.
+    /// GET /api/sinhvien/profile
+    /// </summary>
+    [HttpGet("profile")]
+    [Authorize(Roles = "SinhVien")]
+    public async Task<IActionResult> GetProfile()
+    {
+        var maSV = User.Identity?.Name;
+        if (string.IsNullOrEmpty(maSV))
+        {
+            return Unauthorized(new BaseResponse<SinhVienProfileDTO>
+            {
+                Success = false,
+                Message = "Khong tim thay thong tin dang nhap.",
+                Data = null
+            });
+        }
+
+        try
+        {
+            var profile = await _sinhVienRepository.GetProfileAsync(maSV);
+            if (profile == null)
+            {
+                return NotFound(new BaseResponse<SinhVienProfileDTO>
+                {
+                    Success = false,
+                    Message = "Khong tim thay thong tin sinh vien.",
+                    Data = null
+                });
+            }
+
+            return Ok(new BaseResponse<SinhVienProfileDTO>
+            {
+                Success = true,
+                Message = "Thanh cong.",
+                Data = profile
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "GetProfile failed.");
+            return StatusCode(500, new BaseResponse<SinhVienProfileDTO>
+            {
+                Success = false,
+                Message = "Loi he thong.",
+                Data = null
+            });
+        }
+    }
 }

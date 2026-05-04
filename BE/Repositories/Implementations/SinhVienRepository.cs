@@ -55,5 +55,33 @@ public class SinhVienRepository : ISinhVienRepository
             .ToListAsync()
             .ContinueWith(t => t.Result.Select(x => (x.MaSV, x.HoTen)).ToList());
     }
+
+    public async Task<BE.DTOs.Response.SinhVienProfileDTO?> GetProfileAsync(string maSV)
+    {
+        if (string.IsNullOrWhiteSpace(maSV)) return null;
+
+        var profile = await _context.SinhViens
+            .Include(s => s.Lop)
+                .ThenInclude(l => l.Khoa)
+            .Include(s => s.KetQuaHocTaps)
+            .Where(s => s.MaSV == maSV)
+            .Select(s => new BE.DTOs.Response.SinhVienProfileDTO
+            {
+                MaSV = s.MaSV,
+                HoTen = s.HoTen,
+                NgaySinh = s.NgaySinh,
+                Email = s.Email,
+                SDT = s.SDT,
+                TenLop = s.Lop != null ? s.Lop.TenLop : "",
+                TenKhoa = s.Lop != null && s.Lop.Khoa != null ? s.Lop.Khoa.TenKhoa : "",
+                // GPA from the latest KetQuaHocTap
+                GPA = s.KetQuaHocTaps.OrderByDescending(k => k.NamHoc).ThenByDescending(k => k.HocKy).Select(k => k.GPA).FirstOrDefault(),
+                // TinChiKyXet from the latest KetQuaHocTap
+                TinChiKyXet = s.KetQuaHocTaps.OrderByDescending(k => k.NamHoc).ThenByDescending(k => k.HocKy).Select(k => k.SoTC).FirstOrDefault()
+            })
+            .FirstOrDefaultAsync();
+
+        return profile;
+    }
 }
 
