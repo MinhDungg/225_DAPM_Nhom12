@@ -6,7 +6,8 @@ public class HoSoChoDuyetResponseDTO
     public string MaSV { get; set; } = null!;
     public string HoTenSinhVien { get; set; } = null!;
     public string TenLop { get; set; } = null!;
-    public double GPA { get; set; }
+    public float DiemHocTap { get; set; } // Điểm học tập thang 10
+    public float GPA { get; set; }
     public int DiemRenLuyen { get; set; }
     public double DiemNCKH { get; set; }
     public double DiemHDCD { get; set; }

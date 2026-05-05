@@ -31,6 +31,7 @@ public class HoSoXetHocBongRepository : IHoSoXetHocBongRepository
             .Include(h => h.SinhVien)
                 .ThenInclude(sv => sv.Lop)
             .Include(h => h.SinhVien.DiemRenLuyens)
+            .Include(h => h.SinhVien.KetQuaHocTaps) // THÊM: Load kết quả học tập để kiểm tra số tín chỉ
             .Where(h => h.TrangThai == "ChoXet" 
                      && h.SinhVien.Lop.MaKhoa == maKhoa 
                      && h.MaDot == maDot)

@@ -7,6 +7,7 @@ public class SinhVienXepHangDTO
     public string MaSV { get; set; } = null!;
     public string HoTen { get; set; } = null!;
     public string TenLop { get; set; } = null!;
+    public double DiemHocTap { get; set; } // Điểm học tập thang 10
     public double GPA { get; set; }
     public int DiemRenLuyen { get; set; }
     public string XepLoai { get; set; } = null!; // XuatSac, Gioi, Kha
