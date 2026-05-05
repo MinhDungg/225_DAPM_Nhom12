@@ -16,7 +16,7 @@ const khoaService = {
     // Task 2.1: Lấy danh sách hồ sơ chờ duyệt
     layDanhSachChoDuyet: async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const response = await axiosInstance.get('/khoa/danhsach', {
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -40,11 +40,11 @@ const khoaService = {
     // Task 2.2: Xếp hạng và phân bổ học bổng
     xepHangVaPhanBo: async (maDot, nganSach) => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const response = await axiosInstance.post(
                 '/khoa/xephang',
                 { maDot, nganSach },
-                { 
+                {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -66,11 +66,11 @@ const khoaService = {
     // Task 2.3: Chốt danh sách đề xuất
     chotDanhSachDeXuat: async (maDot, danhSachMaHoSo) => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const response = await axiosInstance.put(
                 '/khoa/dexuat',
                 { maDot, danhSachMaHoSo },
-                { 
+                {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }

@@ -1,170 +1,234 @@
-import React, { useState } from 'react';
-import { BookOpen, Activity, CheckCircle, Bell, FileWarning, Search, ChevronRight, Send, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { BookOpen, Activity, CheckCircle, Bell, FileWarning, Search, Send, AlertCircle, Clock, Loader2, LogOut } from 'lucide-react';
+import api from '../../utils/api';
 
 const StudentDashboard = () => {
     const [activeTab, setActiveTab] = useState('thongbao'); // 'thongbao' hoặc 'khieunai'
 
+    const [hoSos, setHoSos] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        fetchMyProfiles();
+    }, []);
+
+    const fetchMyProfiles = async () => {
+        try {
+            const response = await api.get('/api/sinhvien/tracuu');
+            if (response.data.success) {
+                setHoSos(response.data.data);
+            } else {
+                setError(response.data.message);
+            }
+        } catch (err) {
+            setError("Không thể kết nối đến máy chủ. Vui lòng thử lại sau.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const latestProfile = hoSos.length > 0 ? hoSos[0] : null;
+
+    // Helper UI Badge gọn gàng hơn
+    const renderStatusUI = (status) => {
+        switch (status) {
+            case 'ChoXet':
+                return { text: 'Đang chờ xét', color: 'text-gray-700', bg: 'bg-gray-100', icon: <Clock size={14} /> };
+            case 'KhoaDeXuat':
+                return { text: 'Khoa đề xuất', color: 'text-blue-700', bg: 'bg-blue-50', icon: <Search size={14} /> };
+            case 'DanhSachDuKien':
+                return { text: 'Dự kiến', color: 'text-amber-700', bg: 'bg-amber-50', icon: <AlertCircle size={14} /> };
+            case 'ChinhThuc':
+                return { text: 'Chính thức', color: 'text-green-700', bg: 'bg-green-50', icon: <CheckCircle size={14} /> };
+            default:
+                return { text: status || 'Chưa có', color: 'text-gray-700', bg: 'bg-gray-100', icon: <Clock size={14} /> };
+        }
+    };
+
+    const userInfo = JSON.parse(localStorage.getItem('userInfo')) || {};
+
+    const handleLogout = () => {
+        localStorage.clear();
+        window.location.href = '/';
+    };
+
+    const latestStatusUI = renderStatusUI(latestProfile?.trangThai);
+
     return (
-        <div className="space-y-8 animate-fade-in">
-            {/* Tiêu đề trang */}
-            <div className="flex flex-col">
-                <h2 className="text-3xl font-extrabold text-gray-900 leading-tight">Cổng thông tin Sinh viên</h2>
-                <p className="text-gray-500 mt-1.5">Theo dõi thông báo học bổng, danh sách xét duyệt và xử lý khiếu nại.</p>
-            </div>
-
-            {/* Thẻ thống kê cá nhân */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 flex items-center gap-5 border-l-8 border-l-blue-500 hover:shadow-lg transition-all duration-300">
-                    <div className="bg-blue-50 p-4 rounded-2xl"><BookOpen className="text-blue-600 w-8 h-8" /></div>
-                    <div>
-                        <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">GPA Tích lũy</p>
-                        <h3 className="text-2xl font-extrabold text-gray-900 mt-1">3.2 / 4.0</h3>
-                        <p className="text-xs text-blue-600 font-medium mt-1">Đạt điều kiện học lực</p>
-                    </div>
+        <div className="max-w-7xl mx-auto space-y-6 p-4 md:p-8 animate-in fade-in duration-500">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                <div>
+                    <h2 className="text-xl font-bold text-gray-900">Cổng thông tin Sinh viên</h2>
+                    <p className="text-sm text-gray-500 mt-1">
+                        Xin chào, <span className="font-medium text-gray-900">{userInfo.name || 'Sinh viên'}</span>. Chào mừng bạn quay trở lại.
+                    </p>
                 </div>
-
-                <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 flex items-center gap-5 border-l-8 border-l-teal-500 hover:shadow-lg transition-all duration-300">
-                    <div className="bg-teal-50 p-4 rounded-2xl"><Activity className="text-teal-600 w-8 h-8" /></div>
-                    <div>
-                        <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">Điểm rèn luyện</p>
-                        <h3 className="text-2xl font-extrabold text-gray-900 mt-1">85 / 100</h3>
-                        <p className="text-xs text-teal-600 font-medium mt-1">Xếp loại Tốt</p>
-                    </div>
-                </div>
-
-                <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 flex items-center gap-5 border-l-8 border-l-amber-500 hover:shadow-lg transition-all duration-300">
-                    <div className="bg-amber-50 p-4 rounded-2xl"><CheckCircle className="text-amber-600 w-8 h-8" /></div>
-                    <div>
-                        <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">Trạng thái Hồ sơ</p>
-                        <h3 className="text-xl font-extrabold text-gray-900 mt-1">Dự kiến nhận HB</h3>
-                        <p className="text-xs text-amber-600 font-medium mt-1">Chờ công bố chính thức</p>
-                    </div>
-                </div>
-            </div>
-
-            {/* Tabs Menu */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-2 flex gap-2 w-fit">
                 <button
-                    onClick={() => setActiveTab('thongbao')}
-                    className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-semibold transition-all ${activeTab === 'thongbao' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}
+                    onClick={handleLogout}
+                    className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                 >
-                    <Bell size={18} /> Xem Thông báo & Danh sách
-                </button>
-                <button
-                    onClick={() => setActiveTab('khieunai')}
-                    className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-semibold transition-all ${activeTab === 'khieunai' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}
-                >
-                    <FileWarning size={18} /> Gửi Khiếu nại
+                    <LogOut size={16} />
+                    Đăng xuất
                 </button>
             </div>
 
-            {/* Nội dung Tab: Thông báo & Danh sách */}
-            {activeTab === 'thongbao' && (
-                <div className="space-y-6 animate-fade-in">
-                    {/* Use case: Xem danh sách dự kiến */}
-                    <div className="bg-white rounded-3xl shadow-sm border border-blue-100 p-8 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-amber-100 rounded-bl-full -z-10 opacity-50"></div>
-                        <div className="flex justify-between items-start mb-4">
-                            <div>
-                                <span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">Mới nhất</span>
-                                <h3 className="text-xl font-bold text-gray-900 mt-3">Danh sách Dự kiến nhận HB KKHT Học kỳ 1 (2025-2026)</h3>
-                                <p className="text-sm text-gray-600 mt-2 leading-relaxed">
-                                    Phòng CTSV đã tổng hợp và công bố danh sách dự kiến. Sinh viên vui lòng kiểm tra thông tin. Nếu có sai sót về GPA hoặc Điểm rèn luyện, vui lòng gửi khiếu nại trước ngày 10/03/2026.
-                                </p>
-                            </div>
-                            <div className="bg-blue-50 p-3 rounded-2xl text-blue-600"><Search size={24} /></div>
-                        </div>
-                        <div className="flex gap-4 mt-6">
-                            <button className="px-5 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-colors shadow-md flex items-center gap-2">
-                                Tra cứu tên của bạn <ChevronRight size={16} />
-                            </button>
-                            <button className="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-50 transition-colors">
-                                Tải file Excel toàn trường
-                            </button>
-                        </div>
+            {/* Stats Overview */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Thẻ 1 */}
+                <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col gap-2">
+                    <div className="flex justify-between items-center text-gray-500">
+                        <span className="text-sm font-medium">GPA Hiện tại</span>
+                        <BookOpen size={16} className="text-gray-400" />
                     </div>
-
-                    {/* Use case: Xem danh sách chính thức */}
-                    <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 opacity-75 hover:opacity-100 transition-opacity">
-                        <div className="flex justify-between items-start mb-4">
-                            <div>
-                                <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">Đã đóng</span>
-                                <h3 className="text-xl font-bold text-gray-900 mt-3">Quyết định & Danh sách Chính thức HB KKHT Học kỳ 2 (2024-2025)</h3>
-                                <p className="text-sm text-gray-500 mt-2">Hiệu trưởng đã phê duyệt danh sách chính thức. Phòng KH-TC đang tiến hành giải ngân qua tài khoản ngân hàng của sinh viên.</p>
-                            </div>
-                            <div className="bg-green-50 p-3 rounded-2xl text-green-600"><CheckCircle size={24} /></div>
-                        </div>
-                        <button className="mt-4 text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-1">
-                            Xem chi tiết Quyết định <ChevronRight size={16} />
-                        </button>
-                    </div>
+                    <span className="text-2xl font-bold text-gray-900">
+                        {latestProfile && latestProfile.gpa != null ? Number(latestProfile.gpa).toLocaleString('vi-VN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '--'}
+                    </span>
                 </div>
-            )}
 
-            {/* Nội dung Tab: Gửi khiếu nại */}
-            {activeTab === 'khieunai' && (
-                <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 animate-fade-in flex flex-col md:flex-row gap-10">
-                    <div className="flex-1 space-y-6">
-                        <div>
-                            <h3 className="text-2xl font-bold text-gray-900">Biểu mẫu Khiếu nại</h3>
-                            <p className="text-gray-500 text-sm mt-1">Dành cho sinh viên phát hiện sai sót trong Danh sách Dự kiến.</p>
-                        </div>
-
-                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-3 text-amber-800 text-sm">
-                            <AlertCircle className="shrink-0 w-5 h-5" />
-                            <p>Lưu ý: Hệ thống chỉ tiếp nhận khiếu nại trong vòng <strong>10 ngày</strong> kể từ khi công bố Danh sách Dự kiến. Vui lòng đính kèm minh chứng rõ ràng.</p>
-                        </div>
-
-                        <form className="space-y-5">
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Chương trình học bổng khiếu nại *</label>
-                                <select className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                                    <option>HB KKHT Học kỳ 1 (Năm 2025-2026)</option>
-                                    <option>HB Doanh nghiệp VNPT</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Loại sai sót *</label>
-                                <select className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                                    <option>Sai sót Điểm trung bình (GPA)</option>
-                                    <option>Sai sót Điểm rèn luyện</option>
-                                    <option>Thiếu tên trong danh sách</option>
-                                    <option>Khác</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Trình bày chi tiết *</label>
-                                <textarea
-                                    rows="4"
-                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"
-                                    placeholder="Mô tả cụ thể vấn đề của bạn..."
-                                ></textarea>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Đính kèm minh chứng (Hình ảnh/PDF)</label>
-                                <input type="file" className="w-full text-sm text-gray-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" />
-                            </div>
-
-                            <button type="button" className="w-full md:w-auto px-8 py-3.5 bg-blue-600 text-white font-bold rounded-xl shadow-md hover:bg-blue-700 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
-                                <Send size={18} /> Gửi khiếu nại tới Phòng CTSV
-                            </button>
-                        </form>
+                {/* Thẻ 2 */}
+                <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col gap-2">
+                    <div className="flex justify-between items-center text-gray-500">
+                        <span className="text-sm font-medium">Điểm học tập</span>
+                        <Activity size={16} className="text-gray-400" />
                     </div>
-
-                    {/* Cột hiển thị lịch sử khiếu nại */}
-                    <div className="w-full md:w-1/3 bg-gray-50 rounded-2xl p-6 border border-gray-100 h-fit">
-                        <h4 className="font-bold text-gray-900 mb-4 pb-3 border-b border-gray-200">Lịch sử khiếu nại của bạn</h4>
-                        <div className="text-center py-8">
-                            <CheckCircle className="text-gray-300 w-12 h-12 mx-auto mb-3" />
-                            <p className="text-sm text-gray-500">Bạn chưa gửi khiếu nại nào trong học kỳ này.</p>
-                        </div>
-                    </div>
+                    <span className="text-2xl font-bold text-gray-900">
+                        {latestProfile && latestProfile.diemHocTap != null ? Number(latestProfile.diemHocTap).toLocaleString('vi-VN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '--'}
+                    </span>
                 </div>
-            )}
 
+                {/* Thẻ 3 */}
+                <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col gap-2">
+                    <div className="flex justify-between items-center text-gray-500">
+                        <span className="text-sm font-medium">Điểm rèn luyện</span>
+                        <Activity size={16} className="text-gray-400" />
+                    </div>
+                    <span className="text-2xl font-bold text-gray-900">
+                        {latestProfile ? latestProfile.diemRenLuyen : '--'}
+                    </span>
+                </div>
+
+                {/* Thẻ 4 */}
+                <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col gap-2">
+                    <div className="flex justify-between items-center text-gray-500">
+                        <span className="text-sm font-medium">Trạng thái hồ sơ</span>
+                        <div className={`p-1.5 rounded-md ${latestStatusUI.bg} ${latestStatusUI.color}`}>
+                            {latestStatusUI.icon}
+                        </div>
+                    </div>
+                    <span className="text-lg font-bold text-gray-900 truncate" title={latestStatusUI.text}>
+                        {latestStatusUI.text}
+                    </span>
+                </div>
+            </div>
+
+            {/* Main Content Area */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+                {/* Modern Tabs */}
+                <div className="flex gap-6 border-b border-gray-200 px-6 pt-2">
+                    <button
+                        onClick={() => setActiveTab('thongbao')}
+                        className={`flex items-center gap-2 pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${activeTab === 'thongbao'
+                                ? 'border-blue-600 text-blue-600'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                            }`}
+                    >
+                        <Bell size={16} /> Hồ sơ & Tiến trình
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('khieunai')}
+                        className={`flex items-center gap-2 pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${activeTab === 'khieunai'
+                                ? 'border-blue-600 text-blue-600'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                            }`}
+                    >
+                        <FileWarning size={16} /> Gửi Khiếu nại
+                    </button>
+                </div>
+
+                {/* Tab Content */}
+                <div className="p-6">
+                    {activeTab === 'thongbao' && (
+                        <div className="space-y-4">
+                            <div>
+                                <h3 className="text-base font-semibold text-gray-900">Tiến trình hồ sơ</h3>
+                                <p className="text-sm text-gray-500">Danh sách các hồ sơ xét học bổng đã được ghi nhận trên hệ thống.</p>
+                            </div>
+
+                            {loading ? (
+                                <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+                                    <Loader2 className="w-6 h-6 animate-spin mb-3 text-gray-400" />
+                                    <p className="text-sm">Đang tải dữ liệu...</p>
+                                </div>
+                            ) : error ? (
+                                <div className="bg-red-50 text-red-600 p-4 rounded-lg text-sm flex items-center gap-2 border border-red-100">
+                                    <AlertCircle size={16} /> {error}
+                                </div>
+                            ) : hoSos.length === 0 ? (
+                                <div className="text-center py-12 border border-dashed border-gray-200 rounded-lg">
+                                    <Search className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                                    <p className="text-sm text-gray-500">Bạn chưa có hồ sơ xét học bổng nào.</p>
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto rounded-lg border border-gray-200">
+                                    <table className="w-full text-left border-collapse whitespace-nowrap">
+                                        <thead>
+                                            <tr className="bg-gray-50 text-gray-500 text-xs uppercase font-medium">
+                                                <th className="py-3 px-4 border-b border-gray-200">Mã Hồ Sơ</th>
+                                                <th className="py-3 px-4 border-b border-gray-200 text-right">GPA</th>
+                                                <th className="py-3 px-4 border-b border-gray-200 text-right">Học Tập</th>
+                                                <th className="py-3 px-4 border-b border-gray-200 text-right">Rèn Luyện</th>
+                                                <th className="py-3 px-4 border-b border-gray-200">Xếp loại</th>
+                                                <th className="py-3 px-4 border-b border-gray-200">Trạng thái</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="text-sm text-gray-700 divide-y divide-gray-100">
+                                            {hoSos.map((hoso) => {
+                                                const statusUI = renderStatusUI(hoso.trangThai);
+                                                return (
+                                                    <tr key={hoso.maHoSo} className="hover:bg-gray-50 transition-colors">
+                                                        <td className="py-3 px-4 font-medium text-gray-900">HS-{hoso.maHoSo}</td>
+                                                        <td className="py-3 px-4 text-right">{hoso.gpa != null ? Number(hoso.gpa).toLocaleString('vi-VN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}</td>
+                                                        <td className="py-3 px-4 text-right">{hoso.diemHocTap != null ? Number(hoso.diemHocTap).toLocaleString('vi-VN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}</td>
+                                                        <td className="py-3 px-4 text-right">{hoso.diemRenLuyen !== undefined ? hoso.diemRenLuyen : '-'}</td>
+                                                        <td className="py-3 px-4">
+                                                            {hoso.xepLoaiHB ? (
+                                                                <span className="text-xs font-medium text-gray-600 bg-gray-100 px-2 py-1 rounded">
+                                                                    {hoso.xepLoaiHB}
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-gray-400">-</span>
+                                                            )}
+                                                        </td>
+                                                        <td className="py-3 px-4">
+                                                            <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium ${statusUI.bg} ${statusUI.color}`}>
+                                                                {statusUI.icon} {statusUI.text}
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {activeTab === 'khieunai' && (
+                        <div className="text-center py-16 px-4">
+                            <div className="bg-gray-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-100">
+                                <FileWarning className="w-8 h-8 text-gray-400" />
+                            </div>
+                            <h3 className="text-lg font-medium text-gray-900">Tính năng đang phát triển</h3>
+                            <p className="text-sm text-gray-500 mt-2 max-w-sm mx-auto">
+                                Chức năng gửi khiếu nại hiện đang được cập nhật phía Backend. Vui lòng quay lại sau.
+                            </p>
+                        </div>
+                    )}
+                </div>
+            </div>
         </div>
     );
 };

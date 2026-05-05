@@ -4,14 +4,14 @@ import {
     Home, FileText, Bell, User, LogOut, ChevronDown,
     Database, Users, ShieldCheck, Landmark, FileCheck,
     ClipboardList, CheckSquare, MessageSquareWarning,
-    GraduationCap, LifeBuoy
+    GraduationCap, LifeBuoy, Sparkles, PlusCircle, FileSpreadsheet
 } from 'lucide-react';
 
 const Layout = ({ role }) => {
     const navigate = useNavigate();
     const location = useLocation();
 
-    // TỰ ĐỘNG DÒ TÌM VAI TRÒ DỰA VÀO URL TRÌNH DUYỆT
+    // Dò tìm role từ URL
     let activeRole = role;
     if (location.pathname.includes('/sinh-vien')) activeRole = 'SinhVien';
     else if (location.pathname.includes('/ctsv')) activeRole = 'CTSV';
@@ -34,157 +34,137 @@ const Layout = ({ role }) => {
     const menuConfig = {
         'SinhVien': [
             { path: '/sinh-vien', icon: Home, label: 'Trang chủ Dashboard' },
-            { path: '/sinh-vien', icon: Bell, label: 'Thông báo & Danh sách' },
-            { path: '/sinh-vien', icon: MessageSquareWarning, label: 'Gửi khiếu nại' },
-            { path: '/sinh-vien', icon: User, label: 'Hồ sơ cá nhân' }
+            { path: '/sinh-vien/thong-bao', icon: Bell, label: 'Thông báo & Danh sách' },
+            { path: '/sinh-vien/khieu-nai', icon: MessageSquareWarning, label: 'Gửi khiếu nại' },
+            { path: '/sinh-vien/ho-so', icon: User, label: 'Hồ sơ cá nhân' }
         ],
         'CTSV': [
             { path: '/ctsv', icon: Home, label: 'Tổng quan học bổng' },
-            { path: '/ctsv', icon: Users, label: 'Phân bổ dữ liệu Khoa' },
-            { path: '/ctsv', icon: Bell, label: 'Công bố danh sách' },
-            { path: '/ctsv', icon: FileCheck, label: 'Trình duyệt danh sách' },
-            { path: '/ctsv', icon: MessageSquareWarning, label: 'Xử lý khiếu nại' }
+            { path: '/ctsv/tao-dot-hoc-bong', icon: PlusCircle, label: 'Tạo đợt học bổng' },
+            { path: '/ctsv/phan-bo', icon: Users, label: 'Phân bổ dữ liệu Khoa' },
+            { path: '/ctsv/cong-bo', icon: Bell, label: 'Công bố danh sách' },
+            { path: '/ctsv/trinh-duyet', icon: FileCheck, label: 'Trình duyệt danh sách' },
+            { path: '/ctsv/khieu-nai', icon: MessageSquareWarning, label: 'Xử lý khiếu nại' }
         ],
         'DaoTao': [
             { path: '/dao-tao', icon: Home, label: 'Trang chủ Đào tạo' },
-            { path: '/dao-tao', icon: Database, label: 'Cung cấp DS đủ điều kiện' }
+            { path: '/dao-tao/danh-sach', icon: FileSpreadsheet, label: 'Cung cấp điểm học vụ' }
         ],
         'Khoa': [
             { path: '/khoa', icon: Home, label: 'Trang chủ Khoa' },
-            { path: '/khoa', icon: ClipboardList, label: 'Lập danh sách đề xuất' }
+            { path: '/khoa/de-xuat', icon: ClipboardList, label: 'Lập danh sách đề xuất' },
+            { path: '/khoa/khieu-nai', icon: MessageSquareWarning, label: 'Xử lý khiếu nại' }
         ],
         'HDXD': [
             { path: '/hdxd', icon: Home, label: 'Trang chủ Hội đồng' },
-            { path: '/hdxd', icon: ShieldCheck, label: 'Xét chọn sinh viên' },
-            { path: '/hdxd', icon: FileText, label: 'Xem hồ sơ minh chứng' }
+            { path: '/hdxd/xet-chon', icon: ShieldCheck, label: 'Xét chọn sinh viên' },
+            { path: '/hdxd/minh-chung', icon: FileText, label: 'Xem hồ sơ minh chứng' }
         ],
         'KHTC': [
             { path: '/tai-chinh', icon: Home, label: 'Trang chủ Tài chính' },
-            { path: '/tai-chinh', icon: Landmark, label: 'Kinh phí học bổng' }
+            { path: '/tai-chinh/kinh-phi', icon: Landmark, label: 'Kinh phí học bổng' }
         ],
         'HieuTruong': [
             { path: '/hieu-truong', icon: Home, label: 'Trang chủ BGH' },
-            { path: '/hieu-truong', icon: CheckSquare, label: 'Phê duyệt danh sách' }
+            { path: '/hieu-truong/phe-duyet', icon: CheckSquare, label: 'Phê duyệt danh sách' }
         ]
     };
 
-    const currentMenus = menuConfig[activeRole] || [];
+    const currentMenus = menuConfig[activeRole] || menuConfig['SinhVien'];
 
     const handleLogout = () => {
         navigate('/login');
     };
 
     return (
-        <div className="flex h-screen bg-slate-50 font-sans">
-            {/* Tối ưu hóa Sidebar: Đổi màu nền sang Midnight Blue mượt mà hơn */}
-            <aside className="w-72 bg-[#0A192F] text-white flex flex-col shadow-2xl z-20 relative overflow-hidden">
-                {/* Hiệu ứng ánh sáng nền mờ */}
-                <div className="absolute top-0 left-0 w-full h-40 bg-blue-600/20 blur-3xl pointer-events-none"></div>
+        <div className="flex h-screen bg-gray-50 font-sans overflow-hidden">
 
-                {/* Logo Area */}
-                <div className="p-6 border-b border-slate-800/80 flex items-center gap-4 relative z-10">
-                    <div className="bg-gradient-to-tr from-blue-500 to-cyan-400 p-2.5 rounded-xl shadow-lg shadow-blue-500/20">
-                        <GraduationCap className="text-white w-7 h-7" />
+            {/* SIDEBAR */}
+            <aside className="w-64 bg-white border-r border-gray-200 flex flex-col z-20 transition-all duration-300 flex-shrink-0">
+                <div className="h-16 px-6 flex items-center gap-3 border-b border-gray-200">
+                    <div className="bg-slate-800 p-1.5 rounded-lg flex-shrink-0">
+                        <GraduationCap className="text-white w-5 h-5" />
                     </div>
-                    <div className="flex flex-col">
-                        <h1 className="font-black text-xl tracking-wider text-white leading-tight">HỌC BỔNG UTE</h1>
-                        <p className="text-[10px] text-cyan-400 uppercase tracking-[0.2em] font-bold mt-1">
+                    <div className="flex flex-col overflow-hidden">
+                        <h1 className="font-bold text-sm text-gray-900 truncate">HỌC BỔNG UTE</h1>
+                        <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold truncate">
                             {roleDisplayNames[activeRole] || activeRole}
                         </p>
                     </div>
                 </div>
 
-                {/* Navigation Menus */}
-                <nav className="flex-1 py-6 overflow-y-auto custom-scrollbar relative z-10 flex flex-col">
-                    <p className="px-8 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Menu Chính</p>
-                    <ul className="space-y-2">
+                <nav className="flex-1 py-4 overflow-y-auto px-3 custom-scrollbar flex flex-col gap-1">
+                    <p className="px-3 text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Danh mục</p>
+                    <ul className="space-y-1">
                         {currentMenus.map((menu, index) => {
                             const Icon = menu.icon;
-                            const isActive = location.pathname.includes(menu.path);
-
+                            const isActive = location.pathname === menu.path;
                             return (
-                                <li key={index} className="relative">
-                                    {/* Dấu gạch dọc phát sáng khi Active */}
-                                    {isActive && (
-                                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-8 bg-cyan-400 rounded-r-full shadow-[0_0_12px_rgba(34,211,238,0.6)]"></div>
-                                    )}
+                                <li key={index}>
                                     <Link
                                         to={menu.path}
-                                        className={`flex items-center gap-4 px-6 py-3.5 mx-4 rounded-xl transition-all duration-300 group ${isActive
-                                                ? 'bg-blue-900/40 text-white font-bold border border-blue-700/50 shadow-inner'
-                                                : 'text-slate-400 hover:bg-slate-800/50 hover:text-white font-medium'
+                                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-sm font-medium ${isActive
+                                                ? 'bg-blue-50 text-blue-700'
+                                                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                                             }`}
                                     >
-                                        <Icon size={20} className={`transition-transform duration-300 ${isActive ? 'text-cyan-400' : 'group-hover:scale-110 group-hover:text-cyan-300'}`} />
-                                        <span className="text-sm tracking-wide">{menu.label}</span>
+                                        <Icon size={18} className={isActive ? 'text-blue-600' : 'text-gray-400'} />
+                                        <span>{menu.label}</span>
                                     </Link>
                                 </li>
                             );
                         })}
                     </ul>
-
-                    {/* Thẻ Support lấp khoảng trống phía dưới (Rất tinh tế) */}
-                    <div className="mx-6 mt-auto mb-4 bg-gradient-to-br from-slate-800/80 to-slate-900 border border-slate-700/50 p-5 rounded-2xl relative overflow-hidden group">
-                        <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-blue-500/10 rounded-full blur-2xl group-hover:bg-cyan-400/20 transition-all duration-500"></div>
-                        <div className="flex items-center gap-3 mb-3">
-                            <div className="bg-slate-700/50 p-2 rounded-lg">
-                                <LifeBuoy size={18} className="text-cyan-400" />
-                            </div>
-                            <p className="font-bold text-sm text-white">Cần hỗ trợ?</p>
-                        </div>
-                        <p className="text-xs text-slate-400 leading-relaxed mb-4">
-                            Hệ thống quản lý học bổng UTE. Liên hệ kỹ thuật nếu gặp sự cố.
-                        </p>
-                        <button className="w-full py-2.5 bg-slate-700/50 hover:bg-cyan-500 hover:text-white border border-slate-600 hover:border-cyan-400 rounded-xl text-xs font-bold text-slate-300 transition-all shadow-sm">
-                            Gửi yêu cầu hỗ trợ
-                        </button>
-                    </div>
                 </nav>
 
-                {/* Nút Đăng xuất */}
-                <div className="p-5 border-t border-slate-800/80 bg-[#071324] relative z-10">
+                <div className="p-3 border-t border-gray-200">
                     <button
                         onClick={handleLogout}
-                        className="flex items-center justify-center gap-3 px-4 py-3 w-full rounded-xl text-slate-400 hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30 border border-transparent transition-all duration-300 group"
+                        className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors text-sm font-medium"
                     >
-                        <LogOut size={20} className="group-hover:-translate-x-1 transition-transform" />
-                        <span className="font-bold text-sm">Đăng xuất hệ thống</span>
+                        <LogOut size={18} className="text-gray-400" />
+                        <span>Đăng xuất</span>
                     </button>
                 </div>
             </aside>
 
-            {/* Main Content */}
-            <div className="flex-1 flex flex-col overflow-hidden">
-                <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-10 shadow-sm relative z-10">
-                    <div className="flex flex-col">
-                        <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Hệ thống Quản lý Học bổng</h2>
-                        <p className="text-xs text-slate-500 mt-1 font-medium">Trường Đại học Sư phạm Kỹ thuật - ĐHĐN</p>
+            {/* MAIN CONTENT AREA */}
+            <div className="flex-1 flex flex-col min-w-0">
+                {/* HEADER */}
+                <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 sticky top-0 z-10 flex-shrink-0">
+                    <div className="flex flex-col justify-center">
+                        <h2 className="text-lg font-semibold text-gray-900 leading-tight">Hệ thống Quản lý Học bổng</h2>
+                        <p className="text-xs text-gray-500 hidden sm:block">
+                            Trường Đại học Sư phạm Kỹ thuật - ĐHĐN
+                        </p>
                     </div>
 
-                    <div className="flex items-center gap-6">
-                        <div className="relative group cursor-pointer">
-                            <div className="p-2 bg-slate-50 rounded-full group-hover:bg-blue-50 transition-colors">
-                                <Bell className="text-slate-500 group-hover:text-blue-600 transition-colors" size={22} />
-                            </div>
-                            <span className="absolute top-0 right-0 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold border-2 border-white">3</span>
-                        </div>
+                    <div className="flex items-center gap-4">
+                        <button className="relative p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-900 rounded-full transition-colors focus:outline-none">
+                            <Bell size={20} />
+                            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
+                        </button>
 
-                        <div className="flex items-center gap-3 border-l pl-6 border-slate-200 cursor-pointer group">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-100 to-blue-50 border border-blue-200 flex items-center justify-center text-blue-700 font-black shadow-sm group-hover:shadow-md transition-all">
-                                {activeRole === 'SinhVien' ? 'SV' : 'CB'}
-                            </div>
-                            <div className="flex flex-col">
-                                <span className="text-sm font-bold text-slate-700 group-hover:text-blue-700 transition-colors">
+                        <div className="h-6 w-px bg-gray-200 mx-1 hidden sm:block"></div>
+
+                        <div className="flex items-center gap-3 cursor-pointer group">
+                            <div className="hidden sm:flex flex-col text-right">
+                                <span className="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
                                     {activeRole === 'SinhVien' ? 'Huỳnh Minh Dũng' : 'Cán bộ Hệ thống'}
                                 </span>
-                                <span className="text-xs text-slate-500 font-medium">{roleDisplayNames[activeRole]}</span>
+                                <span className="text-xs text-gray-500">{roleDisplayNames[activeRole]}</span>
                             </div>
-                            <ChevronDown className="text-slate-400 w-5 h-5 group-hover:text-blue-600 transition-colors ml-2" />
+
+                            <div className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center text-white text-sm font-medium">
+                                {activeRole === 'SinhVien' ? 'SV' : 'CB'}
+                            </div>
+
+                            <ChevronDown className="text-gray-400 w-4 h-4" />
                         </div>
                     </div>
                 </header>
 
-                <main className="flex-1 overflow-y-auto p-10 bg-[#F8FAFC]">
+                <main className="flex-1 overflow-y-auto p-4 md:p-8 bg-gray-50">
                     <div className="max-w-7xl mx-auto">
                         <Outlet />
                     </div>

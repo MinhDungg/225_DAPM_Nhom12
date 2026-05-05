@@ -1,5 +1,6 @@
 -- =======================================================
 -- SCRIPT TẠO CƠ SỞ DỮ LIỆU: HỆ THỐNG QUẢN LÝ HỌC BỎNG UTE
+-- (Đã fix toàn bộ lỗi khóa ngoại và tên cột)
 -- =======================================================
 
 -- 1. KIỂM TRA VÀ TẠO DATABASE MỚI
@@ -21,35 +22,36 @@ GO
 CREATE DATABASE dbQLHocBong;
 GO
 
--- Chuyển sang sử dụng database vừa tạo
 USE dbQLHocBong;
 GO
 
+-- =======================================================
+-- TẠO BẢNG
+-- =======================================================
 
--- 2. TẠO CÁC BẢNG (TABLES)
-
--- Bảng Tài khoản (Dùng chung cho Sinh viên và Cán bộ/Giảng viên)
+-- Bảng Tài khoản
 CREATE TABLE [TAIKHOAN] (
   [MaTK] int PRIMARY KEY IDENTITY(1,1),
   [TenDangNhap] varchar(100) NOT NULL UNIQUE,
   [MatKhau] varchar(255) NOT NULL,
-  [VaiTro] varchar(50) NOT NULL, -- Admin, SinhVien, Khoa, CTSV, KHTC, HoiDong, HieuTruong
-  [TrangThai] bit DEFAULT 1 -- 1 (Hoạt động), 0 (Đã khóa)
+  [VaiTro] varchar(50) NOT NULL,
+  [TrangThai] bit DEFAULT 1,
+  CONSTRAINT CHK_VaiTro CHECK ([VaiTro] IN ('Admin', 'SinhVien', 'Khoa', 'CTSV', 'DaoTao', 'KHTC', 'HoiDong', 'HieuTruong'))
 );
 GO
 
 -- Bảng Phòng ban
 CREATE TABLE [PHONGBAN] (
   [MaPhong] int PRIMARY KEY IDENTITY(1,1),
-  [TenPhong] nvarchar(150) NOT NULL
+  [TenPhong] nvarchar(150) NOT NULL CONSTRAINT UQ_TenPhong UNIQUE
 );
 GO
 
--- Bảng Cán bộ (Quản lý nhân sự các phòng ban, khoa, ban giám hiệu)
+-- Bảng Cán bộ
 CREATE TABLE [CANBO] (
   [MaCB] int PRIMARY KEY IDENTITY(1,1),
   [HoTen] nvarchar(150) NOT NULL,
-  [Email] varchar(100) NOT NULL,
+  [Email] varchar(100) NOT NULL CONSTRAINT CHK_Email_CanBo CHECK ([Email] LIKE '%_@_%._%'),
   [ChucVu] nvarchar(100),
   [MaPhong] int,
   [MaKhoa] int,
@@ -60,7 +62,7 @@ GO
 -- Bảng Khoa
 CREATE TABLE [KHOA] (
   [MaKhoa] int PRIMARY KEY IDENTITY(1,1),
-  [TenKhoa] nvarchar(150) NOT NULL
+  [TenKhoa] nvarchar(150) NOT NULL CONSTRAINT UQ_TenKhoa UNIQUE
 );
 GO
 
@@ -74,25 +76,27 @@ GO
 
 -- Bảng Sinh viên
 CREATE TABLE [SINHVIEN] (
-  [MaSV] varchar(20) PRIMARY KEY, -- Sử dụng mã SV thực tế (VD: 23115053122108)
+  [MaSV] varchar(20) PRIMARY KEY, 
   [HoTen] nvarchar(150) NOT NULL,
-  [NgaySinh] date,
-  [Email] varchar(100) NOT NULL,
-  [SDT] varchar(15),
+  [NgaySinh] date CONSTRAINT CHK_NgaySinh CHECK ([NgaySinh] < GETDATE()),
+  [Email] varchar(100) NOT NULL CONSTRAINT CHK_Email_SV CHECK ([Email] LIKE '%_@_%._%'),
+  [SDT] varchar(15) CONSTRAINT CHK_SDT_SV CHECK (LEN([SDT]) >= 9 AND [SDT] NOT LIKE '%[^0-9]%'),
   [MaLop] int NOT NULL,
   [MaTK] int UNIQUE
 );
 GO
 
--- Bảng Kết quả học tập (Lưu GPA từng kỳ)
+-- Bảng Kết quả học tập
 CREATE TABLE [KETQUAHOCTAP] (
   [MaDiem] int PRIMARY KEY IDENTITY(1,1),
   [MaSV] varchar(20) NOT NULL,
-  [HocKy] int NOT NULL,
+  [HocKy] int NOT NULL CONSTRAINT CHK_HocKy_KQHT CHECK ([HocKy] IN (1, 2, 3)),
   [NamHoc] varchar(20) NOT NULL,
-  [GPA] float NOT NULL,
-  [SoTC] int NOT NULL,
-  [MaCB_Nhap] int -- Cán bộ phòng Đào tạo import
+  [GPA] real NOT NULL CONSTRAINT CHK_GPA CHECK ([GPA] >= 0.0 AND [GPA] <= 4.0),
+  [DiemHocTap] real NOT NULL DEFAULT 0, -- THÊM MỚI
+  [CoDiemF] bit NOT NULL DEFAULT 0,     -- THÊM MỚI
+  [SoTC] int NOT NULL CONSTRAINT CHK_SoTC CHECK ([SoTC] > 0),
+  [MaCB_Nhap] int 
 );
 GO
 
@@ -100,20 +104,22 @@ GO
 CREATE TABLE [DIEMRENLUYEN] (
   [MaDRL] int PRIMARY KEY IDENTITY(1,1),
   [MaSV] varchar(20) NOT NULL,
-  [HocKy] int NOT NULL,
+  [HocKy] int NOT NULL CONSTRAINT CHK_HocKy_DRL CHECK ([HocKy] IN (1, 2, 3)),
   [NamHoc] varchar(20) NOT NULL,
-  [DiemSo] int NOT NULL,
-  [MaCB_Nhap] int -- Cán bộ phòng CTSV import
+  [DiemSo] int NOT NULL CONSTRAINT CHK_DiemSo_DRL CHECK ([DiemSo] >= 0 AND [DiemSo] <= 100),
+  [MaCB_Nhap] int 
 );
 GO
 
 -- Bảng Đợt học bổng
 CREATE TABLE [DOTHOCBONG] (
   [MaDot] int PRIMARY KEY IDENTITY(1,1),
-  [LoaiDot] nvarchar(150) NOT NULL, -- VD: Khuyến khích học tập, Thử thách UTE
+  [LoaiDot] nvarchar(150) NOT NULL, 
   [HocKy] int NOT NULL,
   [NamHoc] varchar(20) NOT NULL,
-  [TrangThai] varchar(50) DEFAULT 'KhoiTao' -- KhoiTao, DangXetDuyet, DuKien, ChinhThuc
+  [TrangThai] varchar(50) DEFAULT 'KhoiTao' CONSTRAINT CHK_TrangThai_Dot CHECK ([TrangThai] IN ('KhoiTao', 'DangXetDuyet', 'DuKien', 'CongBoLayYKien', 'ChoPheDuyet', 'ChinhThuc')),
+  [LyDoTraVe] nvarchar(500),
+  [NgayCongBo] datetime NULL -- Cột mới thêm để đếm 10 ngày
 );
 GO
 
@@ -123,11 +129,12 @@ CREATE TABLE [HOSOXETHOCBONG] (
   [MaSV] varchar(20) NOT NULL,
   [MaDot] int NOT NULL,
   [NgayNop] datetime DEFAULT GETDATE(),
-  [GPA] float NOT NULL,
-  [DiemNCKH] float DEFAULT 0,
-  [DiemHDCD] float DEFAULT 0,
+  [DiemHocTap] real NOT NULL CONSTRAINT CHK_GPA_HoSo CHECK ([DiemHocTap] >= 0.0 AND [DiemHocTap] <= 10.0),
+  [GPA] real NOT NULL DEFAULT 0, -- THÊM MỚI
+  [DiemRenLuyen] int NOT NULL CONSTRAINT CHK_DiemRenLuyen CHECK ([DiemRenLuyen] >= 0 AND [DiemRenLuyen] <= 100),
   [XepLoaiHB] nvarchar(50),
-  [TrangThai] varchar(50) DEFAULT 'ChoXet', -- ChoXet, KhoaDeXuat, HoiDongDuyet, TuChoi
+  [TrangThai] varchar(50) DEFAULT 'ChoXet' CONSTRAINT CHK_TrangThai_HoSo CHECK ([TrangThai] IN ('ChoXet', 'KhoaDeXuat', 'HoiDongDuyet', 'TuChoi', 'ChinhThuc')),
+  [GhiChu] nvarchar(MAX) NULL, -- THÊM MỚI
   [MaCB_Duyet] int
 );
 GO
@@ -139,368 +146,83 @@ CREATE TABLE [KHIEUNAI] (
   [NoiDung] nvarchar(MAX) NOT NULL,
   [MinhChung] varchar(255),
   [NgayGui] datetime DEFAULT GETDATE(),
-  [TrangThai] varchar(50) DEFAULT 'ChoXuLy', -- ChoXuLy, DaXuLy
-  [MaCB_Duyet] int
+  [TrangThai] varchar(50) DEFAULT 'ChoXuLy' CONSTRAINT CHK_TrangThai_KhieuNai CHECK ([TrangThai] IN ('ChoXuLy', 'DaXuLy')),
+  [MaCB_Duyet] int,
+  [NoiDungPhanHoi] nvarchar(MAX),
+  [NgayPhanHoi] datetime
 );
 GO
 
--- Bảng Danh sách Học bổng (Lưu vết Quyết định của Hiệu trưởng)
+-- Bảng Danh sách Học bổng
 CREATE TABLE [DSHOCBONG] (
   [MaDS] int PRIMARY KEY IDENTITY(1,1),
   [MaDot] int NOT NULL,
   [MaSV] varchar(20) NOT NULL,
   [XepLoai] nvarchar(50),
-  [SoTien] decimal(18,2) NOT NULL,
+  [SoTien] decimal(18,2) NOT NULL CONSTRAINT CHK_SoTien_DS CHECK ([SoTien] >= 0),
   [NgayPheDuyet] datetime DEFAULT GETDATE(),
   [MaCB_PheDuyet] int NOT NULL
 );
 GO
 
--- Bảng Chi trả (Giải ngân tiền từ KHTC)
+-- Bảng Chi trả
 CREATE TABLE [CHITRA] (
   [MaChiTra] int PRIMARY KEY IDENTITY(1,1),
   [MaHoSo] int NOT NULL,
-  [SoTien] decimal(18,2) NOT NULL,
+  [SoTien] decimal(18,2) NOT NULL CONSTRAINT CHK_SoTien_ChiTra CHECK ([SoTien] >= 0),
   [NgayXacNhan] datetime,
-  [TrangThai] varchar(50) DEFAULT 'ChuaGiaiNgan', -- ChuaGiaiNgan, DaGiaiNgan
+  [TrangThai] varchar(50) DEFAULT 'ChuaGiaiNgan' CONSTRAINT CHK_TrangThai_ChiTra CHECK ([TrangThai] IN ('ChuaGiaiNgan', 'DaGiaiNgan')),
   [MaCB_GiaiNgan] int
 );
 GO
 
--- Bảng Phân bổ kinh phí (Lưu trữ ngân sách học bổng được cấp cho từng Khoa trong mỗi Đợt)
+-- Bảng Phân bổ kinh phí
 CREATE TABLE [PHANBOKINHPHI] (
   [MaPhanBo] int PRIMARY KEY IDENTITY(1,1),
   [MaDot] int NOT NULL,
   [MaKhoa] int NOT NULL,
-  [KinhPhi] decimal(18,2) NOT NULL,
-  [MucHBLoaiKha] decimal(18,2) NOT NULL
+  [KinhPhi] decimal(18,2) NOT NULL CONSTRAINT CHK_KinhPhi CHECK ([KinhPhi] >= 0),
+  [MucHBLoaiKha] decimal(18,2) NOT NULL CONSTRAINT CHK_MucHBLoaiKha CHECK ([MucHBLoaiKha] >= 0),
+  [MucHBLoaiGioi] decimal(18,2) NOT NULL DEFAULT 0,     -- THÊM MỚI
+  [MucHBLoaiXuatSac] decimal(18,2) NOT NULL DEFAULT 0   -- THÊM MỚI
 );
 GO
 
--- 3. TẠO KHÓA NGOẠI (FOREIGN KEYS)
+-- =======================================================
+-- XỬ LÝ KHÓA NGOẠI 
+-- =======================================================
 
--- Khóa ngoại bảng Cán bộ
-ALTER TABLE [CANBO] ADD FOREIGN KEY ([MaPhong]) REFERENCES [PHONGBAN] ([MaPhong]);
-ALTER TABLE [CANBO] ADD FOREIGN KEY ([MaKhoa]) REFERENCES [KHOA] ([MaKhoa]);
-ALTER TABLE [CANBO] ADD FOREIGN KEY ([MaTK]) REFERENCES [TAIKHOAN] ([MaTK]);
+ALTER TABLE [CANBO] ADD FOREIGN KEY ([MaPhong]) REFERENCES [PHONGBAN] ([MaPhong]) ON UPDATE CASCADE ON DELETE SET NULL;
+ALTER TABLE [CANBO] ADD FOREIGN KEY ([MaTK]) REFERENCES [TAIKHOAN] ([MaTK]) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE [CANBO] ADD FOREIGN KEY ([MaKhoa]) REFERENCES [KHOA] ([MaKhoa]) ON UPDATE CASCADE ON DELETE SET NULL;
 
--- Khóa ngoại bảng Lớp
-ALTER TABLE [LOP] ADD FOREIGN KEY ([MaKhoa]) REFERENCES [KHOA] ([MaKhoa]);
+ALTER TABLE [LOP] ADD FOREIGN KEY ([MaKhoa]) REFERENCES [KHOA] ([MaKhoa]) ON UPDATE CASCADE ON DELETE CASCADE;
 
--- Khóa ngoại bảng Sinh viên
-ALTER TABLE [SINHVIEN] ADD FOREIGN KEY ([MaLop]) REFERENCES [LOP] ([MaLop]);
-ALTER TABLE [SINHVIEN] ADD FOREIGN KEY ([MaTK]) REFERENCES [TAIKHOAN] ([MaTK]);
+ALTER TABLE [SINHVIEN] ADD FOREIGN KEY ([MaLop]) REFERENCES [LOP] ([MaLop]) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE [SINHVIEN] ADD FOREIGN KEY ([MaTK]) REFERENCES [TAIKHOAN] ([MaTK]) ON UPDATE CASCADE ON DELETE CASCADE;
 
--- Khóa ngoại bảng Kết quả học tập
-ALTER TABLE [KETQUAHOCTAP] ADD FOREIGN KEY ([MaSV]) REFERENCES [SINHVIEN] ([MaSV]);
-ALTER TABLE [KETQUAHOCTAP] ADD FOREIGN KEY ([MaCB_Nhap]) REFERENCES [CANBO] ([MaCB]);
+ALTER TABLE [KETQUAHOCTAP] ADD FOREIGN KEY ([MaSV]) REFERENCES [SINHVIEN] ([MaSV]) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE [KETQUAHOCTAP] ADD FOREIGN KEY ([MaCB_Nhap]) REFERENCES [CANBO] ([MaCB]) ON UPDATE NO ACTION ON DELETE NO ACTION;
 
--- Khóa ngoại bảng Điểm rèn luyện
-ALTER TABLE [DIEMRENLUYEN] ADD FOREIGN KEY ([MaSV]) REFERENCES [SINHVIEN] ([MaSV]);
-ALTER TABLE [DIEMRENLUYEN] ADD FOREIGN KEY ([MaCB_Nhap]) REFERENCES [CANBO] ([MaCB]);
+ALTER TABLE [DIEMRENLUYEN] ADD FOREIGN KEY ([MaSV]) REFERENCES [SINHVIEN] ([MaSV]) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE [DIEMRENLUYEN] ADD FOREIGN KEY ([MaCB_Nhap]) REFERENCES [CANBO] ([MaCB]) ON UPDATE NO ACTION ON DELETE NO ACTION;
 
--- Khóa ngoại bảng Hồ sơ xét học bổng
-ALTER TABLE [HOSOXETHOCBONG] ADD FOREIGN KEY ([MaSV]) REFERENCES [SINHVIEN] ([MaSV]);
-ALTER TABLE [HOSOXETHOCBONG] ADD FOREIGN KEY ([MaDot]) REFERENCES [DOTHOCBONG] ([MaDot]);
-ALTER TABLE [HOSOXETHOCBONG] ADD FOREIGN KEY ([MaCB_Duyet]) REFERENCES [CANBO] ([MaCB]);
+ALTER TABLE [HOSOXETHOCBONG] ADD FOREIGN KEY ([MaSV]) REFERENCES [SINHVIEN] ([MaSV]) ON UPDATE CASCADE ON DELETE NO ACTION;
+ALTER TABLE [HOSOXETHOCBONG] ADD FOREIGN KEY ([MaDot]) REFERENCES [DOTHOCBONG] ([MaDot]) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE [HOSOXETHOCBONG] ADD FOREIGN KEY ([MaCB_Duyet]) REFERENCES [CANBO] ([MaCB]) ON UPDATE NO ACTION ON DELETE NO ACTION;
 
--- Khóa ngoại bảng Khiếu nại
-ALTER TABLE [KHIEUNAI] ADD FOREIGN KEY ([MaHoSo]) REFERENCES [HOSOXETHOCBONG] ([MaHoSo]);
-ALTER TABLE [KHIEUNAI] ADD FOREIGN KEY ([MaCB_Duyet]) REFERENCES [CANBO] ([MaCB]);
+ALTER TABLE [KHIEUNAI] ADD FOREIGN KEY ([MaHoSo]) REFERENCES [HOSOXETHOCBONG] ([MaHoSo]) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE [KHIEUNAI] ADD FOREIGN KEY ([MaCB_Duyet]) REFERENCES [CANBO] ([MaCB]) ON UPDATE NO ACTION ON DELETE NO ACTION;
 
--- Khóa ngoại bảng Danh sách học bổng
-ALTER TABLE [DSHOCBONG] ADD FOREIGN KEY ([MaDot]) REFERENCES [DOTHOCBONG] ([MaDot]);
-ALTER TABLE [DSHOCBONG] ADD FOREIGN KEY ([MaSV]) REFERENCES [SINHVIEN] ([MaSV]);
-ALTER TABLE [DSHOCBONG] ADD FOREIGN KEY ([MaCB_PheDuyet]) REFERENCES [CANBO] ([MaCB]);
+ALTER TABLE [DSHOCBONG] ADD FOREIGN KEY ([MaDot]) REFERENCES [DOTHOCBONG] ([MaDot]) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE [DSHOCBONG] ADD FOREIGN KEY ([MaSV]) REFERENCES [SINHVIEN] ([MaSV]) ON UPDATE CASCADE ON DELETE NO ACTION;
+ALTER TABLE [DSHOCBONG] ADD FOREIGN KEY ([MaCB_PheDuyet]) REFERENCES [CANBO] ([MaCB]) ON UPDATE NO ACTION ON DELETE NO ACTION;
 
--- Khóa ngoại bảng Chi trả
-ALTER TABLE [CHITRA] ADD FOREIGN KEY ([MaHoSo]) REFERENCES [HOSOXETHOCBONG] ([MaHoSo]);
-ALTER TABLE [CHITRA] ADD FOREIGN KEY ([MaCB_GiaiNgan]) REFERENCES [CANBO] ([MaCB]);
-GO
+ALTER TABLE [CHITRA] ADD FOREIGN KEY ([MaHoSo]) REFERENCES [HOSOXETHOCBONG] ([MaHoSo]) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE [CHITRA] ADD FOREIGN KEY ([MaCB_GiaiNgan]) REFERENCES [CANBO] ([MaCB]) ON UPDATE NO ACTION ON DELETE NO ACTION;
 
--- Khóa ngoại bảng Phân bổ kinh phí
-ALTER TABLE [PHANBOKINHPHI] ADD FOREIGN KEY ([MaDot]) REFERENCES [DOTHOCBONG] ([MaDot]);
-ALTER TABLE [PHANBOKINHPHI] ADD FOREIGN KEY ([MaKhoa]) REFERENCES [KHOA] ([MaKhoa]);
-GO
+ALTER TABLE [PHANBOKINHPHI] ADD FOREIGN KEY ([MaDot]) REFERENCES [DOTHOCBONG] ([MaDot]) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE [PHANBOKINHPHI] ADD FOREIGN KEY ([MaKhoa]) REFERENCES [KHOA] ([MaKhoa]) ON UPDATE NO ACTION ON DELETE NO ACTION;
+ALTER TABLE [PHANBOKINHPHI] ADD CONSTRAINT UQ_PhanBo_DotKhoa UNIQUE (MaDot, MaKhoa);
 
-USE dbQLHocBong;
-GO
-
--- =================================================================================
--- 1. THÊM DỮ LIỆU DANH MỤC (PHÒNG BAN, KHOA, LỚP)
--- =================================================================================
-
--- Thêm Phòng ban
-INSERT INTO [PHONGBAN] (TenPhong) VALUES 
-(N'Phòng Đào tạo'),             -- ID: 1
-(N'Phòng Công tác Sinh viên'),  -- ID: 2
-(N'Phòng Kế hoạch Tài chính'),  -- ID: 3
-(N'Ban Giám Hiệu');             -- ID: 4
-
--- Thêm Khoa
-INSERT INTO [KHOA] (TenKhoa) VALUES 
-(N'Khoa Công nghệ Thông tin');  -- ID: 1
-
--- Thêm Lớp (Chia làm 2 lớp thuộc Khoa CNTT)
-INSERT INTO [LOP] (TenLop, MaKhoa) VALUES 
-('23T1', 1), -- ID: 1
-('23T2', 1); -- ID: 2
-
--- =================================================================================
--- 2. THÊM TÀI KHOẢN & CÁN BỘ CHO 6 TÁC NHÂN (KHÔNG CÓ ADMIN)
--- =================================================================================
-
--- 1. Tác nhân: Đào Tạo
-INSERT INTO [TAIKHOAN] (TenDangNhap, MatKhau, VaiTro, TrangThai) VALUES ('daotao', '123456', 'DaoTao', 1);
-INSERT INTO [CANBO] (HoTen, Email, ChucVu, MaPhong, MaTK) VALUES (N'Phạm Thị Đào Tạo', 'daotao@ute.edu.vn', N'Chuyên viên Đào tạo', 1, IDENT_CURRENT('TAIKHOAN'));
-
--- 2. Tác nhân: CTSV
-INSERT INTO [TAIKHOAN] (TenDangNhap, MatKhau, VaiTro, TrangThai) VALUES ('ctsv', '123456', 'CTSV', 1);
-INSERT INTO [CANBO] (HoTen, Email, ChucVu, MaPhong, MaTK) VALUES (N'Trần Thị CTSV', 'ctsv@ute.edu.vn', N'Chuyên viên CTSV', 2, IDENT_CURRENT('TAIKHOAN'));
-
--- 3. Tác nhân: KHTC
-INSERT INTO [TAIKHOAN] (TenDangNhap, MatKhau, VaiTro, TrangThai) VALUES ('khtc', '123456', 'KHTC', 1);
-INSERT INTO [CANBO] (HoTen, Email, ChucVu, MaPhong, MaTK) VALUES (N'Lê Văn KHTC', 'khtc@ute.edu.vn', N'Chuyên viên KHTC', 3, IDENT_CURRENT('TAIKHOAN'));
-
--- 4. Tác nhân: Khoa
-INSERT INTO [TAIKHOAN] (TenDangNhap, MatKhau, VaiTro, TrangThai) VALUES ('khoacntt', '123456', 'Khoa', 1);
-INSERT INTO [CANBO] (HoTen, Email, ChucVu, MaPhong, MaTK) VALUES (N'Nguyễn Văn Khoa', 'khoacntt@ute.edu.vn', N'Trưởng Khoa', NULL, IDENT_CURRENT('TAIKHOAN'));
-
--- 5. Tác nhân: Hội đồng
-INSERT INTO [TAIKHOAN] (TenDangNhap, MatKhau, VaiTro, TrangThai) VALUES ('hoidong', '123456', 'HoiDong', 1);
-INSERT INTO [CANBO] (HoTen, Email, ChucVu, MaPhong, MaTK) VALUES (N'Hội Đồng Trường', 'hoidong@ute.edu.vn', N'Chủ tịch Hội đồng', 4, IDENT_CURRENT('TAIKHOAN'));
-
--- 6. Tác nhân: Hiệu trưởng
-INSERT INTO [TAIKHOAN] (TenDangNhap, MatKhau, VaiTro, TrangThai) VALUES ('hieutruong', '123456', 'HieuTruong', 1);
-INSERT INTO [CANBO] (HoTen, Email, ChucVu, MaPhong, MaTK) VALUES (N'Nguyễn Hiệu Trưởng', 'hieutruong@ute.edu.vn', N'Hiệu trưởng', 4, IDENT_CURRENT('TAIKHOAN'));
-
-
--- =================================================================================
--- 3. THÊM 10 TÀI KHOẢN & SINH VIÊN (Mã từ 23115053122101 đến 23115053122110)
--- =================================================================================
-
--- 3.1. Insert 10 dòng vào bảng TAIKHOAN trước
-INSERT INTO [TAIKHOAN] (TenDangNhap, MatKhau, VaiTro, TrangThai) VALUES 
-('23115053122101', '123456', 'SinhVien', 1),
-('23115053122102', '123456', 'SinhVien', 1),
-('23115053122103', '123456', 'SinhVien', 1),
-('23115053122104', '123456', 'SinhVien', 1),
-('23115053122105', '123456', 'SinhVien', 1),
-('23115053122106', '123456', 'SinhVien', 1),
-('23115053122107', '123456', 'SinhVien', 1),
-('23115053122108', '123456', 'SinhVien', 1),
-('23115053122109', '123456', 'SinhVien', 1),
-('23115053122110', '123456', 'SinhVien', 1);
-
--- 3.2. Insert 10 dòng vào bảng SINHVIEN (Tìm lại MaTK qua TenDangNhap)
-INSERT INTO [SINHVIEN] (MaSV, HoTen, NgaySinh, Email, SDT, MaLop, MaTK) VALUES 
-('23115053122101', N'Nguyễn Sinh Viên 01', '2005-01-15', 'sv01@sv.ute.edu.vn', '0901000001', 1, (SELECT MaTK FROM TAIKHOAN WHERE TenDangNhap = '23115053122101')),
-('23115053122102', N'Trần Sinh Viên 02', '2005-02-14', 'sv02@sv.ute.edu.vn', '0901000002', 1, (SELECT MaTK FROM TAIKHOAN WHERE TenDangNhap = '23115053122102')),
-('23115053122103', N'Lê Sinh Viên 03', '2005-03-20', 'sv03@sv.ute.edu.vn', '0901000003', 1, (SELECT MaTK FROM TAIKHOAN WHERE TenDangNhap = '23115053122103')),
-('23115053122104', N'Phạm Sinh Viên 04', '2005-04-10', 'sv04@sv.ute.edu.vn', '0901000004', 1, (SELECT MaTK FROM TAIKHOAN WHERE TenDangNhap = '23115053122104')),
-('23115053122105', N'Hoàng Sinh Viên 05', '2005-05-05', 'sv05@sv.ute.edu.vn', '0901000005', 1, (SELECT MaTK FROM TAIKHOAN WHERE TenDangNhap = '23115053122105')),
-('23115053122106', N'Đặng Sinh Viên 06', '2005-06-12', 'sv06@sv.ute.edu.vn', '0901000006', 2, (SELECT MaTK FROM TAIKHOAN WHERE TenDangNhap = '23115053122106')),
-('23115053122107', N'Bùi Sinh Viên 07', '2005-07-22', 'sv07@sv.ute.edu.vn', '0901000007', 2, (SELECT MaTK FROM TAIKHOAN WHERE TenDangNhap = '23115053122107')),
-('23115053122108', N'Đỗ Sinh Viên 08', '2005-08-08', 'sv08@sv.ute.edu.vn', '0901000008', 2, (SELECT MaTK FROM TAIKHOAN WHERE TenDangNhap = '23115053122108')),
-('23115053122109', N'Hồ Sinh Viên 09', '2005-09-19', 'sv09@sv.ute.edu.vn', '0901000009', 2, (SELECT MaTK FROM TAIKHOAN WHERE TenDangNhap = '23115053122109')),
-('23115053122110', N'Ngô Sinh Viên 10', '2005-10-30', 'sv10@sv.ute.edu.vn', '0901000010', 2, (SELECT MaTK FROM TAIKHOAN WHERE TenDangNhap = '23115053122110'));
-
--- Thêm cột MaKhoa vào bảng CANBO
-ALTER TABLE [CANBO] 
-ADD [MaKhoa] int NULL;
-GO
-
--- Tạo foreign key constraint
-ALTER TABLE [CANBO] 
-ADD CONSTRAINT FK_CANBO_KHOA 
-FOREIGN KEY ([MaKhoa]) REFERENCES [KHOA]([MaKhoa]);
-GO
-
--- Update dữ liệu mẫu: Gán cán bộ Khoa CNTT vào Khoa có MaKhoa = 1
-UPDATE [CANBO] 
-SET [MaKhoa] = 1 
-WHERE [ChucVu] = N'Trưởng Khoa';
-GO
-
--- Tạo đợt học bổng mẫu
-INSERT INTO [DOTHOCBONG] (LoaiDot, HocKy, NamHoc, TrangThai) 
-VALUES (N'Học bổng khuyến khích học tập', 1, '2023-2024', 'DangXetDuyet');
-GO
-
--- Lấy MaDot vừa tạo
-DECLARE @MaDot int = SCOPE_IDENTITY();
-
--- Thêm điểm rèn luyện cho sinh viên
-INSERT INTO [DIEMRENLUYEN] (MaSV, HocKy, NamHoc, DiemSo, MaCB_Nhap)
-VALUES 
-('23115053122101', 1, '2023-2024', 85, 2), -- Cán bộ CTSV nhập
-('23115053122102', 1, '2023-2024', 90, 2),
-('23115053122103', 1, '2023-2024', 80, 2),
-('23115053122104', 1, '2023-2024', 88, 2),
-('23115053122105', 1, '2023-2024', 92, 2);
-GO
-
--- Thêm kết quả học tập cho sinh viên
-INSERT INTO [KETQUAHOCTAP] (MaSV, HocKy, NamHoc, GPA, SoTC, MaCB_Nhap)
-VALUES 
-('23115053122101', 1, '2023-2024', 3.5, 20, 1), -- Cán bộ Đào tạo nhập
-('23115053122102', 1, '2023-2024', 3.8, 20, 1),
-('23115053122103', 1, '2023-2024', 3.2, 20, 1),
-('23115053122104', 1, '2023-2024', 3.6, 20, 1),
-('23115053122105', 1, '2023-2024', 3.9, 20, 1);
-GO
-
--- Thêm hồ sơ xét học bổng (trạng thái ChoXet)
--- Lấy MaDot đầu tiên
-DECLARE @MaDotTest int = (SELECT TOP 1 MaDot FROM DOTHOCBONG ORDER BY MaDot DESC);
-
-INSERT INTO [HOSOXETHOCBONG] (MaSV, MaDot, NgayNop, GPA, DiemNCKH, DiemHDCD, XepLoaiHB, TrangThai, MaCB_Duyet)
-VALUES 
-('23115053122101', @MaDotTest, GETDATE(), 3.5, 5, 3, NULL, 'ChoXet', NULL),
-('23115053122102', @MaDotTest, GETDATE(), 3.8, 8, 5, NULL, 'ChoXet', NULL),
-('23115053122103', @MaDotTest, GETDATE(), 3.2, 2, 1, NULL, 'ChoXet', NULL),
-('23115053122104', @MaDotTest, GETDATE(), 3.6, 6, 4, NULL, 'ChoXet', NULL),
-('23115053122105', @MaDotTest, GETDATE(), 3.9, 10, 7, NULL, 'ChoXet', NULL);
-GO
-
-USE dbQLHocBong;
-GO
-
--- ================================================
--- KIỂM TRA DỮ LIỆU HIỆN TẠI
--- ================================================
-SELECT 'DOTHOCBONG' AS Bang, COUNT(*) AS SoLuong FROM DOTHOCBONG
-UNION ALL
-SELECT 'HOSOXETHOCBONG', COUNT(*) FROM HOSOXETHOCBONG
-UNION ALL
-SELECT 'SINHVIEN', COUNT(*) FROM SINHVIEN
-UNION ALL
-SELECT 'LOP', COUNT(*) FROM LOP;
-GO
-
--- ================================================
--- BƯỚC 1: Đảm bảo Đợt học bổng MaDot = 1 tồn tại
--- ================================================
-IF NOT EXISTS (SELECT 1 FROM DOTHOCBONG WHERE MaDot = 1)
-BEGIN
-    -- Reset identity nếu bảng rỗng
-    SET IDENTITY_INSERT DOTHOCBONG ON;
-    INSERT INTO DOTHOCBONG (MaDot, LoaiDot, HocKy, NamHoc, TrangThai)
-    VALUES (1, N'Học bổng khuyến khích học tập', 1, '2023-2024', 'DangXetDuyet');
-    SET IDENTITY_INSERT DOTHOCBONG OFF;
-    PRINT 'Đã thêm DOTHOCBONG MaDot = 1';
-END
-ELSE
-BEGIN
-    PRINT 'DOTHOCBONG MaDot = 1 đã tồn tại';
-END
-GO
-
--- ================================================
--- BƯỚC 2: Đảm bảo Khoa, Lớp, Sinh viên tồn tại
--- ================================================
-
--- Khoa CNTT (MaKhoa = 1)
-IF NOT EXISTS (SELECT 1 FROM KHOA WHERE MaKhoa = 1)
-BEGIN
-    SET IDENTITY_INSERT KHOA ON;
-    INSERT INTO KHOA (MaKhoa, TenKhoa) VALUES (1, N'Khoa Công nghệ Thông tin');
-    SET IDENTITY_INSERT KHOA OFF;
-    PRINT 'Đã thêm KHOA';
-END
-GO
-
--- Lớp 23T1 (MaLop = 1, MaKhoa = 1)
-IF NOT EXISTS (SELECT 1 FROM LOP WHERE MaLop = 1)
-BEGIN
-    SET IDENTITY_INSERT LOP ON;
-    INSERT INTO LOP (MaLop, TenLop, MaKhoa) VALUES (1, '23T1', 1);
-    SET IDENTITY_INSERT LOP OFF;
-    PRINT 'Đã thêm LOP 23T1';
-END
-GO
-
--- Lớp 23T2 (MaLop = 2, MaKhoa = 1)
-IF NOT EXISTS (SELECT 1 FROM LOP WHERE MaLop = 2)
-BEGIN
-    SET IDENTITY_INSERT LOP ON;
-    INSERT INTO LOP (MaLop, TenLop, MaKhoa) VALUES (2, '23T2', 1);
-    SET IDENTITY_INSERT LOP OFF;
-    PRINT 'Đã thêm LOP 23T2';
-END
-GO
-
--- ================================================
--- BƯỚC 3: Thêm TÀI KHOẢN cho sinh viên (nếu chưa có)
--- ================================================
-IF NOT EXISTS (SELECT 1 FROM TAIKHOAN WHERE TenDangNhap = '23115053122101')
-BEGIN
-    INSERT INTO TAIKHOAN (TenDangNhap, MatKhau, VaiTro, TrangThai) VALUES 
-    ('23115053122101', '123456', 'SinhVien', 1),
-    ('23115053122102', '123456', 'SinhVien', 1),
-    ('23115053122103', '123456', 'SinhVien', 1),
-    ('23115053122104', '123456', 'SinhVien', 1),
-    ('23115053122105', '123456', 'SinhVien', 1);
-    PRINT 'Đã thêm 5 TAIKHOAN sinh viên';
-END
-GO
-
--- ================================================
--- BƯỚC 4: Thêm SINH VIÊN (nếu chưa có)
--- ================================================
-IF NOT EXISTS (SELECT 1 FROM SINHVIEN WHERE MaSV = '23115053122101')
-BEGIN
-    INSERT INTO SINHVIEN (MaSV, HoTen, NgaySinh, Email, SDT, MaLop, MaTK) VALUES 
-    ('23115053122101', N'Nguyễn Sinh Viên 01', '2005-01-15', 'sv01@sv.ute.edu.vn', '0901000001', 1, 
-        (SELECT MaTK FROM TAIKHOAN WHERE TenDangNhap = '23115053122101')),
-    ('23115053122102', N'Trần Sinh Viên 02',   '2005-02-14', 'sv02@sv.ute.edu.vn', '0901000002', 1, 
-        (SELECT MaTK FROM TAIKHOAN WHERE TenDangNhap = '23115053122102')),
-    ('23115053122103', N'Lê Sinh Viên 03',     '2005-03-20', 'sv03@sv.ute.edu.vn', '0901000003', 1, 
-        (SELECT MaTK FROM TAIKHOAN WHERE TenDangNhap = '23115053122103')),
-    ('23115053122104', N'Phạm Sinh Viên 04',   '2005-04-10', 'sv04@sv.ute.edu.vn', '0901000004', 1, 
-        (SELECT MaTK FROM TAIKHOAN WHERE TenDangNhap = '23115053122104')),
-    ('23115053122105', N'Hoàng Sinh Viên 05',  '2005-05-05', 'sv05@sv.ute.edu.vn', '0901000005', 1, 
-        (SELECT MaTK FROM TAIKHOAN WHERE TenDangNhap = '23115053122105'));
-    PRINT 'Đã thêm 5 SINHVIEN thuộc lớp 23T1 (MaKhoa=1)';
-END
-GO
-
--- ================================================
--- BƯỚC 5: Thêm HỒ SƠ XÉT HỌC BỔNG (nếu chưa có)
--- ================================================
-IF NOT EXISTS (
-    SELECT 1 FROM HOSOXETHOCBONG 
-    WHERE MaDot = 1 AND TrangThai = 'ChoXet'
-)
-BEGIN
-    INSERT INTO HOSOXETHOCBONG 
-        (MaSV, MaDot, NgayNop, GPA, DiemNCKH, DiemHDCD, XepLoaiHB, TrangThai, MaCB_Duyet)
-    VALUES 
-    ('23115053122101', 1, GETDATE(), 3.5, 5, 3, NULL, 'ChoXet', NULL),
-    ('23115053122102', 1, GETDATE(), 3.8, 8, 5, NULL, 'ChoXet', NULL),
-    ('23115053122103', 1, GETDATE(), 3.2, 2, 1, NULL, 'ChoXet', NULL),
-    ('23115053122104', 1, GETDATE(), 3.6, 6, 4, NULL, 'ChoXet', NULL),
-    ('23115053122105', 1, GETDATE(), 3.9, 10, 7, NULL, 'ChoXet', NULL);
-    PRINT 'Đã thêm 5 HOSOXETHOCBONG trạng thái ChoXet';
-END
-GO
-
--- ================================================
--- KIỂM TRA KẾT QUẢ QUERY MỤC TIÊU
--- ================================================
-SELECT 
-    hs.MaHoSo,
-    hs.MaSV,
-    sv.HoTen,
-    hs.MaDot,
-    hs.TrangThai,
-    sv.MaLop,
-    l.MaKhoa,
-    hs.GPA
-FROM HOSOXETHOCBONG hs
-JOIN SINHVIEN sv ON hs.MaSV = sv.MaSV
-JOIN LOP l ON sv.MaLop = l.MaLop
-WHERE l.MaKhoa = 1 
-  AND hs.MaDot = 1
-  AND hs.TrangThai = 'ChoXet';
-GO
+ALTER TABLE [HOSOXETHOCBONG] ADD CONSTRAINT UQ_HoSo_SVDot UNIQUE (MaSV, MaDot);

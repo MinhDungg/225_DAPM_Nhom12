@@ -6,11 +6,12 @@ public class HoSoXetHocBong
     public string MaSV { get; set; } = null!;
     public int MaDot { get; set; }
     public DateTime NgayNop { get; set; }
-    public double GPA { get; set; }
-    public double DiemNCKH { get; set; }
-    public double DiemHDCD { get; set; }
+    public float GPA { get; set; }
+    public float DiemHocTap { get; set; }
+    public int DiemRenLuyen { get; set; }
     public string? XepLoaiHB { get; set; }
     public string TrangThai { get; set; } = null!;
+    public string? GhiChu { get; set; }
     public int? MaCB_Duyet { get; set; }
 
     public SinhVien SinhVien { get; set; } = null!;
