@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BE.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260422140831_UpdateSchemaV3")]
-    partial class UpdateSchemaV3
+    [Migration("20260504040655_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -204,11 +204,17 @@ namespace BE.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 
+                    b.Property<string>("LyDoTraVe")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("NamHoc")
                         .IsRequired()
                         .HasMaxLength(20)
                         .IsUnicode(false)
                         .HasColumnType("varchar(20)");
+
+                    b.Property<DateTime?>("NgayCongBo")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("TrangThai")
                         .ValueGeneratedOnAdd()

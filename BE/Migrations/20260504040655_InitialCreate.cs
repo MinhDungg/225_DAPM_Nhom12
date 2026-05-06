@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace BE.Migrations
 {
     /// <inheritdoc />
-    public partial class UpdateHoSoAndPhanBoKinhPhi : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -20,7 +20,9 @@ namespace BE.Migrations
                     LoaiDot = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false),
                     HocKy = table.Column<int>(type: "int", nullable: false),
                     NamHoc = table.Column<string>(type: "varchar(20)", unicode: false, maxLength: 20, nullable: false),
-                    TrangThai = table.Column<string>(type: "varchar(50)", unicode: false, maxLength: 50, nullable: true, defaultValue: "KhoiTao")
+                    TrangThai = table.Column<string>(type: "varchar(50)", unicode: false, maxLength: 50, nullable: true, defaultValue: "KhoiTao"),
+                    LyDoTraVe = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    NgayCongBo = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -127,11 +129,17 @@ namespace BE.Migrations
                     Email = table.Column<string>(type: "varchar(100)", unicode: false, maxLength: 100, nullable: false),
                     ChucVu = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     MaPhong = table.Column<int>(type: "int", nullable: true),
+                    MaKhoa = table.Column<int>(type: "int", nullable: true),
                     MaTK = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_CANBO", x => x.MaCB);
+                    table.ForeignKey(
+                        name: "FK_CANBO_KHOA_MaKhoa",
+                        column: x => x.MaKhoa,
+                        principalTable: "KHOA",
+                        principalColumn: "MaKhoa");
                     table.ForeignKey(
                         name: "FK_CANBO_PHONGBAN_MaPhong",
                         column: x => x.MaPhong,
@@ -245,10 +253,12 @@ namespace BE.Migrations
                     MaSV = table.Column<string>(type: "varchar(20)", unicode: false, maxLength: 20, nullable: false),
                     MaDot = table.Column<int>(type: "int", nullable: false),
                     NgayNop = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETDATE()"),
-                    DiemHocTap = table.Column<double>(type: "float", nullable: false),
+                    GPA = table.Column<float>(type: "real", nullable: false),
+                    DiemHocTap = table.Column<float>(type: "real", nullable: false),
                     DiemRenLuyen = table.Column<int>(type: "int", nullable: false),
                     XepLoaiHB = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
                     TrangThai = table.Column<string>(type: "varchar(50)", unicode: false, maxLength: 50, nullable: false, defaultValue: "ChoXet"),
+                    GhiChu = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     MaCB_Duyet = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>
@@ -282,8 +292,10 @@ namespace BE.Migrations
                     MaSV = table.Column<string>(type: "varchar(20)", unicode: false, maxLength: 20, nullable: false),
                     HocKy = table.Column<int>(type: "int", nullable: false),
                     NamHoc = table.Column<string>(type: "varchar(20)", unicode: false, maxLength: 20, nullable: false),
-                    GPA = table.Column<double>(type: "float", nullable: false),
+                    GPA = table.Column<float>(type: "real", nullable: false),
+                    DiemHocTap = table.Column<float>(type: "real", nullable: false),
                     SoTC = table.Column<int>(type: "int", nullable: false),
+                    CoDiemF = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
                     MaCB_Nhap = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>
@@ -341,7 +353,9 @@ namespace BE.Migrations
                     MinhChung = table.Column<string>(type: "varchar(255)", unicode: false, maxLength: 255, nullable: true),
                     NgayGui = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETDATE()"),
                     TrangThai = table.Column<string>(type: "varchar(50)", unicode: false, maxLength: 50, nullable: false, defaultValue: "ChoXuLy"),
-                    MaCB_Duyet = table.Column<int>(type: "int", nullable: true)
+                    MaCB_Duyet = table.Column<int>(type: "int", nullable: true),
+                    NoiDungPhanHoi = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    NgayPhanHoi = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -358,6 +372,11 @@ namespace BE.Migrations
                         principalColumn: "MaHoSo",
                         onDelete: ReferentialAction.Cascade);
                 });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CANBO_MaKhoa",
+                table: "CANBO",
+                column: "MaKhoa");
 
             migrationBuilder.CreateIndex(
                 name: "IX_CANBO_MaPhong",
