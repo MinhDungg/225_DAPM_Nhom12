@@ -87,6 +87,28 @@ const khoaService = {
                 throw new Error('Lỗi không xác định');
             }
         }
+    },
+
+    // Lấy danh sách đã đề xuất
+    layDanhSachDaDeXuat: async () => {
+        try {
+            const token = sessionStorage.getItem('token');
+            const response = await axiosInstance.get('/khoa/danhsach-da-de-xuat', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Lỗi khi lấy danh sách đã đề xuất:', error);
+            if (error.response) {
+                throw new Error(error.response.data.message || 'Lỗi từ server');
+            } else if (error.request) {
+                throw new Error('Không thể kết nối tới server. Vui lòng kiểm tra Backend đang chạy.');
+            } else {
+                throw new Error('Lỗi không xác định');
+            }
+        }
     }
 };
 
