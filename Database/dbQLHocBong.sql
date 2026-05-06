@@ -117,7 +117,7 @@ CREATE TABLE [DOTHOCBONG] (
   [LoaiDot] nvarchar(150) NOT NULL, 
   [HocKy] int NOT NULL,
   [NamHoc] varchar(20) NOT NULL,
-  [TrangThai] varchar(50) DEFAULT 'KhoiTao' CONSTRAINT CHK_TrangThai_Dot CHECK ([TrangThai] IN ('KhoiTao', 'DangXetDuyet', 'DuKien', 'CongBoLayYKien', 'ChoPheDuyet', 'ChinhThuc')),
+  [TrangThai] varchar(50) DEFAULT 'KhoiTao' CONSTRAINT CHK_TrangThai_Dot CHECK ([TrangThai] IN ('KhoiTao','DaCoDiem', 'DangXetDuyet', 'DuKien', 'CongBoLayYKien', 'ChoPheDuyet', 'ChinhThuc')),
   [LyDoTraVe] nvarchar(500),
   [NgayCongBo] datetime NULL -- Cột mới thêm để đếm 10 ngày
 );
@@ -133,7 +133,7 @@ CREATE TABLE [HOSOXETHOCBONG] (
   [GPA] real NOT NULL DEFAULT 0, -- THÊM MỚI
   [DiemRenLuyen] int NOT NULL CONSTRAINT CHK_DiemRenLuyen CHECK ([DiemRenLuyen] >= 0 AND [DiemRenLuyen] <= 100),
   [XepLoaiHB] nvarchar(50),
-  [TrangThai] varchar(50) DEFAULT 'ChoXet' CONSTRAINT CHK_TrangThai_HoSo CHECK ([TrangThai] IN ('ChoXet', 'KhoaDeXuat', 'HoiDongDuyet', 'TuChoi', 'ChinhThuc')),
+  [TrangThai] varchar(50) DEFAULT 'ChoXet' CONSTRAINT CHK_TrangThai_HoSo CHECK ([TrangThai] IN ('ChoXet', 'KhoaDeXuat', 'HoiDongDuyet', 'TuChoi', 'ChinhThuc', 'Loai')),
   [GhiChu] nvarchar(MAX) NULL, -- THÊM MỚI
   [MaCB_Duyet] int
 );
