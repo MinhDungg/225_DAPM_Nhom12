@@ -201,11 +201,17 @@ namespace BE.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 
+                    b.Property<string>("LyDoTraVe")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("NamHoc")
                         .IsRequired()
                         .HasMaxLength(20)
                         .IsUnicode(false)
                         .HasColumnType("varchar(20)");
+
+                    b.Property<DateTime?>("NgayCongBo")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("TrangThai")
                         .ValueGeneratedOnAdd()

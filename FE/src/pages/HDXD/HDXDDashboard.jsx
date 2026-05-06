@@ -1,79 +1,121 @@
-import React, { useState } from 'react';
-import { ShieldCheck, Eye, UserX, CheckCircle, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import finalDecisionService from '../../services/finalDecisionService';
 
 const HDXDDashboard = () => {
-    const [showModal, setShowModal] = useState(false);
+    const [hoSos, setHoSos] = useState([]);
+    const fetchHoSo = async () => {
+        try {
+            const res = await finalDecisionService.getTongHopToanTruong();
+            if (res.success) {
+                const dsHopLe = res.data.filter(hs => hs.trangThai !== 'TuChoi');
+                setHoSos(dsHopLe);
+            }
+        } catch (error) {
+            console.error(error.message);
+        }
+    };
+
+    useEffect(() => { fetchHoSo(); }, []);
+
+    // TÍNH TOÁN DỮ LIỆU CHO BIỂU ĐỒ & THỐNG KÊ
+    const tongSinhVien = hoSos.length;
+    const countXuatSac = hoSos.filter(h => h.xepLoaiHB === 'Xuất sắc').length;
+    const countGioi = hoSos.filter(h => h.xepLoaiHB === 'Giỏi').length;
+    const countKha = hoSos.filter(h => h.xepLoaiHB === 'Khá').length;
+
+    const chartData = [
+        { name: 'Xuất sắc', 'Số lượng': countXuatSac, color: '#3b82f6' },
+        { name: 'Giỏi', 'Số lượng': countGioi, color: '#10b981' },
+        { name: 'Khá', 'Số lượng': countKha, color: '#f59e0b' }
+    ];
 
     return (
         <div className="space-y-8 animate-fade-in">
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-end">
                 <div>
-                    <h2 className="text-3xl font-extrabold text-gray-900">Hội đồng Xét duyệt</h2>
-                    <p className="text-gray-500 mt-1">Thẩm định danh sách và phê duyệt kết quả cuối cùng.</p>
+                    <h2 className="text-3xl font-extrabold text-gray-900">Dashboard Hội đồng</h2>
+                    <p className="text-gray-500 mt-1">Rà soát danh sách tổng và xử lý các ngoại lệ vi phạm cấp trường.</p>
                 </div>
-                <button className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-xl font-bold shadow-lg transition-all flex items-center gap-2">
-                    <CheckCircle size={20} /> Chốt danh sách xét duyệt
-                </button>
             </div>
 
-            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-                <table className="w-full text-left border-collapse">
-                    <thead>
-                        <tr className="bg-gray-50/50 border-b border-gray-100">
-                            <th className="p-6 font-bold text-gray-700 text-sm uppercase tracking-wider">Sinh viên</th>
-                            <th className="p-6 font-bold text-gray-700 text-sm uppercase tracking-wider text-center">GPA / ĐRL</th>
-                            <th className="p-6 font-bold text-gray-700 text-sm uppercase tracking-wider text-center">Loại HB</th>
-                            <th className="p-6 font-bold text-gray-700 text-sm uppercase tracking-wider text-center">Thao tác</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50">
-                        {[1, 2, 3].map((item) => (
-                            <tr key={item} className="hover:bg-blue-50/20 transition-colors">
-                                <td className="p-6">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-blue-700 font-bold">SV</div>
-                                        <div>
-                                            <p className="font-bold text-gray-900 text-base">Huỳnh Minh Dũng</p>
-                                            <p className="text-xs text-gray-500 font-medium">MSSV: 23115053122108</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td className="p-6 text-center">
-                                    <span className="font-bold text-gray-800">3.6</span> <span className="text-gray-400">/</span> <span className="font-bold text-gray-800">85</span>
-                                </td>
-                                <td className="p-6 text-center">
-                                    <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold">Loại Xuất sắc</span>
-                                </td>
-                                <td className="p-6">
-                                    <div className="flex justify-center gap-3">
-                                        <button className="p-2.5 bg-gray-100 text-gray-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all shadow-sm"><Eye size={18} /></button>
-                                        <button onClick={() => setShowModal(true)} className="p-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition-all shadow-sm"><UserX size={18} /></button>
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-
-            {/* Modal xử lý khi loại sinh viên theo Usecase */}
-            {showModal && (
-                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 animate-scale-up">
-                        <div className="bg-red-50 w-16 h-16 rounded-2xl flex items-center justify-center text-red-600 mb-6">
-                            <AlertTriangle size={32} />
-                        </div>
-                        <h3 className="text-2xl font-bold text-gray-900">Loại bỏ sinh viên?</h3>
-                        <p className="text-gray-500 mt-2">Vui lòng nhập lý do loại bỏ sinh viên này khỏi danh sách nhận học bổng.</p>
-                        <textarea className="w-full mt-6 bg-gray-50 border border-gray-200 rounded-2xl p-4 outline-none focus:ring-2 focus:ring-red-500 text-sm" rows="3" placeholder="Lý do vi phạm..."></textarea>
-                        <div className="flex gap-4 mt-8">
-                            <button onClick={() => setShowModal(false)} className="flex-1 py-3 font-bold text-gray-500 hover:bg-gray-100 rounded-xl transition-all">Hủy</button>
-                            <button className="flex-1 py-3 font-bold bg-red-600 text-white rounded-xl shadow-md hover:bg-red-700 transition-all">Xác nhận loại</button>
-                        </div>
+            {/* KHU VỰC THỐNG KÊ DÀNH CHO SẾP */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col justify-center">
+                    <h3 className="text-gray-500 font-bold mb-2">TỔNG SINH VIÊN ĐỀ XUẤT</h3>
+                    <p className="text-5xl font-extrabold text-gray-900">{tongSinhVien} <span className="text-lg text-gray-400 font-normal">hồ sơ</span></p>
+                </div>
+                <div className="lg:col-span-2 bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+                    <h3 className="text-gray-500 font-bold mb-4">PHÂN BỔ THEO XẾP LOẠI</h3>
+                    <div className="h-32">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={chartData} layout="vertical" margin={{ top: 0, right: 0, left: 20, bottom: 0 }}>
+                                <XAxis type="number" hide />
+                                <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} fontWeight="bold" />
+                                <Tooltip cursor={{ fill: 'transparent' }} />
+                                <Bar dataKey="Số lượng" radius={[0, 8, 8, 0]} barSize={20}>
+                                    {chartData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.color} />
+                                    ))}
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
                     </div>
                 </div>
-            )}
+            </div>
+            {/* BẢNG TỔNG HỢP THEO KHOA */}
+            {(() => {
+                // Group hồ sơ theo Khoa
+                const theoKhoa = hoSos.reduce((acc, hs) => {
+                    const key = hs.tenKhoa || 'Chưa xác định';
+                    if (!acc[key]) acc[key] = [];
+                    acc[key].push(hs);
+                    return acc;
+                }, {});
+
+                const rows = Object.entries(theoKhoa).map(([tenKhoa, ds]) => ({
+                    tenKhoa,
+                    soLuong: ds.length,
+                    diemMin: Math.min(...ds.map(h => h.diemHocTap)).toFixed(2),
+                    diemMax: Math.max(...ds.map(h => h.diemHocTap)).toFixed(2),
+                    diemTB: (ds.reduce((s, h) => s + h.diemHocTap, 0) / ds.length).toFixed(2),
+                }));
+
+                return rows.length > 0 ? (
+                    <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+                        <div className="p-6 border-b border-gray-100 font-bold text-gray-800 text-lg flex items-center gap-2">
+                            📊 Tổng hợp đề xuất theo Khoa
+                        </div>
+                        <table className="w-full text-left">
+                            <thead>
+                                <tr className="bg-gray-50 border-b border-gray-100">
+                                    <th className="p-5 font-bold text-gray-600 text-sm uppercase">Khoa</th>
+                                    <th className="p-5 font-bold text-gray-600 text-sm uppercase text-center">Số SV đề xuất</th>
+                                    <th className="p-5 font-bold text-gray-600 text-sm uppercase text-center">Điểm thấp nhất</th>
+                                    <th className="p-5 font-bold text-gray-600 text-sm uppercase text-center bg-blue-50/30">Điểm TB</th>
+                                    <th className="p-5 font-bold text-gray-600 text-sm uppercase text-center">Điểm cao nhất</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50">
+                                {rows.map(r => (
+                                    <tr key={r.tenKhoa} className="hover:bg-gray-50/50 transition-colors">
+                                        <td className="p-5 font-bold text-gray-800">{r.tenKhoa}</td>
+                                        <td className="p-5 text-center">
+                                            <span className="bg-blue-100 text-blue-700 font-bold px-3 py-1 rounded-full text-sm">{r.soLuong} SV</span>
+                                        </td>
+                                        <td className="p-5 text-center font-bold text-orange-500">{r.diemMin}</td>
+                                        <td className="p-5 text-center font-bold text-blue-600 bg-blue-50/20">{r.diemTB}</td>
+                                        <td className="p-5 text-center font-bold text-green-600">{r.diemMax}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : null;
+            })()}
+
         </div>
+
     );
 };
 

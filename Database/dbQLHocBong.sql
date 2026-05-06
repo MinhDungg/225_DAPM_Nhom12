@@ -93,8 +93,8 @@ CREATE TABLE [KETQUAHOCTAP] (
   [HocKy] int NOT NULL CONSTRAINT CHK_HocKy_KQHT CHECK ([HocKy] IN (1, 2, 3)),
   [NamHoc] varchar(20) NOT NULL,
   [GPA] real NOT NULL CONSTRAINT CHK_GPA CHECK ([GPA] >= 0.0 AND [GPA] <= 4.0),
-  [DiemHocTap] real NOT NULL DEFAULT 0,
-  [CoDiemF] bit NOT NULL DEFAULT 0,
+  [DiemHocTap] real NOT NULL DEFAULT 0, -- THÊM MỚI
+  [CoDiemF] bit NOT NULL DEFAULT 0,     -- THÊM MỚI
   [SoTC] int NOT NULL CONSTRAINT CHK_SoTC CHECK ([SoTC] > 0),
   [MaCB_Nhap] int 
 );
@@ -117,7 +117,9 @@ CREATE TABLE [DOTHOCBONG] (
   [LoaiDot] nvarchar(150) NOT NULL, 
   [HocKy] int NOT NULL,
   [NamHoc] varchar(20) NOT NULL,
-  [TrangThai] varchar(50) DEFAULT 'KhoiTao' CONSTRAINT CHK_TrangThai_Dot CHECK ([TrangThai] IN ('KhoiTao','DaCoDiem', 'DangXetDuyet', 'DuKien', 'ChinhThuc'))
+  [TrangThai] varchar(50) DEFAULT 'KhoiTao' CONSTRAINT CHK_TrangThai_Dot CHECK ([TrangThai] IN ('KhoiTao','DaCoDiem', 'DangXetDuyet', 'DuKien', 'CongBoLayYKien', 'ChoPheDuyet', 'ChinhThuc')),
+  [LyDoTraVe] nvarchar(500),
+  [NgayCongBo] datetime NULL -- Cột mới thêm để đếm 10 ngày
 );
 GO
 
@@ -127,12 +129,12 @@ CREATE TABLE [HOSOXETHOCBONG] (
   [MaSV] varchar(20) NOT NULL,
   [MaDot] int NOT NULL,
   [NgayNop] datetime DEFAULT GETDATE(),
-  [GPA] real NOT NULL CONSTRAINT CHK_GPA_HoSo CHECK ([GPA] >= 0.0 AND [GPA] <= 4.0),
-  [DiemHocTap] real NOT NULL CONSTRAINT CHK_DiemHocTap_HoSo CHECK ([DiemHocTap] >= 0.0 AND [DiemHocTap] <= 10.0),
+  [DiemHocTap] real NOT NULL CONSTRAINT CHK_GPA_HoSo CHECK ([DiemHocTap] >= 0.0 AND [DiemHocTap] <= 10.0),
+  [GPA] real NOT NULL DEFAULT 0, -- THÊM MỚI
   [DiemRenLuyen] int NOT NULL CONSTRAINT CHK_DiemRenLuyen CHECK ([DiemRenLuyen] >= 0 AND [DiemRenLuyen] <= 100),
   [XepLoaiHB] nvarchar(50),
   [TrangThai] varchar(50) DEFAULT 'ChoXet' CONSTRAINT CHK_TrangThai_HoSo CHECK ([TrangThai] IN ('ChoXet', 'KhoaDeXuat', 'HoiDongDuyet', 'TuChoi', 'ChinhThuc', 'Loai')),
-  [GhiChu] nvarchar(500) NULL,
+  [GhiChu] nvarchar(MAX) NULL, -- THÊM MỚI
   [MaCB_Duyet] int
 );
 GO
@@ -180,7 +182,9 @@ CREATE TABLE [PHANBOKINHPHI] (
   [MaDot] int NOT NULL,
   [MaKhoa] int NOT NULL,
   [KinhPhi] decimal(18,2) NOT NULL CONSTRAINT CHK_KinhPhi CHECK ([KinhPhi] >= 0),
-  [MucHBLoaiKha] decimal(18,2) NOT NULL CONSTRAINT CHK_MucHBLoaiKha CHECK ([MucHBLoaiKha] >= 0)
+  [MucHBLoaiKha] decimal(18,2) NOT NULL CONSTRAINT CHK_MucHBLoaiKha CHECK ([MucHBLoaiKha] >= 0),
+  [MucHBLoaiGioi] decimal(18,2) NOT NULL DEFAULT 0,     -- THÊM MỚI
+  [MucHBLoaiXuatSac] decimal(18,2) NOT NULL DEFAULT 0   -- THÊM MỚI
 );
 GO
 
@@ -221,4 +225,4 @@ ALTER TABLE [PHANBOKINHPHI] ADD FOREIGN KEY ([MaDot]) REFERENCES [DOTHOCBONG] ([
 ALTER TABLE [PHANBOKINHPHI] ADD FOREIGN KEY ([MaKhoa]) REFERENCES [KHOA] ([MaKhoa]) ON UPDATE NO ACTION ON DELETE NO ACTION;
 ALTER TABLE [PHANBOKINHPHI] ADD CONSTRAINT UQ_PhanBo_DotKhoa UNIQUE (MaDot, MaKhoa);
 
-
+ALTER TABLE [HOSOXETHOCBONG] ADD CONSTRAINT UQ_HoSo_SVDot UNIQUE (MaSV, MaDot);

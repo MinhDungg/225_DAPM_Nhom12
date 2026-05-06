@@ -26,4 +26,5 @@ public interface IHoSoXetHocBongRepository
     /// Lấy danh sách ứng viên của một đợt, kèm HoTen từ SinhVien.
     /// </summary>
     Task<List<UngVienResponseDTO>> LayDanhSachUngVienTheoMaDotAsync(int maDot);
+    Task DeleteAsync(int maHoSo);
 }

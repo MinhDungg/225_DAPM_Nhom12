@@ -16,7 +16,7 @@ const khoaService = {
     // Task 2.1: Lấy danh sách hồ sơ chờ duyệt
     layDanhSachChoDuyet: async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const response = await axiosInstance.get('/khoa/danhsach', {
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -40,11 +40,11 @@ const khoaService = {
     // Task 2.2: Xếp hạng và phân bổ học bổng
     xepHangVaPhanBo: async (maDot, nganSach) => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const response = await axiosInstance.post(
                 '/khoa/xephang',
                 { maDot, nganSach },
-                { 
+                {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -66,11 +66,11 @@ const khoaService = {
     // Task 2.3: Chốt danh sách đề xuất
     chotDanhSachDeXuat: async (maDot, danhSachMaHoSo) => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const response = await axiosInstance.put(
                 '/khoa/dexuat',
                 { maDot, danhSachMaHoSo },
-                { 
+                {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -79,6 +79,28 @@ const khoaService = {
             return response.data;
         } catch (error) {
             console.error('Lỗi khi chốt danh sách:', error);
+            if (error.response) {
+                throw new Error(error.response.data.message || 'Lỗi từ server');
+            } else if (error.request) {
+                throw new Error('Không thể kết nối tới server. Vui lòng kiểm tra Backend đang chạy.');
+            } else {
+                throw new Error('Lỗi không xác định');
+            }
+        }
+    },
+
+    // Lấy danh sách đã đề xuất
+    layDanhSachDaDeXuat: async () => {
+        try {
+            const token = sessionStorage.getItem('token');
+            const response = await axiosInstance.get('/khoa/danhsach-da-de-xuat', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Lỗi khi lấy danh sách đã đề xuất:', error);
             if (error.response) {
                 throw new Error(error.response.data.message || 'Lỗi từ server');
             } else if (error.request) {

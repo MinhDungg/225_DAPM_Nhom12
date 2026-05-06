@@ -2,12 +2,10 @@ version=1
 
 # This file caches language service data to improve the performance of C# Dev Kit.
 # It is not intended for manual editing. It can safely be deleted and will be
-# regenerated automatically.
+# regenerated automatically. For more information, see https://aka.ms/lscache
 #
-# To exclude from version control, add *.lscache to your .gitignore file.
-#
-# To disable caching, add the following to your VS Code settings:
-#   "dotnet.projectsystem.enableLanguageServiceCache": false
+# To control where cache files are stored, use the following VS Code setting:
+#   "dotnet.projectsystem.cacheInProjectFolder": true
 
 [project]
 language=C#
@@ -57,18 +55,50 @@ TemporaryDependencyNodeTargetIdentifier=net8.0
 [sourceFiles]
 Controllers/
  AuthController.cs
+ DiemController.cs
  DotHocBongController.cs
  FinalDecisionController.cs
+ KhieuNaiController.cs
+ KhoaController.cs
+ KhtcController.cs
+ SinhVienController.cs
 Data/AppDbContext.cs
 DTOs/Request/
+ ChotDeXuatRequestDTO.cs
  DotHocBongCreateDTO.cs
+ DotHocBongUpdateDTO.cs
+ ImportDrlRequest.cs
+ ImportGpaRequest.cs
+ ImportHocVuRequest.cs
+ KhieuNaiRequestDTO.cs
  LoginRequestDTO.cs
+ ThietLapKinhPhiRequest.cs
+ XepHangRequestDTO.cs
 DTOs/Response/
+ AutoScanResultDTO.cs
  BaseResponse.cs
+ ChotDeXuatResponseDTO.cs
  DotHocBongResponseDTO.cs
+ HoSoChoDuyetResponseDTO.cs
  HoSoResponseDTO.cs
+ ImportResultDTO.cs
+ KhieuNaiResponseDTO.cs
  LoginResponseDTO.cs
  LoginUserInfoDTO.cs
+ PhanBoKinhPhiResponseDTO.cs
+ SinhVienVerifyResponseDTO.cs
+ SinhVienXepHangDTO.cs
+ TongHopHieuTruongResponseDTO.cs
+ UngVienDiemDTO.cs
+ UngVienResponseDTO.cs
+ XepHangResponseDTO.cs
+Helpers/TrangThaiHocBong.cs
+Migrations/
+ 20260415121553_UpdateHoSoAndPhanBoKinhPhi.cs
+ 20260415121553_UpdateHoSoAndPhanBoKinhPhi.Designer.cs
+ 20260422140831_UpdateSchemaV3.cs
+ 20260422140831_UpdateSchemaV3.Designer.cs
+ AppDbContextModelSnapshot.cs
 Models/
  CanBo.cs
  ChiTra.cs
@@ -80,6 +110,7 @@ Models/
  KhieuNai.cs
  Khoa.cs
  Lop.cs
+ PhanBoKinhPhi.cs
  PhongBan.cs
  SinhVien.cs
  TaiKhoan.cs
@@ -89,27 +120,49 @@ obj/Debug/net8.0/
  BE.GlobalUsings.g.cs
 Program.cs
 Repositories/Implementations/
+ DiemRenLuyenRepository.cs
  DotHocBongRepository.cs
  HoSoXetHocBongRepository.cs
+ KetQuaHocTapRepository.cs
+ KhieuNaiRepository.cs
+ KhoaRepository.cs
+ PhanBoKinhPhiRepository.cs
+ SinhVienRepository.cs
  TaiKhoanRepository.cs
+ UnitOfWork.cs
 Repositories/Interfaces/
+ IDiemRenLuyenRepository.cs
  IDotHocBongRepository.cs
  IHoSoXetHocBongRepository.cs
+ IKetQuaHocTapRepository.cs
+ IKhieuNaiRepository.cs
+ IKhoaRepository.cs
+ IPhanBoKinhPhiRepository.cs
+ ISinhVienRepository.cs
  ITaiKhoanRepository.cs
+ IUnitOfWork.cs
 Services/Implementations/
  AuthService.cs
+ DiemService.cs
  DotHocBongService.cs
  FinalDecisionService.cs
+ KhieuNaiService.cs
+ KhoaService.cs
+ KinhPhiService.cs
 Services/Interfaces/
  IAuthService.cs
+ IDiemService.cs
  IDotHocBongService.cs
  IFinalDecisionService.cs
+ IKhieuNaiService.cs
+ IKhoaService.cs
+ IKinhPhiService.cs
 
 [metadataReferences]
 <NUGET>/
  azure.core/1.35.0/lib/net6.0/Azure.Core.dll
  azure.identity/1.10.3/lib/netstandard2.0/Azure.Identity.dll
- microsoft.aspnetcore.app.ref/8.0.25/ref/net8.0/
+ microsoft.aspnetcore.app.ref/8.0.26/ref/net8.0/
   Microsoft.AspNetCore.Antiforgery.dll
   Microsoft.AspNetCore.Authentication.Abstractions.dll
   Microsoft.AspNetCore.Authentication.BearerToken.dll
@@ -263,7 +316,7 @@ Services/Interfaces/
  microsoft.identitymodel.protocols.openidconnect/7.1.2/lib/net8.0/Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
  microsoft.identitymodel.protocols/7.1.2/lib/net8.0/Microsoft.IdentityModel.Protocols.dll
  microsoft.identitymodel.tokens/7.1.2/lib/net8.0/Microsoft.IdentityModel.Tokens.dll
- microsoft.netcore.app.ref/8.0.25/ref/net8.0/
+ microsoft.netcore.app.ref/8.0.26/ref/net8.0/
   Microsoft.CSharp.dll
   Microsoft.VisualBasic.Core.dll
   Microsoft.VisualBasic.dll
@@ -437,21 +490,21 @@ Services/Interfaces/
  system.security.cryptography.protecteddata/6.0.0/lib/net6.0/System.Security.Cryptography.ProtectedData.dll
 
 [analyzerReferences]
-<DOTNET>/sdk/10.0.201/Sdks/Microsoft.NET.Sdk.Razor/source-generators/
+<DOTNET>/sdk/10.0.202/Sdks/Microsoft.NET.Sdk.Razor/source-generators/
  Microsoft.AspNetCore.Razor.Utilities.Shared.dll
  Microsoft.CodeAnalysis.Razor.Compiler.dll
  Microsoft.Extensions.ObjectPool.dll
-<DOTNET>/sdk/10.0.201/Sdks/Microsoft.NET.Sdk.Web/analyzers/cs/
+<DOTNET>/sdk/10.0.202/Sdks/Microsoft.NET.Sdk.Web/analyzers/cs/
  Microsoft.AspNetCore.Analyzers.dll
  Microsoft.AspNetCore.Mvc.Analyzers.dll
-<DOTNET>/sdk/10.0.201/Sdks/Microsoft.NET.Sdk/analyzers/
+<DOTNET>/sdk/10.0.202/Sdks/Microsoft.NET.Sdk/analyzers/
  Microsoft.CodeAnalysis.CSharp.NetAnalyzers.dll
  Microsoft.CodeAnalysis.NetAnalyzers.dll
-<NUGET>/microsoft.aspnetcore.app.ref/8.0.25/analyzers/dotnet/cs/
+<NUGET>/microsoft.aspnetcore.app.ref/8.0.26/analyzers/dotnet/cs/
  Microsoft.AspNetCore.App.Analyzers.dll
  Microsoft.AspNetCore.App.CodeFixes.dll
  Microsoft.AspNetCore.Components.Analyzers.dll
-<NUGET>/microsoft.aspnetcore.app.ref/8.0.25/analyzers/dotnet/roslyn4.4/cs/
+<NUGET>/microsoft.aspnetcore.app.ref/8.0.26/analyzers/dotnet/roslyn4.4/cs/
  Microsoft.Extensions.Logging.Generators.dll
  Microsoft.Extensions.Options.SourceGeneration.dll
 <NUGET>/microsoft.codeanalysis.analyzers/3.3.3/analyzers/dotnet/cs/
@@ -459,7 +512,7 @@ Services/Interfaces/
  Microsoft.CodeAnalysis.CSharp.Analyzers.dll
 <NUGET>/
  microsoft.entityframeworkcore.analyzers/8.0.4/analyzers/dotnet/cs/Microsoft.EntityFrameworkCore.Analyzers.dll
- microsoft.netcore.app.ref/8.0.25/analyzers/dotnet/cs/
+ microsoft.netcore.app.ref/8.0.26/analyzers/dotnet/cs/
   Microsoft.Interop.ComInterfaceGenerator.dll
   Microsoft.Interop.JavaScript.JSImportGenerator.dll
   Microsoft.Interop.LibraryImportGenerator.dll
@@ -468,5 +521,6 @@ Services/Interfaces/
   System.Text.RegularExpressions.Generator.dll
 
 [analyzerConfigFiles]
-<DOTNET>/sdk/10.0.201/Sdks/Microsoft.NET.Sdk/analyzers/build/config/analysislevel_8_default.globalconfig
+.editorconfig
+<DOTNET>/sdk/10.0.202/Sdks/Microsoft.NET.Sdk/analyzers/build/config/analysislevel_8_default.globalconfig
 obj/Debug/net8.0/BE.GeneratedMSBuildEditorConfig.editorconfig

@@ -69,6 +69,33 @@ public class KhoaController : ControllerBase
         });
     }
 
+    [HttpGet("danhsach-da-de-xuat")]
+    public async Task<IActionResult> GetDanhSachDaDeXuat()
+    {
+        var userIdClaim = User.FindFirst("UserId") 
+                       ?? User.FindFirst(ClaimTypes.NameIdentifier)
+                       ?? User.FindFirst("sub");
+        
+        if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+        {
+            return BadRequest(new BaseResponse<object>
+            {
+                Success = false,
+                Message = "Khong tim thay UserId trong token",
+                Data = null
+            });
+        }
+
+        var result = await _khoaService.LayDanhSachDaDeXuatAsync(userId);
+
+        return Ok(new BaseResponse<List<HoSoChoDuyetResponseDTO>>
+        {
+            Success = true,
+            Message = "Lay danh sach da de xuat thanh cong",
+            Data = result
+        });
+    }
+
     [HttpPost("xephang")]
     public async Task<IActionResult> XepHang([FromBody] XepHangRequestDTO request)
     {

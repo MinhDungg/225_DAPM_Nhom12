@@ -8,6 +8,7 @@ public interface IDotHocBongRepository
     Task<DotHocBong> ThemAsync(DotHocBong dotHocBong);
     Task<DotHocBong?> LayTheoIdAsync(int maDot);
     void CapNhat(DotHocBong dotHocBong);
+    Task UpdateAsync(DotHocBong dotHocBong);
     Task<IEnumerable<DotHocBong>> LayDanhSachAsync();
     Task<bool> XoaAsync(int maDot);
 
