@@ -223,7 +223,7 @@ public class KhoaService : IKhoaService
         if (gpa >= 3.2 && diemDRL >= 80)
             return ("Gioi", mucHBLoaiKha * 1.2m);
 
-        if (gpa >= 2.5 && diemDRL >= 70)
+        if (gpa >= 2.5 && diemDRL >= 65)
             return ("Kha", mucHBLoaiKha);
 
         return ("KhongDuDieuKien", 0);

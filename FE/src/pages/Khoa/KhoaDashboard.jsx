@@ -119,7 +119,7 @@ const KhoaDashboard = () => {
       );
       if (response.success) {
         await layDanhSachDaDeXuat();
-        await layDanhSachChoDuyet();
+        await layDanhSachChoDuyetTheoDot(selectedDot.maDot);
       }
     } catch (err) {
       setError(err.message || "Không thể chốt danh sách.");

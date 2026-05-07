@@ -66,7 +66,6 @@ const CTSVDashboard = () => {
                 const chuaXuLy = khieuNaiRes.data.some(kn => kn.trangThai === 'ChoXuLy');
                 if (chuaXuLy) {
                     alert('⚠️ Vẫn còn khiếu nại chưa xử lý. Bạn cần xử lý hết khiếu nại trước khi trình BGH!');
-                    setLoading(false);
                     return;
                 }
             }
@@ -80,7 +79,8 @@ const CTSVDashboard = () => {
             }
         } catch (error) {
             console.error(error);
-            alert('Lỗi kết nối đến máy chủ.');
+            const serverMessage = error?.response?.data?.message || error?.response?.data?.Message || error?.message;
+            alert(serverMessage || 'Lỗi kết nối đến máy chủ.');
         } finally {
             setLoading(false);
         }

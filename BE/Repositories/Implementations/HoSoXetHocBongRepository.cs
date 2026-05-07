@@ -104,11 +104,26 @@ public class HoSoXetHocBongRepository : IHoSoXetHocBongRepository
         {
             hoSo.TrangThai = "KhoaDeXuat";
             hoSo.MaCB_Duyet = maCB;
+            hoSo.XepLoaiHB = PhanLoaiHocBong(hoSo.GPA, hoSo.DiemRenLuyen);
             _context.HoSoXetHocBongs.Update(hoSo);
         }
 
         await _context.SaveChangesAsync();
         return hoSos.Count;
+    }
+
+    private static string PhanLoaiHocBong(double gpa, int diemRenLuyen)
+    {
+        if (gpa >= 3.6 && diemRenLuyen >= 90)
+            return "XuatSac";
+
+        if (gpa >= 3.2 && diemRenLuyen >= 80)
+            return "Gioi";
+
+        if (gpa >= 2.5 && diemRenLuyen >= 65)
+            return "Kha";
+
+        return "KhongDuDieuKien";
     }
 
     public async Task<IEnumerable<HoSoXetHocBong>> GetProfilesByStatusAsync(string status)
