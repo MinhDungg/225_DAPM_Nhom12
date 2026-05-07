@@ -26,10 +26,29 @@ const khoaService = {
         } catch (error) {
             console.error('Lỗi khi lấy danh sách chờ duyệt:', error);
             if (error.response) {
-                // Server trả về lỗi
                 throw new Error(error.response.data.message || 'Lỗi từ server');
             } else if (error.request) {
-                // Không kết nối được tới server
+                throw new Error('Không thể kết nối tới server. Vui lòng kiểm tra Backend đang chạy.');
+            } else {
+                throw new Error('Lỗi không xác định');
+            }
+        }
+    },
+
+    layDanhSachChoDuyetTheoDot: async (maDot) => {
+        try {
+            const token = sessionStorage.getItem('token');
+            const response = await axiosInstance.get(`/khoa/danhsach/${maDot}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Lỗi khi lấy danh sách chờ duyệt theo đợt:', error);
+            if (error.response) {
+                throw new Error(error.response.data.message || 'Lỗi từ server');
+            } else if (error.request) {
                 throw new Error('Không thể kết nối tới server. Vui lòng kiểm tra Backend đang chạy.');
             } else {
                 throw new Error('Lỗi không xác định');

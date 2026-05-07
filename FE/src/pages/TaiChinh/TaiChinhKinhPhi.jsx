@@ -158,12 +158,7 @@ const TaiChinhKinhPhi = () => {
   const taiDanhSachKhoa = useCallback(async (dot) => {
     setDangTaiKhoa(true);
     try {
-      // Fetch Khoa list and existing allocations in parallel
-      const [resKhoa, resPhanBo] = await Promise.all([
-        kinhPhiService.getDanhSachKhoa(),
-        kinhPhiService.getPhanBoTheoMaDot(dot.maDot),
-      ]);
-
+      const resKhoa = await kinhPhiService.getDanhSachKhoa();
       if (!resKhoa.success || !Array.isArray(resKhoa.data)) {
         toast.error(resKhoa.message || 'Không thể tải danh sách Khoa.');
         return;
@@ -171,7 +166,13 @@ const TaiChinhKinhPhi = () => {
 
       setDanhSachKhoa(resKhoa.data);
 
-      // Build lookup map: maKhoa → existing allocation
+      let resPhanBo = { success: true, data: [] };
+      try {
+        resPhanBo = await kinhPhiService.getPhanBoTheoMaDot(dot.maDot);
+      } catch (err) {
+        console.warn('Không tải được phân bổ kinh phí, tiếp tục hiển thị danh sách khoa rỗng.', err);
+      }
+
       const phanBoMap = {};
       if (resPhanBo.success && Array.isArray(resPhanBo.data)) {
         resPhanBo.data.forEach(p => {
@@ -179,7 +180,6 @@ const TaiChinhKinhPhi = () => {
         });
       }
 
-      // Merge: use existing values if available, otherwise default to 0
       setRows(resKhoa.data.map(k => {
         const existing = phanBoMap[k.maKhoa];
         return {
@@ -370,7 +370,7 @@ const TaiChinhKinhPhi = () => {
       if (res.success) {
         toast.success(res.message || `Đã chốt ngân sách cho ${payload.length} Khoa.`);
         setShowConfirm(false);
-        quayLai();
+        await taiDanhSachKhoa(selectedDot);
         await taiDanhSachDot();
       } else {
         toast.error(res.message || 'Chốt ngân sách thất bại.');

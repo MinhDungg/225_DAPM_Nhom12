@@ -11,6 +11,7 @@ public interface IHoSoXetHocBongRepository
 
     Task<List<HoSoXetHocBong>> LayDanhSachChoDuyetTheoKhoaAsync(int maKhoa);
     Task<List<HoSoXetHocBong>> LayDanhSachChoDuyetTheoKhoaVaDotAsync(int maKhoa, int maDot);
+    Task<List<HoSoXetHocBong>> LayDanhSachChoXetTheoKhoaVaDotAsync(int maKhoa, int maDot);
     Task CapNhatXepLoaiVaTrangThaiAsync(List<HoSoXetHocBong> hoSos);
     Task<int> ChotDanhSachDeXuatAsync(int maKhoa, int maDot, List<int> danhSachMaHoSo, int maCB);
 

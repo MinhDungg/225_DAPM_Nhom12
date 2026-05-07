@@ -5,24 +5,22 @@ using BE.Models;
 using BE.Repositories.Interfaces;
 using BE.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 
 namespace BE.Services.Implementations;
 
 public class KhoaService : IKhoaService
 {
     private readonly IHoSoXetHocBongRepository _hoSoRepository;
+    private readonly IPhanBoKinhPhiRepository _phanBoKinhPhiRepository;
     private readonly AppDbContext _context;
 
-    private const decimal DON_GIA_TIN_CHI = 550000m;
     private const int SO_TIN_CHI = 15;
-    private const decimal MUC_SAN = DON_GIA_TIN_CHI * SO_TIN_CHI;
-    private const decimal TY_LE_XUAT_SAC = 1.4m;
-    private const decimal TY_LE_GIOI = 1.2m;
-    private const decimal TY_LE_KHA = 1.0m;
 
-    public KhoaService(IHoSoXetHocBongRepository hoSoRepository, AppDbContext context)
+    public KhoaService(IHoSoXetHocBongRepository hoSoRepository, IPhanBoKinhPhiRepository phanBoKinhPhiRepository, AppDbContext context)
     {
         _hoSoRepository = hoSoRepository;
+        _phanBoKinhPhiRepository = phanBoKinhPhiRepository;
         _context = context;
     }
 
@@ -36,20 +34,43 @@ public class KhoaService : IKhoaService
 
         var hoSos = await _hoSoRepository.LayDanhSachChoDuyetTheoKhoaAsync(canBo.MaKhoa.Value);
 
-        var result = hoSos.Select(h => new HoSoChoDuyetResponseDTO
-        {
-            MaHoSo = h.MaHoSo,
-            MaSV = h.MaSV,
-            HoTenSinhVien = h.SinhVien.HoTen,
-            TenLop = h.SinhVien.Lop.TenLop,
-            DiemHocTap = h.DiemHocTap,
-            GPA = h.GPA,
-            DiemRenLuyen = h.DiemRenLuyen,
-            NgayNop = h.NgayNop,
-            TrangThai = h.TrangThai ?? "ChoXet"
-        }).ToList();
+        return MapDanhSachChoDuyet(hoSos);
+    }
 
-        return result;
+    public async Task<List<HoSoChoDuyetResponseDTO>> LayDanhSachChoXetTheoDotAsync(int maTaiKhoan, int maDot)
+    {
+        var canBo = await _context.CanBos
+            .FirstOrDefaultAsync(cb => cb.MaTK == maTaiKhoan);
+
+        if (canBo == null || canBo.MaKhoa == null)
+            return new List<HoSoChoDuyetResponseDTO>();
+
+        var hoSos = await _hoSoRepository.LayDanhSachChoXetTheoKhoaVaDotAsync(canBo.MaKhoa.Value, maDot);
+
+        return MapDanhSachChoDuyet(hoSos);
+    }
+
+    private static List<HoSoChoDuyetResponseDTO> MapDanhSachChoDuyet(List<HoSoXetHocBong> hoSos)
+    {
+        return hoSos
+            .GroupBy(h => h.MaSV)
+            .Select(g => g
+                .OrderByDescending(h => h.NgayNop)
+                .ThenByDescending(h => h.MaHoSo)
+                .First())
+            .Select(h => new HoSoChoDuyetResponseDTO
+            {
+                MaHoSo = h.MaHoSo,
+                MaSV = h.MaSV,
+                HoTenSinhVien = h.SinhVien.HoTen,
+                TenLop = h.SinhVien.Lop.TenLop,
+                DiemHocTap = h.DiemHocTap,
+                GPA = h.GPA,
+                DiemRenLuyen = h.DiemRenLuyen,
+                NgayNop = h.NgayNop,
+                TrangThai = h.TrangThai ?? "ChoXet"
+            })
+            .ToList();
     }
 
     public async Task<XepHangResponseDTO> XepHangVaPhanBoAsync(int maTaiKhoan, XepHangRequestDTO request)
@@ -60,13 +81,25 @@ public class KhoaService : IKhoaService
         if (canBo == null || canBo.MaKhoa == null)
             throw new Exception("Khong tim thay thong tin can bo hoac khoa");
 
-        var hoSos = await _hoSoRepository.LayDanhSachChoDuyetTheoKhoaVaDotAsync(canBo.MaKhoa.Value, request.MaDot);
+        var phanBoKinhPhi = await _phanBoKinhPhiRepository.LayTheoMaDotVaMaKhoaAsync(request.MaDot, canBo.MaKhoa.Value);
+
+        if (phanBoKinhPhi == null)
+            throw new Exception("Khoa chưa được cấp kinh phí cho đợt này");
+
+        var tongNganSach = phanBoKinhPhi.KinhPhi;
+        var mucHBLoaiKha = phanBoKinhPhi.MucHBLoaiKha;
+
+        var hoSos = await _context.HoSoXetHocBongs
+            .Include(h => h.SinhVien)
+                .ThenInclude(sv => sv.Lop)
+            .Where(h => h.TrangThai == "ChoXet" && h.SinhVien.Lop.MaKhoa == canBo.MaKhoa.Value && h.MaDot == request.MaDot)
+            .ToListAsync();
 
         if (!hoSos.Any())
         {
             return new XepHangResponseDTO
             {
-                TongNganSach = request.NganSach,
+                TongNganSach = tongNganSach,
                 TongChiTieu = 0,
                 SoLuongDuocNhan = 0,
                 TongSoHoSo = 0,
@@ -80,7 +113,7 @@ public class KhoaService : IKhoaService
         if (dotHocBong == null)
             throw new Exception("Khong tim thay thong tin dot hoc bong");
 
-        var danhSachXepHang = new List<(HoSoXetHocBong HoSo, string XepLoai, decimal MucHocBong, int DiemDRL, int SoTinChi, string LyDoLoai)>();
+        var danhSachXepHang = new List<(HoSoXetHocBong HoSo, string XepLoai, decimal MucHocBong, int DiemDRL, string LyDoLoai)>();
 
         foreach (var hoSo in hoSos)
         {
@@ -94,33 +127,31 @@ public class KhoaService : IKhoaService
 
             if (soTinChi < SO_TIN_CHI)
             {
-                danhSachXepHang.Add((hoSo, "KhongDuDieuKien", 0, diemDRL, soTinChi,
+                danhSachXepHang.Add((hoSo, "KhongDuDieuKien", 0, diemDRL,
                     $"Khong du {SO_TIN_CHI} tin chi (chi co {soTinChi} TC)"));
                 continue;
             }
 
-            bool coDiemF = ketQuaHocTap?.CoDiemF ?? false;
-            if (coDiemF)
+            if (ketQuaHocTap?.CoDiemF ?? false)
             {
-                danhSachXepHang.Add((hoSo, "KhongDuDieuKien", 0, diemDRL, soTinChi, "Co diem F trong hoc ky"));
+                danhSachXepHang.Add((hoSo, "KhongDuDieuKien", 0, diemDRL, "Co diem F trong hoc ky"));
                 continue;
             }
 
-            var (xepLoai, mucHocBong) = PhanLoaiHocBong(hoSo.GPA, diemDRL);
+            var (xepLoai, mucHocBong) = PhanLoaiHocBong(hoSo.GPA, diemDRL, mucHBLoaiKha);
             string lyDoLoai = xepLoai == "KhongDuDieuKien" ? "Khong du dieu kien GPA hoac DRL" : "";
-            danhSachXepHang.Add((hoSo, xepLoai, mucHocBong, diemDRL, soTinChi, lyDoLoai));
+            danhSachXepHang.Add((hoSo, xepLoai, mucHocBong, diemDRL, lyDoLoai));
         }
 
-        // Tách 2 nhóm: Đủ điều kiện và Không đủ điều kiện
         var danhSachDuDieuKien = danhSachXepHang
             .Where(x => x.XepLoai != "KhongDuDieuKien")
-            .OrderByDescending(x => x.HoSo.GPA)
+            .OrderByDescending(x => x.HoSo.DiemHocTap)
             .ThenByDescending(x => x.DiemDRL)
             .ToList();
 
         var danhSachKhongDuDieuKien = danhSachXepHang
             .Where(x => x.XepLoai == "KhongDuDieuKien")
-            .OrderByDescending(x => x.HoSo.GPA)
+            .OrderByDescending(x => x.HoSo.DiemHocTap)
             .ThenByDescending(x => x.DiemDRL)
             .ToList();
 
@@ -133,7 +164,7 @@ public class KhoaService : IKhoaService
             var item = danhSachDuDieuKien[i];
             bool duocNhan = false;
 
-            if (item.MucHocBong > 0 && tongChiTieu + item.MucHocBong <= request.NganSach)
+            if (item.MucHocBong > 0 && tongChiTieu + item.MucHocBong <= tongNganSach)
             {
                 tongChiTieu += item.MucHocBong;
                 soLuongDuocNhan++;
@@ -176,7 +207,7 @@ public class KhoaService : IKhoaService
 
         return new XepHangResponseDTO
         {
-            TongNganSach = request.NganSach,
+            TongNganSach = tongNganSach,
             TongChiTieu = tongChiTieu,
             SoLuongDuocNhan = soLuongDuocNhan,
             TongSoHoSo = hoSos.Count,
@@ -184,19 +215,41 @@ public class KhoaService : IKhoaService
         };
     }
 
-    // Dùng GPA (thang 4) để phân loại
-    private (string XepLoai, decimal MucHocBong) PhanLoaiHocBong(double gpa, int diemDRL)
+    private (string XepLoai, decimal MucHocBong) PhanLoaiHocBong(double gpa, int diemDRL, decimal mucHBLoaiKha)
     {
         if (gpa >= 3.6 && diemDRL >= 90)
-            return ("XuatSac", MUC_SAN * TY_LE_XUAT_SAC);
+            return ("XuatSac", mucHBLoaiKha * 1.4m);
 
         if (gpa >= 3.2 && diemDRL >= 80)
-            return ("Gioi", MUC_SAN * TY_LE_GIOI);
+            return ("Gioi", mucHBLoaiKha * 1.2m);
 
         if (gpa >= 2.5 && diemDRL >= 70)
-            return ("Kha", MUC_SAN * TY_LE_KHA);
+            return ("Kha", mucHBLoaiKha);
 
         return ("KhongDuDieuKien", 0);
+    }
+
+    public async Task<PhanBoKinhPhiResponseDTO?> LayPhanBoKinhPhiAsync(int maTaiKhoan, int maDot)
+    {
+        var canBo = await _context.CanBos
+            .FirstOrDefaultAsync(cb => cb.MaTK == maTaiKhoan);
+
+        if (canBo == null || canBo.MaKhoa == null)
+            return null;
+
+        var phanBo = await _phanBoKinhPhiRepository.LayTheoMaDotVaMaKhoaAsync(maDot, canBo.MaKhoa.Value);
+
+        if (phanBo == null)
+            return null;
+
+        return new PhanBoKinhPhiResponseDTO
+        {
+            MaPhanBo = phanBo.MaPhanBo,
+            MaDot = phanBo.MaDot,
+            MaKhoa = phanBo.MaKhoa,
+            KinhPhi = phanBo.KinhPhi,
+            MucHBLoaiKha = phanBo.MucHBLoaiKha
+        };
     }
 
     public async Task<ChotDeXuatResponseDTO> ChotDanhSachDeXuatAsync(int maTaiKhoan, ChotDeXuatRequestDTO request)
@@ -240,18 +293,25 @@ public class KhoaService : IKhoaService
             .ThenByDescending(h => h.DiemRenLuyen)
             .ToListAsync();
 
-        var result = hoSos.Select(h => new HoSoChoDuyetResponseDTO
-        {
-            MaHoSo = h.MaHoSo,
-            MaSV = h.MaSV,
-            HoTenSinhVien = h.SinhVien.HoTen,
-            TenLop = h.SinhVien.Lop.TenLop,
-            DiemHocTap = h.DiemHocTap,
-            GPA = h.GPA,
-            DiemRenLuyen = h.DiemRenLuyen,
-            NgayNop = h.NgayNop,
-            TrangThai = h.TrangThai ?? "KhoaDeXuat"
-        }).ToList();
+        var result = hoSos
+            .GroupBy(h => h.MaSV)
+            .Select(g => g
+                .OrderByDescending(h => h.NgayNop)
+                .ThenByDescending(h => h.MaHoSo)
+                .First())
+            .Select(h => new HoSoChoDuyetResponseDTO
+            {
+                MaHoSo = h.MaHoSo,
+                MaSV = h.MaSV,
+                HoTenSinhVien = h.SinhVien.HoTen,
+                TenLop = h.SinhVien.Lop.TenLop,
+                DiemHocTap = h.DiemHocTap,
+                GPA = h.GPA,
+                DiemRenLuyen = h.DiemRenLuyen,
+                NgayNop = h.NgayNop,
+                TrangThai = h.TrangThai ?? "KhoaDeXuat"
+            })
+            .ToList();
 
         return result;
     }
