@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
+using System;
 
 namespace BE.Services.Implementations
 {
@@ -61,22 +62,21 @@ namespace BE.Services.Implementations
             if (profileIds == null || !profileIds.Any())
                 return false;
 
-            var updated = await _hoSoRepository.UpdateProfilesStatusAsync(profileIds, "HoiDongDuyet");
-            if (!updated)
-                return false;
-
-            var firstProfile = await _hoSoRepository.GetByIdAsync(profileIds.First());
-            if (firstProfile?.MaDot != null)
+            var result = await _hoSoRepository.UpdateProfilesStatusAsync(profileIds, "HoiDongDuyet");
+            if (result)
             {
-                var dot = await _dotHocBongRepository.LayTheoIdAsync(firstProfile.MaDot);
-                if (dot != null)
+                var firstProfile = await _hoSoRepository.GetByIdAsync(profileIds.First());
+                if (firstProfile != null)
                 {
-                    dot.TrangThai = "DuKien";
-                    await _dotHocBongRepository.UpdateAsync(dot);
+                    var dot = await _dotHocBongRepository.LayTheoIdAsync(firstProfile.MaDot);
+                    if (dot != null)
+                    {
+                        dot.TrangThai = "DuKien";
+                        await _dotHocBongRepository.UpdateAsync(dot);
+                    }
                 }
             }
-
-            return true;
+            return result;
         }
 
         // CTSV lập tờ trình lên Hiệu trưởng
@@ -99,11 +99,16 @@ namespace BE.Services.Implementations
                 {
                     return new BaseResponse<bool> { Success = false, Message = $"Chưa hết thời hạn 10 ngày lấy ý kiến. (Mới trôi qua {Math.Round(soNgayDaQua, 1)} ngày)." };
                 }
+                else 
+                {
+                    dot.TrangThai = "LayYKienHoanTat";
+                    await _dotHocBongRepository.UpdateAsync(dot);
+                }
             }
-            else if (dot.TrangThai != "CongBoLayYKien")
+            else if (dot.TrangThai != "LayYKienHoanTat")
             {
-                // Chưa được công bố thì không cho trình
-                return new BaseResponse<bool> { Success = false, Message = "Đợt này chưa được công bố lấy ý kiến sinh viên." };
+                // Chưa được công bố hoặc chưa hoàn tất thì không cho trình
+                return new BaseResponse<bool> { Success = false, Message = "Đợt này chưa hoàn tất việc lấy ý kiến sinh viên." };
             }
             // --- KẾT THÚC ĐOẠN CODE KIỂM TRA ---
 
@@ -235,22 +240,22 @@ namespace BE.Services.Implementations
 
             return new BaseResponse<bool> { Success = true, Message = "Xóa hồ sơ thành công.", Data = true };
         }
-        // 1. Hàm công bố danh sách
+        // 1. Hàm công bộ danh sách
         public async Task<BaseResponse<bool>> CongBoLayYKienAsync(int maDot)
         {
             var dot = await _dotHocBongRepository.LayTheoIdAsync(maDot);
             if (dot == null) return new BaseResponse<bool> { Success = false, Message = "Không tìm thấy đợt." };
 
-            if (dot.TrangThai != "HoiDongDuyet")
+            if (dot.TrangThai != "DuKien" && dot.TrangThai != "HoiDongDuyet")
             {
-                return new BaseResponse<bool> { Success = false, Message = "Hội đồng chưa chốt danh sách, không thể công bố." };
+                return new BaseResponse<bool> { Success = false, Message = "Đợt chưa ở trạng thái Dự Kiến hoặc Hội đồng chưa chốt danh sách, không thể công bố." };
             }
-            
-                dot.TrangThai = "CongBoLayYKien"; 
-                dot.NgayCongBo = DateTime.Now; // Bắt đầu tính giờ
-                await _dotHocBongRepository.UpdateAsync(dot);
+        
+            dot.TrangThai = "CongBoLayYKien"; 
+            dot.NgayCongBo = DateTime.Now; // Bắt đầu tính giờ
+            await _dotHocBongRepository.UpdateAsync(dot);
 
-                return new BaseResponse<bool> { Success = true, Message = "Đã công bố danh sách cho Sinh viên phản hồi trong 10 ngày.", Data = true };
+            return new BaseResponse<bool> { Success = true, Message = "Đã công bố danh sách cho Sinh viên phản hồi trong 10 ngày.", Data = true };
         }
 
         // 2. Hàm Tua nhanh thời gian cho Demo
@@ -263,6 +268,7 @@ namespace BE.Services.Implementations
             }
 
             dot.NgayCongBo = dot.NgayCongBo.Value.AddDays(-11);
+            dot.TrangThai = "LayYKienHoanTat";
             await _dotHocBongRepository.UpdateAsync(dot);
 
             return new BaseResponse<bool> { Success = true, Message = "Đã tua nhanh qua 10 ngày để Demo!", Data = true };

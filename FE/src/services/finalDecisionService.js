@@ -24,6 +24,18 @@ const FinalDecisionService = {
         return response.data;
     },
 
+    // CTSV công bố lấy ý kiến
+    congBoLayYKien: async (maDot) => {
+        const response = await api.post(`/api/tructhuoc/cong-bo-lay-y-kien/${maDot}`);
+        return response.data;
+    },
+
+    // CTSV tua nhanh thời gian (chỉ dùng cho mục đích demo)
+    tuaNhanhDemo: async (maDot) => {
+        const response = await api.put(`/api/tructhuoc/tua-nhanh-demo/${maDot}`);
+        return response.data;
+    },
+
 
     // ==========================================================
     // DÀNH CHO HIỆU TRƯỞNG (BAN GIÁM HIỆU)

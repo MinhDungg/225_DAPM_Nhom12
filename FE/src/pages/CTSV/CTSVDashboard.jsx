@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Send, Landmark, Info, Trash2, CalendarClock, AlertTriangle, Loader2 } from 'lucide-react';
+import { Send, Landmark, Info, Trash2, CalendarClock, AlertTriangle, Loader2, Megaphone, FastForward } from 'lucide-react';
 import FinalDecisionService from '../../services/finalDecisionService';
 import KhieuNaiService from '../../services/khieuNaiService';
 
@@ -99,7 +99,45 @@ const CTSVDashboard = () => {
             }
         } catch (error) {
             console.error(error);
-            alert('Lỗi kết nối đến máy chủ.');
+            alert(error.response?.data?.message || 'Lỗi kết nối đến máy chủ.');
+        }
+    };
+
+    const handleCongBo = async () => {
+        if (!window.confirm('Bạn có chắc chắn muốn công bố danh sách dự kiến để lấy ý kiến sinh viên?')) return;
+        setLoading(true);
+        try {
+            const res = await FinalDecisionService.congBoLayYKien(selectedMaDot);
+            if (res.success) {
+                alert('✅ Đã công bố danh sách thành công!');
+                fetchData(selectedMaDot);
+            } else {
+                alert(res.message || 'Có lỗi xảy ra.');
+            }
+        } catch (error) {
+            console.error(error);
+            alert(error.response?.data?.message || 'Lỗi kết nối đến máy chủ.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleTuaNhanh = async () => {
+        if (!window.confirm('Dùng cho DEMO: Tua nhanh thời gian 10 ngày để kết thúc lấy ý kiến?')) return;
+        setLoading(true);
+        try {
+            const res = await FinalDecisionService.tuaNhanhDemo(selectedMaDot);
+            if (res.success) {
+                alert('✅ Đã tua nhanh thời gian thành công!');
+                fetchData(selectedMaDot);
+            } else {
+                alert(res.message || 'Có lỗi xảy ra.');
+            }
+        } catch (error) {
+            console.error(error);
+            alert(error.response?.data?.message || 'Lỗi kết nối đến máy chủ.');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -146,12 +184,35 @@ const CTSVDashboard = () => {
                         </select>
                     </div>
 
+                    {trangThai === 'DuKien' && (
+                        <button
+                            onClick={handleCongBo}
+                            disabled={loading}
+                            className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-colors bg-purple-600 text-white hover:bg-purple-700 shadow-sm w-full lg:w-auto"
+                        >
+                            {loading ? <Loader2 size={16} className="animate-spin" /> : <Megaphone size={16} />}
+                            Công Bố Danh Sách
+                        </button>
+                    )}
+
+                    {trangThai === 'CongBoLayYKien' && (
+                        <button
+                            onClick={handleTuaNhanh}
+                            disabled={loading}
+                            className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-colors bg-orange-500 text-white hover:bg-orange-600 shadow-sm w-full lg:w-auto"
+                            title="Nút dành cho Demo"
+                        >
+                            {loading ? <Loader2 size={16} className="animate-spin" /> : <FastForward size={16} />}
+                            Tua Nhanh 10 Ngày
+                        </button>
+                    )}
+
                     {/* Nút trình ký */}
                     <button
                         onClick={handleTrinhBGH}
-                        disabled={loading || isReadOnly || data.danhSachCho.length === 0}
+                        disabled={loading || isReadOnly || data.danhSachCho.length === 0 || trangThai !== 'LayYKienHoanTat'}
                         className={`flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-colors w-full lg:w-auto
-                            ${(loading || isReadOnly || data.danhSachCho.length === 0)
+                            ${(loading || isReadOnly || data.danhSachCho.length === 0 || trangThai !== 'LayYKienHoanTat')
                                 ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
                                 : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm border border-transparent'}`}
                     >
@@ -199,10 +260,16 @@ const CTSVDashboard = () => {
                         <span className={`px-2.5 py-1 rounded-md text-xs font-medium border
                             ${trangThai === 'ChinhThuc' ? 'bg-green-50 text-green-700 border-green-200' :
                                 trangThai === 'ChoPheDuyet' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                                    'bg-blue-50 text-blue-700 border-blue-200'}`}>
+                                    trangThai === 'LayYKienHoanTat' ? 'bg-teal-50 text-teal-700 border-teal-200' :
+                                        trangThai === 'CongBoLayYKien' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
+                                            trangThai === 'DuKien' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                                                'bg-blue-50 text-blue-700 border-blue-200'}`}>
                             {trangThai === 'ChinhThuc' ? 'Đã phê duyệt' :
                                 trangThai === 'ChoPheDuyet' ? 'Đang chờ BGH' :
-                                    trangThai === 'DangXetDuyet' ? 'Đang xét duyệt' : trangThai}
+                                    trangThai === 'LayYKienHoanTat' ? 'Hoàn tất lấy ý kiến' :
+                                        trangThai === 'CongBoLayYKien' ? 'Đang lấy ý kiến' :
+                                            trangThai === 'DuKien' ? 'Danh sách dự kiến' :
+                                                trangThai === 'DangXetDuyet' ? 'Đang xét duyệt' : trangThai}
                         </span>
                     )}
                 </div>
