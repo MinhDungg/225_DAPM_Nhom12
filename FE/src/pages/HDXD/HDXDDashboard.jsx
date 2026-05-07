@@ -2,11 +2,32 @@ import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import finalDecisionService from '../../services/finalDecisionService';
 
+import { CalendarClock } from 'lucide-react';
+
 const HDXDDashboard = () => {
     const [hoSos, setHoSos] = useState([]);
-    const fetchHoSo = async () => {
+    const [dsDotHocBong, setDsDotHocBong] = useState([]);
+    const [selectedMaDot, setSelectedMaDot] = useState('');
+
+    const fetchDots = async () => {
         try {
-            const res = await finalDecisionService.getTongHopToanTruong();
+            const res = await finalDecisionService.layDsDotHocBong();
+            if (res.success) {
+                // Hội đồng thấy các đợt từ DangXetDuyet trở đi
+                const dots = res.data.filter(d => d.trangThai !== 'KhoiTao' && d.trangThai !== 'DaCoDiem');
+                setDsDotHocBong(dots);
+                if (dots.length > 0) {
+                    const activeDot = dots.find(d => d.trangThai === 'DangXetDuyet') || dots[0];
+                    setSelectedMaDot(activeDot.maDot);
+                }
+            }
+        } catch (error) { console.error(error); }
+    };
+
+    const fetchHoSo = async (maDot) => {
+        if (!maDot) return;
+        try {
+            const res = await finalDecisionService.getTongHopToanTruong(maDot);
             if (res.success) {
                 const dsHopLe = res.data.filter(hs => hs.trangThai !== 'TuChoi');
                 setHoSos(dsHopLe);
@@ -16,7 +37,8 @@ const HDXDDashboard = () => {
         }
     };
 
-    useEffect(() => { fetchHoSo(); }, []);
+    useEffect(() => { fetchDots(); }, []);
+    useEffect(() => { fetchHoSo(selectedMaDot); }, [selectedMaDot]);
 
     // TÍNH TOÁN DỮ LIỆU CHO BIỂU ĐỒ & THỐNG KÊ
     const tongSinhVien = hoSos.length;
@@ -35,7 +57,21 @@ const HDXDDashboard = () => {
             <div className="flex justify-between items-end">
                 <div>
                     <h2 className="text-3xl font-extrabold text-gray-900">Dashboard Hội đồng</h2>
-                    <p className="text-gray-500 mt-1">Rà soát danh sách tổng và xử lý các ngoại lệ vi phạm cấp trường.</p>
+                    <p className="text-gray-500 mt-1">Rà soát danh sách tổng và xem biểu đồ phân bổ.</p>
+                </div>
+                <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-gray-300">
+                    <CalendarClock size={16} className="text-gray-400" />
+                    <select
+                        value={selectedMaDot}
+                        onChange={(e) => setSelectedMaDot(e.target.value)}
+                        className="bg-transparent border-none outline-none text-sm font-medium text-gray-700 focus:ring-0"
+                    >
+                        {dsDotHocBong.map(dot => (
+                            <option key={dot.maDot} value={dot.maDot}>
+                                {dot.loaiDot} - HK{dot.hocKy} ({dot.namHoc}) {dot.trangThai !== 'DangXetDuyet' ? '[Lịch sử]' : ''}
+                            </option>
+                        ))}
+                    </select>
                 </div>
             </div>
 

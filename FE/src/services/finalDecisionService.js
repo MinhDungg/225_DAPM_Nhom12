@@ -7,8 +7,9 @@ const FinalDecisionService = {
     // ==========================================================
 
     // Lấy danh sách tổng hợp toàn trường (từ các Khoa đề xuất lên)
-    getTongHopToanTruong: async () => {
-        const response = await api.get('/api/ctsv/tonghop');
+    getTongHopToanTruong: async (maDot = null) => {
+        const url = maDot ? `/api/ctsv/tonghop?maDot=${maDot}` : '/api/ctsv/tonghop';
+        const response = await api.get(url);
         return response.data;
     },
 

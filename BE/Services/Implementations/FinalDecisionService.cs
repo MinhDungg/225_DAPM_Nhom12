@@ -32,14 +32,35 @@ namespace BE.Services.Implementations
         }
 
         // Tổng hợp dữ liệu từ Khoa đề xuất
-        public async Task<IEnumerable<HoSoResponseDTO>> GetRecommendedProfilesAsync(bool isHoiDong)
+        public async Task<IEnumerable<HoSoResponseDTO>> GetRecommendedProfilesAsync(bool isHoiDong, int? maDot = null)
         {
-            // LOGIC TỰ ĐỘNG PHÂN LUỒNG:
-            // - Nếu Hội đồng đăng nhập -> Tìm danh sách 'KhoaDeXuat' để duyệt
-            // - Nếu CTSV đăng nhập -> Tìm danh sách 'HoiDongDuyet' để lập tờ trình
-            string statusToFetch = isHoiDong ? "KhoaDeXuat" : "HoiDongDuyet";
+            IEnumerable<HoSoXetHocBong> profiles;
 
-            var profiles = await _hoSoRepository.GetProfilesByStatusAsync(statusToFetch);
+            if (maDot.HasValue)
+            {
+                var dot = await _dotHocBongRepository.LayTheoIdAsync(maDot.Value);
+                if (dot == null) return Enumerable.Empty<HoSoResponseDTO>();
+
+                // Nếu là Hội đồng xem Lịch sử (đợt đã qua DangXetDuyet)
+                if (isHoiDong && dot.TrangThai != "DangXetDuyet" && dot.TrangThai != "KhoiTao" && dot.TrangThai != "DaCoDiem")
+                {
+                    // Các hồ sơ Hội đồng đã duyệt hoặc từ chối
+                    var list1 = await _hoSoRepository.GetProfilesByStatusAsync("HoiDongDuyet");
+                    var list2 = await _hoSoRepository.GetProfilesByStatusAsync("ChinhThuc");
+                    var list3 = await _hoSoRepository.GetProfilesByStatusAsync("TuChoi");
+                    profiles = list1.Concat(list2).Concat(list3).Where(p => p.MaDot == maDot.Value).ToList();
+                }
+                else
+                {
+                    string statusToFetch = isHoiDong ? "KhoaDeXuat" : "HoiDongDuyet";
+                    profiles = (await _hoSoRepository.GetProfilesByStatusAsync(statusToFetch)).Where(p => p.MaDot == maDot.Value).ToList();
+                }
+            }
+            else
+            {
+                string statusToFetch = isHoiDong ? "KhoaDeXuat" : "HoiDongDuyet";
+                profiles = await _hoSoRepository.GetProfilesByStatusAsync(statusToFetch);
+            }
 
             return profiles.Select(p => new HoSoResponseDTO
             {
