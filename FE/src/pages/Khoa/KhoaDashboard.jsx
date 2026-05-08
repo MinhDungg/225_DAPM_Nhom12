@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { toast } from "react-toastify";
 import {
   ArrowLeft,
   BookOpen,
@@ -120,6 +121,7 @@ const KhoaDashboard = () => {
       if (response.success) {
         await layDanhSachDaDeXuat();
         await layDanhSachChoDuyetTheoDot(selectedDot.maDot);
+        toast.success("Chốt danh sách đề xuất thành công.");
       }
     } catch (err) {
       setError(err.message || "Không thể chốt danh sách.");
@@ -204,6 +206,9 @@ const KhoaDashboard = () => {
 
   const pendingList = ketQuaXepHang ? selectedResults : hoSoChoDuyet;
   const isReadOnly = selectedDot.trangThai !== "DangXetDuyet";
+  const displayList = isReadOnly
+    ? pendingList.filter((hs) => hs.trangThaiHoSoXetHocBong !== "Loai")
+    : pendingList;
 
   return (
     <div className="space-y-6 pb-10">
@@ -217,7 +222,7 @@ const KhoaDashboard = () => {
           {!isReadOnly && (
             <>
               <button onClick={handleXepHang} disabled={loading} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl font-bold disabled:opacity-50">
-                {loading ? <Loader className="animate-spin" size={18} /> : <Calculator size={18} />} Chạy thuật toán Xếp hạng & Phân bổ
+                {loading ? <Loader className="animate-spin" size={18} /> : <Calculator size={18} />} Duyệt nhanh
               </button>
               <button onClick={handleChotDanhSach} disabled={loading || danhSachChon.length===0} className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-xl font-bold disabled:opacity-50">
                 <Send size={18} /> Chốt danh sách đề xuất
@@ -234,10 +239,64 @@ const KhoaDashboard = () => {
       <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
           <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2"><Award className="text-blue-600" size={20} />{isReadOnly ? "Danh sách hồ sơ (Chỉ xem - Lịch sử)" : "Danh sách hồ sơ"}</h3>
-          <span className="text-sm text-gray-500">{pendingList.length} hồ sơ</span>
+          <span className="text-sm text-gray-500">{displayList.length} hồ sơ</span>
         </div>
         <div className="overflow-x-auto">
-          {loading ? <div className="p-12 text-center"><Loader className="animate-spin mx-auto text-blue-600" size={40} /></div> : <table className="w-full text-left text-sm text-gray-600"><thead className="bg-white border-b border-gray-200"><tr><th className="p-4 text-center">STT</th><th className="p-4">MSSV</th><th className="p-4">Họ và Tên</th><th className="p-4 text-center">Lớp</th><th className="p-4 text-center">Điểm học tập</th><th className="p-4 text-center">GPA</th><th className="p-4 text-center">ĐRL</th>{ketQuaXepHang && <><th className="p-4 text-center">Xếp loại học bổng</th><th className="p-4 text-center">Mức HB</th><th className="p-4 text-center">Trạng thái</th></>}</tr></thead><tbody className="divide-y divide-gray-50">{pendingList.map((hs, index) => ketQuaXepHang ? <tr key={hs.maHoSo}><td className="p-4 text-center font-semibold text-gray-800">{index + 1}</td><td className="p-4">{hs.maSV}</td><td className="p-4">{hs.hoTen}</td><td className="p-4 text-center">{hs.tenLop}</td><td className="p-4 text-center">{Number(hs.diemHocTap).toFixed(2)}</td><td className="p-4 text-center">{Number(hs.gpa).toFixed(2)}</td><td className="p-4 text-center">{hs.diemRenLuyen}</td><td className="p-4 text-center">{hs.xepLoai}</td><td className="p-4 text-center">{hs.mucHocBong.toLocaleString("vi-VN")} đ</td><td className="p-4 text-center">{hs.duocNhan ? <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">Được nhận</span> : <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700">Hết ngân sách</span>}</td></tr> : <tr key={hs.maHoSo}><td className="p-4 text-center font-semibold text-gray-800">{index + 1}</td><td className="p-4">{hs.maSV}</td><td className="p-4">{hs.hoTenSinhVien}</td><td className="p-4 text-center">{hs.tenLop}</td><td className="p-4 text-center">{Number(hs.diemHocTap).toFixed(2)}</td><td className="p-4 text-center">{Number(hs.gpa).toFixed(2)}</td><td className="p-4 text-center">{hs.diemRenLuyen}</td></tr>)}</tbody></table>}
+          {loading ? (
+            <div className="p-12 text-center">
+              <Loader className="animate-spin mx-auto text-blue-600" size={40} />
+            </div>
+          ) : (
+            <table className="w-full text-left text-sm text-gray-600">
+              <thead className="bg-white border-b border-gray-200">
+                <tr>
+                  <th className="p-4 text-center">STT</th>
+                  <th className="p-4">MSSV</th>
+                  <th className="p-4">Họ và Tên</th>
+                  <th className="p-4 text-center">Lớp</th>
+                  <th className="p-4 text-center">Điểm học tập</th>
+                  <th className="p-4 text-center">GPA</th>
+                  <th className="p-4 text-center">ĐRL</th>
+                  {isReadOnly && <th className="p-4 text-center">Loại học bổng</th>}
+                  {ketQuaXepHang && <>
+                    <th className="p-4 text-center">Xếp loại học bổng</th>
+                    <th className="p-4 text-center">Mức HB</th>
+                    <th className="p-4 text-center">Trạng thái</th>
+                  </>}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {displayList.map((hs, index) => (
+                  ketQuaXepHang ? (
+                    <tr key={hs.maHoSo}>
+                      <td className="p-4 text-center font-semibold text-gray-800">{index + 1}</td>
+                      <td className="p-4">{hs.maSV}</td>
+                      <td className="p-4">{hs.hoTen}</td>
+                      <td className="p-4 text-center">{hs.tenLop}</td>
+                      <td className="p-4 text-center">{Number(hs.diemHocTap).toFixed(2)}</td>
+                      <td className="p-4 text-center">{Number(hs.gpa).toFixed(2)}</td>
+                      <td className="p-4 text-center">{hs.diemRenLuyen}</td>
+                      {isReadOnly && <td className="p-4 text-center">{hs.xepLoaiHB || "-"}</td>}
+                      <td className="p-4 text-center">{hs.xepLoai}</td>
+                      <td className="p-4 text-center">{hs.mucHocBong.toLocaleString("vi-VN")} đ</td>
+                      <td className="p-4 text-center">{hs.duocNhan ? <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">Được nhận</span> : <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700">Hết ngân sách</span>}</td>
+                    </tr>
+                  ) : (
+                    <tr key={hs.maHoSo}>
+                      <td className="p-4 text-center font-semibold text-gray-800">{index + 1}</td>
+                      <td className="p-4">{hs.maSV}</td>
+                      <td className="p-4">{hs.hoTenSinhVien}</td>
+                      <td className="p-4 text-center">{hs.tenLop}</td>
+                      <td className="p-4 text-center">{Number(hs.diemHocTap).toFixed(2)}</td>
+                      <td className="p-4 text-center">{Number(hs.gpa).toFixed(2)}</td>
+                      <td className="p-4 text-center">{hs.diemRenLuyen}</td>
+                      {isReadOnly && <td className="p-4 text-center">{hs.xepLoaiHB || "-"}</td>}
+                    </tr>
+                  )
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </div>
