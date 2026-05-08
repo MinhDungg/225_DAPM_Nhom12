@@ -9,6 +9,7 @@ public class HoSoChoDuyetResponseDTO
     public float DiemHocTap { get; set; } // Điểm học tập thang 10
     public float GPA { get; set; }
     public int DiemRenLuyen { get; set; }
+    public string? XepLoaiHB { get; set; }
     public double DiemNCKH { get; set; }
     public double DiemHDCD { get; set; }
     public DateTime NgayNop { get; set; }

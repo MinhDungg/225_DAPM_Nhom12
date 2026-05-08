@@ -90,26 +90,53 @@ public class HoSoXetHocBongRepository : IHoSoXetHocBongRepository
 
     public async Task<int> ChotDanhSachDeXuatAsync(int maKhoa, int maDot, List<int> danhSachMaHoSo, int maCB)
     {
-        var hoSos = await _context.HoSoXetHocBongs
-            .Include(h => h.SinhVien)
-                .ThenInclude(sv => sv.Lop)
-            .Where(h => danhSachMaHoSo.Contains(h.MaHoSo)
-                     && h.MaDot == maDot
-                     && h.SinhVien.Lop.MaKhoa == maKhoa
-                     && h.TrangThai == "ChoXet")
-            .Distinct()
-            .ToListAsync();
+        using var transaction = await _context.Database.BeginTransactionAsync();
 
-        foreach (var hoSo in hoSos)
+        try
         {
-            hoSo.TrangThai = "KhoaDeXuat";
-            hoSo.MaCB_Duyet = maCB;
-            hoSo.XepLoaiHB = PhanLoaiHocBong(hoSo.GPA, hoSo.DiemRenLuyen);
-            _context.HoSoXetHocBongs.Update(hoSo);
-        }
+            var hoSosDuocChon = await _context.HoSoXetHocBongs
+                .Include(h => h.SinhVien)
+                    .ThenInclude(sv => sv.Lop)
+                .Where(h => danhSachMaHoSo.Contains(h.MaHoSo)
+                         && h.MaDot == maDot
+                         && h.SinhVien.Lop.MaKhoa == maKhoa
+                         && h.TrangThai == "ChoXet")
+                .Distinct()
+                .ToListAsync();
 
-        await _context.SaveChangesAsync();
-        return hoSos.Count;
+            foreach (var hoSo in hoSosDuocChon)
+            {
+                hoSo.TrangThai = "KhoaDeXuat";
+                hoSo.MaCB_Duyet = maCB;
+                hoSo.XepLoaiHB = PhanLoaiHocBong(hoSo.GPA, hoSo.DiemRenLuyen);
+                _context.HoSoXetHocBongs.Update(hoSo);
+            }
+
+            var soHoSoChuyenLoai = await _context.HoSoXetHocBongs
+                .Include(h => h.SinhVien)
+                    .ThenInclude(sv => sv.Lop)
+                .Where(h => h.MaDot == maDot
+                         && h.TrangThai == "ChoXet"
+                         && !danhSachMaHoSo.Contains(h.MaHoSo)
+                         && h.SinhVien.Lop.MaKhoa == maKhoa)
+                .ToListAsync();
+
+            foreach (var hoSo in soHoSoChuyenLoai)
+            {
+                hoSo.TrangThai = "Loai";
+                hoSo.MaCB_Duyet = maCB;
+                _context.HoSoXetHocBongs.Update(hoSo);
+            }
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+            return hoSosDuocChon.Count;
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
 
     private static string PhanLoaiHocBong(double gpa, int diemRenLuyen)

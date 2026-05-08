@@ -10,7 +10,6 @@ import {
   Loader,
   Send,
   Award,
-  DollarSign,
 } from "lucide-react";
 import khoaService from "../../services/khoaService";
 import kinhPhiService from "../../services/kinhPhiService";
@@ -233,7 +232,24 @@ const KhoaDashboard = () => {
         </div>
       </div>
 
-      {budgetInfo && <div className="bg-gradient-to-br from-blue-700 to-blue-900 p-6 rounded-3xl text-white shadow-lg flex items-center justify-between"><div><p className="text-xs font-bold opacity-80 uppercase">Tổng ngân sách Khoa được cấp</p><h4 className="text-2xl font-black mt-2">{budgetInfo.kinhPhi.toLocaleString("vi-VN")} đ</h4></div><div className="flex items-center gap-2 text-blue-100"><DollarSign size={20} /> Mức HB loại khá: {budgetInfo.mucHBLoaiKha.toLocaleString("vi-VN")} đ</div></div>}
+      {budgetInfo && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-white border border-gray-200 rounded-3xl p-6 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              {isReadOnly ? "Tổng ngân sách Khoa được cấp" : "Tổng kinh phí đã dùng"}
+            </p>
+            <h4 className="text-2xl font-extrabold text-gray-900 mt-2">
+              {isReadOnly
+                ? `${budgetInfo.kinhPhi.toLocaleString("vi-VN")} đ`
+                : `${ketQuaXepHang?.tongChiTieu ? ketQuaXepHang.tongChiTieu.toLocaleString("vi-VN") : "0"} đ / ${budgetInfo.kinhPhi.toLocaleString("vi-VN")} đ`}
+            </h4>
+          </div>
+          <div className="bg-white border border-gray-200 rounded-3xl p-6 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Mức HB loại khá</p>
+            <h4 className="text-2xl font-extrabold text-gray-900 mt-2">{budgetInfo.mucHBLoaiKha.toLocaleString("vi-VN")} đ</h4>
+          </div>
+        </div>
+      )}
 
       {error && <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3"><AlertCircle className="text-red-600" size={20} /><p className="text-red-700 font-medium">{error}</p></div>}
 
@@ -243,7 +259,67 @@ const KhoaDashboard = () => {
           <span className="text-sm text-gray-500">{pendingList.length} hồ sơ</span>
         </div>
         <div className="overflow-x-auto">
-          {loading ? <div className="p-12 text-center"><Loader className="animate-spin mx-auto text-blue-600" size={40} /></div> : <table className="w-full text-left text-sm text-gray-600"><thead className="bg-white border-b border-gray-200"><tr><th className="p-4 text-center">STT</th><th className="p-4">MSSV</th><th className="p-4">Họ và Tên</th><th className="p-4 text-center">Lớp</th><th className="p-4 text-center">Điểm học tập</th><th className="p-4 text-center">GPA</th><th className="p-4 text-center">ĐRL</th>{isReadOnly && <th className="p-4 text-center">Loại học bổng</th>}{ketQuaXepHang && <><th className="p-4 text-center">Xếp loại học bổng</th><th className="p-4 text-center">Mức HB</th><th className="p-4 text-center">Trạng thái</th></>}</tr></thead><tbody className="divide-y divide-gray-50">{pendingList.map((hs, index) => ketQuaXepHang ? <tr key={hs.maHoSo}><td className="p-4 text-center font-semibold text-gray-800">{index + 1}</td><td className="p-4">{hs.maSV}</td><td className="p-4">{hs.hoTen}</td><td className="p-4 text-center">{hs.tenLop}</td><td className="p-4 text-center">{Number(hs.diemHocTap).toFixed(2)}</td><td className="p-4 text-center">{Number(hs.gpa).toFixed(2)}</td><td className="p-4 text-center">{hs.diemRenLuyen}</td>{isReadOnly && <td className="p-4 text-center">{hs.xepLoaiHB || hs.xepLoaiHocBong || hs.XepLoaiHocBong || "—"}</td>}<td className="p-4 text-center">{hs.xepLoai}</td><td className="p-4 text-center">{hs.mucHocBong.toLocaleString("vi-VN")} đ</td><td className="p-4 text-center">{hs.duocNhan ? <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">Được nhận</span> : <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700">Hết ngân sách</span>}</td></tr> : <tr key={hs.maHoSo}><td className="p-4 text-center font-semibold text-gray-800">{index + 1}</td><td className="p-4">{hs.maSV}</td><td className="p-4">{hs.hoTenSinhVien}</td><td className="p-4 text-center">{hs.tenLop}</td><td className="p-4 text-center">{Number(hs.diemHocTap).toFixed(2)}</td><td className="p-4 text-center">{Number(hs.gpa).toFixed(2)}</td><td className="p-4 text-center">{hs.diemRenLuyen}</td>{isReadOnly && <td className="p-4 text-center">{hs.xepLoaiHocBong || hs.XepLoaiHocBong || "—"}</td>}</tr>)}</tbody></table>}
+          {loading ? (
+            <div className="p-12 text-center">
+              <Loader className="animate-spin mx-auto text-blue-600" size={40} />
+            </div>
+          ) : (
+            <table className="w-full text-left text-sm text-gray-600">
+              <thead className="bg-white border-b border-gray-200">
+                <tr>
+                  <th className="p-4 text-center">STT</th>
+                  <th className="p-4">MSSV</th>
+                  <th className="p-4">Họ và Tên</th>
+                  <th className="p-4 text-center">Lớp</th>
+                  <th className="p-4 text-center">Điểm học tập</th>
+                  <th className="p-4 text-center">GPA</th>
+                  <th className="p-4 text-center">ĐRL</th>
+                  {isReadOnly && <th className="p-4 text-center">Loại học bổng</th>}
+                  {ketQuaXepHang && <>
+                    <th className="p-4 text-center">Xếp loại học bổng</th>
+                    <th className="p-4 text-center">Mức HB</th>
+                    <th className="p-4 text-center">Trạng thái</th>
+                  </>}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {pendingList.map((hs, index) => (
+                  ketQuaXepHang ? (
+                    <tr key={hs.maHoSo}>
+                      <td className="p-4 text-center font-semibold text-gray-800">{index + 1}</td>
+                      <td className="p-4">{hs.maSV}</td>
+                      <td className="p-4">{hs.hoTen}</td>
+                      <td className="p-4 text-center">{hs.tenLop}</td>
+                      <td className="p-4 text-center">{Number(hs.diemHocTap).toFixed(2)}</td>
+                      <td className="p-4 text-center">{Number(hs.gpa).toFixed(2)}</td>
+                      <td className="p-4 text-center">{hs.diemRenLuyen}</td>
+                      {isReadOnly && <td className="p-4 text-center">{hs.xepLoaiHB || hs.xepLoaiHocBong || hs.XepLoaiHocBong || "—"}</td>}
+                      <td className="p-4 text-center">{hs.xepLoai}</td>
+                      <td className="p-4 text-center">{hs.mucHocBong.toLocaleString("vi-VN")} đ</td>
+                      <td className="p-4 text-center">
+                        {hs.duocNhan ? (
+                          <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">Được nhận</span>
+                        ) : (
+                          <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700">Hết ngân sách</span>
+                        )}
+                      </td>
+                    </tr>
+                  ) : (
+                    <tr key={hs.maHoSo}>
+                      <td className="p-4 text-center font-semibold text-gray-800">{index + 1}</td>
+                      <td className="p-4">{hs.maSV}</td>
+                      <td className="p-4">{hs.hoTenSinhVien}</td>
+                      <td className="p-4 text-center">{hs.tenLop}</td>
+                      <td className="p-4 text-center">{Number(hs.diemHocTap).toFixed(2)}</td>
+                      <td className="p-4 text-center">{Number(hs.gpa).toFixed(2)}</td>
+                      <td className="p-4 text-center">{hs.diemRenLuyen}</td>
+                      {isReadOnly && <td className="p-4 text-center">{hs.xepLoaiHB || hs.xepLoaiHocBong || hs.XepLoaiHocBong || "—"}</td>}
+                    </tr>
+                  )
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </div>

@@ -82,6 +82,7 @@ public class KhoaService : IKhoaService
                 DiemHocTap = h.DiemHocTap,
                 GPA = h.GPA,
                 DiemRenLuyen = h.DiemRenLuyen,
+                XepLoaiHB = h.XepLoaiHB,
                 NgayNop = h.NgayNop,
                 TrangThai = h.TrangThai ?? "ChoXet"
             })
@@ -323,6 +324,7 @@ public class KhoaService : IKhoaService
                 DiemHocTap = h.DiemHocTap,
                 GPA = h.GPA,
                 DiemRenLuyen = h.DiemRenLuyen,
+                XepLoaiHB = h.XepLoaiHB,
                 NgayNop = h.NgayNop,
                 TrangThai = h.TrangThai ?? "KhoaDeXuat"
             })
