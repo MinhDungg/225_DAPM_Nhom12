@@ -20,13 +20,13 @@ namespace BE.Controllers
 
         [HttpGet("/api/ctsv/tonghop")]
         [Authorize(Roles = "CTSV,HoiDong")]
-        public async Task<ActionResult<BaseResponse<IEnumerable<HoSoResponseDTO>>>> GetSystemWideSummaryAsync()
+        public async Task<ActionResult<BaseResponse<IEnumerable<HoSoResponseDTO>>>> GetSystemWideSummaryAsync([FromQuery] int? maDot = null)
         {
             // Lấy thông tin từ Token xem người đăng nhập có phải là Hội Đồng không
             bool isHoiDong = User.IsInRole("HoiDong");
 
             // Truyền kết quả xuống cho Service xử lý
-            var profiles = await _service.GetRecommendedProfilesAsync(isHoiDong);
+            var profiles = await _service.GetRecommendedProfilesAsync(isHoiDong, maDot);
 
             return Ok(new BaseResponse<IEnumerable<HoSoResponseDTO>>
             {

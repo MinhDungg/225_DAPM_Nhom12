@@ -46,7 +46,7 @@ const KhoaDashboard = () => {
       const response = await FinalDecisionService.layDsDotHocBong();
       if (response.success) {
         setDanhSachDot(
-          response.data.filter((dot) => dot.trangThai === "DangXetDuyet"),
+          response.data.filter((dot) => dot.trangThai !== "KhoiTao" && dot.trangThai !== "DaCoDiem"),
         );
       }
     } catch (err) {
@@ -133,6 +133,9 @@ const KhoaDashboard = () => {
     return ketQuaXepHang.danhSachXepHang;
   }, [ketQuaXepHang]);
 
+  const dangXetDuyetList = danhSachDot.filter(dot => dot.trangThai === "DangXetDuyet");
+  const lichSuList = danhSachDot.filter(dot => dot.trangThai !== "DangXetDuyet");
+
   if (!selectedDot) {
     return (
       <div className="space-y-6 pb-10">
@@ -151,13 +154,14 @@ const KhoaDashboard = () => {
             <p className="text-red-700 font-medium">{error}</p>
           </div>
         )}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+        <h3 className="text-xl font-bold text-gray-800 mb-4">Đợt đang xét duyệt</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 mb-8">
           {loading ? (
             <div className="col-span-full p-12 text-center">
               <Loader className="animate-spin mx-auto text-blue-600" size={40} />
             </div>
-          ) : danhSachDot.length ? (
-            danhSachDot.map((dot) => (
+          ) : dangXetDuyetList.length ? (
+            dangXetDuyetList.map((dot) => (
               <button key={dot.maDot} onClick={() => setSelectedDot(dot)} className="text-left bg-white rounded-3xl border border-gray-100 shadow-sm hover:shadow-lg transition-all p-6">
                 <div className="flex items-center justify-between">
                   <div className="w-12 h-12 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center"><BookOpen size={22} /></div>
@@ -168,7 +172,29 @@ const KhoaDashboard = () => {
               </button>
             ))
           ) : (
-            <div className="col-span-full text-center text-gray-500">Không có đợt nào đang xét duyệt.</div>
+            <div className="col-span-full text-center text-gray-500">Không có đợt nào đang chờ khoa xét duyệt.</div>
+          )}
+        </div>
+
+        <h3 className="text-xl font-bold text-gray-800 mb-4">Lịch sử xét duyệt</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+          {loading ? (
+            <div className="col-span-full p-12 text-center">
+              <Loader className="animate-spin mx-auto text-blue-600" size={40} />
+            </div>
+          ) : lichSuList.length ? (
+            lichSuList.map((dot) => (
+              <button key={dot.maDot} onClick={() => setSelectedDot(dot)} className="text-left bg-gray-50 rounded-3xl border border-gray-200 shadow-sm hover:shadow-md transition-all p-6 opacity-80 hover:opacity-100">
+                <div className="flex items-center justify-between">
+                  <div className="w-12 h-12 rounded-2xl bg-gray-200 text-gray-600 flex items-center justify-center"><BookOpen size={22} /></div>
+                  <span className="text-xs font-bold px-3 py-1 rounded-full bg-gray-200 text-gray-700">{dot.trangThai}</span>
+                </div>
+                <h3 className="mt-4 text-xl font-bold text-gray-700">{dot.loaiDot}</h3>
+                <p className="text-gray-500 mt-1">Học kỳ {dot.hocKy} • {dot.namHoc}</p>
+              </button>
+            ))
+          ) : (
+            <div className="col-span-full text-center text-gray-500">Chưa có lịch sử.</div>
           )}
         </div>
         {hoSoDaDeXuat.length > 0 && <div className="bg-white rounded-3xl shadow-sm border border-green-200 p-6"><h3 className="font-bold text-gray-800 flex items-center gap-2"><CheckCircle className="text-green-600" size={20} />Danh sách đã đề xuất lên Trường ({hoSoDaDeXuat.length})</h3></div>}
@@ -177,6 +203,7 @@ const KhoaDashboard = () => {
   }
 
   const pendingList = ketQuaXepHang ? selectedResults : hoSoChoDuyet;
+  const isReadOnly = selectedDot.trangThai !== "DangXetDuyet";
 
   return (
     <div className="space-y-6 pb-10">
@@ -187,12 +214,16 @@ const KhoaDashboard = () => {
           <p className="text-gray-500 mt-1">Học kỳ {selectedDot.hocKy} • {selectedDot.namHoc}</p>
         </div>
         <div className="flex gap-3">
-          <button onClick={handleXepHang} disabled={loading} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl font-bold disabled:opacity-50">
-            {loading ? <Loader className="animate-spin" size={18} /> : <Calculator size={18} />} Chạy thuật toán Xếp hạng & Phân bổ
-          </button>
-          <button onClick={handleChotDanhSach} disabled={loading || danhSachChon.length===0} className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-xl font-bold disabled:opacity-50">
-            <Send size={18} /> Chốt danh sách đề xuất
-          </button>
+          {!isReadOnly && (
+            <>
+              <button onClick={handleXepHang} disabled={loading} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl font-bold disabled:opacity-50">
+                {loading ? <Loader className="animate-spin" size={18} /> : <Calculator size={18} />} Chạy thuật toán Xếp hạng & Phân bổ
+              </button>
+              <button onClick={handleChotDanhSach} disabled={loading || danhSachChon.length===0} className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-xl font-bold disabled:opacity-50">
+                <Send size={18} /> Chốt danh sách đề xuất
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -202,7 +233,7 @@ const KhoaDashboard = () => {
 
       <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-          <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2"><Award className="text-blue-600" size={20} />Danh sách hồ sơ</h3>
+          <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2"><Award className="text-blue-600" size={20} />{isReadOnly ? "Danh sách hồ sơ (Chỉ xem - Lịch sử)" : "Danh sách hồ sơ"}</h3>
           <span className="text-sm text-gray-500">{pendingList.length} hồ sơ</span>
         </div>
         <div className="overflow-x-auto">

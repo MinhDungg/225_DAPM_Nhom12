@@ -45,7 +45,22 @@ public class KhoaService : IKhoaService
         if (canBo == null || canBo.MaKhoa == null)
             return new List<HoSoChoDuyetResponseDTO>();
 
-        var hoSos = await _hoSoRepository.LayDanhSachChoXetTheoKhoaVaDotAsync(canBo.MaKhoa.Value, maDot);
+        var dot = await _context.DotHocBongs.FirstOrDefaultAsync(d => d.MaDot == maDot);
+        var isReadOnly = dot != null && dot.TrangThai != "DangXetDuyet";
+
+        List<HoSoXetHocBong> hoSos;
+        if (isReadOnly)
+        {
+            hoSos = await _context.HoSoXetHocBongs
+                .Include(h => h.SinhVien)
+                    .ThenInclude(sv => sv.Lop)
+                .Where(h => h.MaDot == maDot && h.SinhVien.Lop.MaKhoa == canBo.MaKhoa.Value)
+                .ToListAsync();
+        }
+        else
+        {
+            hoSos = await _hoSoRepository.LayDanhSachChoXetTheoKhoaVaDotAsync(canBo.MaKhoa.Value, maDot);
+        }
 
         return MapDanhSachChoDuyet(hoSos);
     }
