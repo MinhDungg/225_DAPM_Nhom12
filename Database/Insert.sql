@@ -79,8 +79,8 @@ INSERT INTO [TAIKHOAN] (TenDangNhap, MatKhau, VaiTro, TrangThai) VALUES
 ('SV001', '123', 'SinhVien', 1), ('SV002', '123', 'SinhVien', 1),
 ('SV003', '123', 'SinhVien', 1), ('SV004', '123', 'SinhVien', 1),
 ('SV005', '123', 'SinhVien', 1), ('SV006', '123', 'SinhVien', 1),
-('SV007', '123', 'SinhVien', 1), ('SV008', '123', 'SinhVien', 1),
-('SV009', '123', 'SinhVien', 1), ('SV010', '123', 'SinhVien', 1);
+('SV007', '123', 'SinhVien', 1), ('SV008', '123', 'SinhVien', 1);
+--('SV009', '123', 'SinhVien', 1), ('SV010', '123', 'SinhVien', 1);
 
 INSERT INTO [SINHVIEN] (MaSV, HoTen, NgaySinh, Email, SDT, MaLop, MaTK) VALUES 
 ('SV001', N'Trần Văn Xuất Sắc', '2005-01-01', 'sv001@ute.edu.vn', '0901000001', 1, 7),
@@ -90,9 +90,9 @@ INSERT INTO [SINHVIEN] (MaSV, HoTen, NgaySinh, Email, SDT, MaLop, MaTK) VALUES
 ('SV005', N'Hoàng Thiếu Tín',   '2005-05-05', 'sv005@ute.edu.vn', '0901000005', 2, 11),
 ('SV006', N'Đinh Văn Khá Hai',  '2005-06-06', 'sv006@ute.edu.vn', '0901000006', 2, 12),
 ('SV007', N'Vũ Thị Giỏi Hai',   '2005-07-07', 'sv007@ute.edu.vn', '0901000007', 2, 13),
-('SV008', N'Lý Xuất Sắc Hai',   '2005-08-08', 'sv008@ute.edu.vn', '0901000008', 2, 14),
-('SV009', N'Bùi Điện Tử Khá',   '2005-09-09', 'sv009@ute.edu.vn', '0901000009', 3, 15),
-('SV010', N'Hồ Điện Tử Giỏi',   '2005-10-10', 'sv010@ute.edu.vn', '0901000010', 3, 16);
+('SV008', N'Lý Xuất Sắc Hai',   '2005-08-08', 'sv008@ute.edu.vn', '0901000008', 2, 14);
+--('SV009', N'Bùi Điện Tử Khá',   '2005-09-09', 'sv009@ute.edu.vn', '0901000009', 3, 15),
+--('SV010', N'Hồ Điện Tử Giỏi',   '2005-10-10', 'sv010@ute.edu.vn', '0901000010', 3, 16);
 
 -- =================================================================================
 -- 4. KẾT QUẢ HỌC TẬP & RÈN LUYỆN (TEST DATA CHO ĐỢT ĐANG XÉT DUYỆT)
@@ -105,16 +105,16 @@ INSERT INTO [KETQUAHOCTAP] (MaSV, HocKy, NamHoc, GPA, DiemHocTap, CoDiemF, SoTC,
 ('SV005', 1, '2025-2026', 3.7, 8.5, 0, 10, 1), -- Dưới 15 TC -> Loại
 ('SV006', 1, '2025-2026', 2.6, 6.5, 0, 15, 1), -- Đạt Khá
 ('SV007', 1, '2025-2026', 3.5, 8.3, 0, 18, 1), -- Đạt Giỏi
-('SV008', 1, '2025-2026', 3.9, 9.5, 0, 20, 1), -- Đạt Xuất sắc
-('SV009', 1, '2025-2026', 2.9, 7.0, 0, 16, 1), -- Khoa điện (Khá)
-('SV010', 1, '2025-2026', 3.3, 8.0, 0, 18, 1); -- Khoa điện (Giỏi)
+('SV008', 1, '2025-2026', 3.9, 9.5, 0, 20, 1); -- Đạt Xuất sắc
+--('SV009', 1, '2025-2026', 2.9, 7.0, 0, 16, 1), -- Khoa điện (Khá)
+--('SV010', 1, '2025-2026', 3.3, 8.0, 0, 18, 1); -- Khoa điện (Giỏi)
 
 INSERT INTO [DIEMRENLUYEN] (MaSV, HocKy, NamHoc, DiemSo, MaCB_Nhap) VALUES 
 ('SV001', 1, '2025-2026', 95, 2), ('SV002', 1, '2025-2026', 85, 2), 
 ('SV003', 1, '2025-2026', 75, 2), ('SV004', 1, '2025-2026', 98, 2), 
 ('SV005', 1, '2025-2026', 80, 2), ('SV006', 1, '2025-2026', 72, 2),
-('SV007', 1, '2025-2026', 82, 2), ('SV008', 1, '2025-2026', 92, 2),
-('SV009', 1, '2025-2026', 78, 2), ('SV010', 1, '2025-2026', 88, 2);
+('SV007', 1, '2025-2026', 82, 2), ('SV008', 1, '2025-2026', 92, 2);
+--('SV009', 1, '2025-2026', 78, 2), ('SV010', 1, '2025-2026', 88, 2);
 
 -- =================================================================================
 -- 5. KỊCH BẢN ĐỢT HỌC BỔNG VÀ PHÂN BỔ KINH PHÍ
@@ -140,7 +140,7 @@ INSERT INTO [HOSOXETHOCBONG] (MaSV, MaDot, DiemHocTap, GPA, DiemRenLuyen, TrangT
 ('SV005', 1, 8.5, 3.7, 80, 'Loai', N'Không đủ 15 tín chỉ'),    
 ('SV006', 1, 6.5, 2.6, 72, 'ChoXet', NULL),
 ('SV007', 1, 8.3, 3.5, 82, 'ChoXet', NULL),
-('SV008', 1, 9.5, 3.9, 92, 'ChoXet', NULL),
-('SV009', 1, 7.0, 2.9, 78, 'ChoXet', NULL),
-('SV010', 1, 8.0, 3.3, 88, 'ChoXet', NULL);
+('SV008', 1, 9.5, 3.9, 92, 'ChoXet', NULL);
+--('SV009', 1, 7.0, 2.9, 78, 'ChoXet', NULL),
+--('SV010', 1, 8.0, 3.3, 88, 'ChoXet', NULL);
 GO
