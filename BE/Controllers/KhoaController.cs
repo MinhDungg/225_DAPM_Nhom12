@@ -41,21 +41,17 @@ public class KhoaController : ControllerBase
     [HttpGet("danhsach")]
     public async Task<IActionResult> GetDanhSachChoDuyet()
     {
-        // Debug: In ra tất cả claims
-        var claims = User.Claims.Select(c => new { c.Type, c.Value }).ToList();
-        
-        // Thử nhiều cách lấy UserId
         var userIdClaim = User.FindFirst("UserId") 
                        ?? User.FindFirst(ClaimTypes.NameIdentifier)
                        ?? User.FindFirst("sub");
-        
+
         if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
         {
             return BadRequest(new BaseResponse<object>
             {
                 Success = false,
                 Message = "Khong tim thay UserId trong token",
-                Data = new { AllClaims = claims } // Trả về tất cả claims để debug
+                Data = null
             });
         }
 
@@ -65,6 +61,33 @@ public class KhoaController : ControllerBase
         {
             Success = true,
             Message = "Lay danh sach thanh cong",
+            Data = result
+        });
+    }
+
+    [HttpGet("danhsach/{maDot:int}")]
+    public async Task<IActionResult> GetDanhSachChoXetTheoDot(int maDot)
+    {
+        var userIdClaim = User.FindFirst("UserId") 
+                       ?? User.FindFirst(ClaimTypes.NameIdentifier)
+                       ?? User.FindFirst("sub");
+
+        if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+        {
+            return BadRequest(new BaseResponse<object>
+            {
+                Success = false,
+                Message = "Khong tim thay UserId trong token",
+                Data = null
+            });
+        }
+
+        var result = await _khoaService.LayDanhSachChoXetTheoDotAsync(userId, maDot);
+
+        return Ok(new BaseResponse<List<HoSoChoDuyetResponseDTO>>
+        {
+            Success = true,
+            Message = "Lay danh sach cho xet theo dot thanh cong",
             Data = result
         });
     }
@@ -96,16 +119,42 @@ public class KhoaController : ControllerBase
         });
     }
 
+    [HttpGet("phan-bo/{maDot:int}")]
+    public async Task<IActionResult> GetPhanBoKinhPhi(int maDot)
+    {
+        var userIdClaim = User.FindFirst("UserId")
+                       ?? User.FindFirst(ClaimTypes.NameIdentifier)
+                       ?? User.FindFirst("sub");
+
+        if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+        {
+            return Unauthorized(new BaseResponse<PhanBoKinhPhiResponseDTO>
+            {
+                Success = false,
+                Message = "Khong tim thay thong tin nguoi dung",
+                Data = null
+            });
+        }
+
+        var result = await _khoaService.LayPhanBoKinhPhiAsync(userId, maDot);
+        return Ok(new BaseResponse<PhanBoKinhPhiResponseDTO?>
+        {
+            Success = true,
+            Message = result == null ? "Chua co kinh phi cho khoa trong dot nay" : "Lay kinh phi thanh cong",
+            Data = result
+        });
+    }
+
     [HttpPost("xephang")]
     public async Task<IActionResult> XepHang([FromBody] XepHangRequestDTO request)
     {
         // Validate request
-        if (request == null || request.MaDot <= 0 || request.NganSach <= 0)
+        if (request == null || request.MaDot <= 0)
         {
             return BadRequest(new BaseResponse<XepHangResponseDTO>
             {
                 Success = false,
-                Message = "Du lieu khong hop le. MaDot va NganSach phai lon hon 0",
+                Message = "Du lieu khong hop le. MaDot phai lon hon 0",
                 Data = null
             });
         }

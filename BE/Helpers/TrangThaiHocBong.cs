@@ -6,6 +6,7 @@ public static class TrangThaiHocBong
     public const string DaCoDiem = "DaCoDiem";
     public const string DangXetDuyet = "DangXetDuyet";
     public const string DuKien = "DuKien";
+    public const string LayYKienHoanTat = "LayYKienHoanTat";
     public const string ChinhThuc = "ChinhThuc";
 
     public const string ChoXet = "ChoXet";
@@ -14,4 +15,3 @@ public static class TrangThaiHocBong
     public const string TuChoi = "TuChoi";
     public const string Loai = "Loai";
 }
-

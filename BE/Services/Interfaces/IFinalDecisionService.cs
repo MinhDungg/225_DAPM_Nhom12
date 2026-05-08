@@ -6,7 +6,8 @@ namespace BE.Services.Interfaces
 {
     public interface IFinalDecisionService
     {
-        Task<IEnumerable<HoSoResponseDTO>> GetRecommendedProfilesAsync(bool isHoiDong); Task<bool> ApproveExpectedListAsync(List<int> profileIds);
+        Task<IEnumerable<HoSoResponseDTO>> GetRecommendedProfilesAsync(bool isHoiDong, int? maDot = null);
+        Task<bool> ApproveExpectedListAsync(List<int> profileIds);
         Task<IEnumerable<HoSoResponseDTO>> GetStudentProgressAsync(string maSV);
         Task<bool> RectorApproveAsync(int maDot, int maCB);
         Task<BaseResponse<bool>> CTSVTrinhHieuTruongAsync(int maDot);

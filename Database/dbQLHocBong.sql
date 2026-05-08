@@ -117,7 +117,7 @@ CREATE TABLE [DOTHOCBONG] (
   [LoaiDot] nvarchar(150) NOT NULL, 
   [HocKy] int NOT NULL,
   [NamHoc] varchar(20) NOT NULL,
-  [TrangThai] varchar(50) DEFAULT 'KhoiTao' CONSTRAINT CHK_TrangThai_Dot CHECK ([TrangThai] IN ('KhoiTao','DaCoDiem', 'DangXetDuyet', 'DuKien', 'CongBoLayYKien', 'ChoPheDuyet', 'ChinhThuc')),
+  [TrangThai] varchar(50) DEFAULT 'KhoiTao' CONSTRAINT CHK_TrangThai_Dot CHECK ([TrangThai] IN ('KhoiTao','DaCoDiem', 'DangXetDuyet', 'DuKien', 'CongBoLayYKien', 'LayYKienHoanTat', 'ChoPheDuyet', 'ChinhThuc')),
   [LyDoTraVe] nvarchar(500),
   [NgayCongBo] datetime NULL -- Cột mới thêm để đếm 10 ngày
 );

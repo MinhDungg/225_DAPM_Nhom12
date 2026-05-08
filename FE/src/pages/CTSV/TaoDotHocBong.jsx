@@ -370,7 +370,7 @@ const TaoDotHocBong = () => {
                   label: dot.trangThai,
                   cls: 'bg-gray-100 text-gray-500 border border-gray-200',
                 };
-                const coTheQuet = dot.daCoDiem && dot.daCoKinhPhi && dot.trangThai !== 'DangXetDuyet';
+                const coTheQuet = dot.trangThai === 'DaCoDiem' && dot.daCoDiem && dot.daCoKinhPhi;
                 const coTheXoa  = dot.trangThai === 'KhoiTao' || dot.trangThai === 'DaCoDiem';
                 const coTheSua  = dot.trangThai === 'KhoiTao' || dot.trangThai === 'DaCoDiem';
                 // Drill-down available for scanned periods

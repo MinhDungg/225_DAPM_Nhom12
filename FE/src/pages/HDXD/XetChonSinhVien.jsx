@@ -1,28 +1,61 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, UserX, AlertTriangle } from 'lucide-react';
+import { ShieldCheck, UserX, AlertTriangle, CalendarClock } from 'lucide-react';
 import finalDecisionService from '../../services/finalDecisionService';
 
 const XetChonSinhVien = () => {
     const [hoSos, setHoSos] = useState([]);
-    const [dsBacBo, setDsBacBo] = useState(() => {
-        const saved = localStorage.getItem('hdxd_ds_bac_bo');
-        return saved ? JSON.parse(saved) : [];
-    });
+    const [dsBacBo, setDsBacBo] = useState([]);
+    const [dsDotHocBong, setDsDotHocBong] = useState([]);
+    const [selectedMaDot, setSelectedMaDot] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [selectedStudentToReject, setSelectedStudentToReject] = useState(null);
     const [lyDoTuChoi, setLyDoTuChoi] = useState("");
     const [selectedKhoa, setSelectedKhoa] = useState('Tất cả');
 
-    const fetchHoSo = async () => {
+    const fetchDots = async () => {
         try {
-            const res = await finalDecisionService.getTongHopToanTruong();
+            const res = await finalDecisionService.layDsDotHocBong();
             if (res.success) {
-                setHoSos(res.data.filter(hs => hs.trangThai !== 'TuChoi'));
+                const dots = res.data.filter(d => d.trangThai !== 'KhoiTao' && d.trangThai !== 'DaCoDiem');
+                setDsDotHocBong(dots);
+                if (dots.length > 0) {
+                    const activeDot = dots.find(d => d.trangThai === 'DangXetDuyet') || dots[0];
+                    setSelectedMaDot(activeDot.maDot);
+                }
             }
         } catch (error) { console.error(error); }
     };
 
-    useEffect(() => { fetchHoSo(); }, []);
+    const fetchHoSo = async (maDot, currentDot) => {
+        if (!maDot) return;
+        try {
+            const res = await finalDecisionService.getTongHopToanTruong(maDot);
+            if (res.success) {
+                const all = res.data;
+                setHoSos(all.filter(hs => hs.trangThai !== 'TuChoi'));
+
+                const readOnly = currentDot && currentDot.trangThai !== 'DangXetDuyet';
+                if (readOnly) {
+                    // Nếu là lịch sử, lấy danh sách bị bác bỏ từ server
+                    setDsBacBo(all.filter(hs => hs.trangThai === 'TuChoi').map(hs => ({...hs, lyDo: hs.ghiChu || hs.lyDo || "Vi phạm cấp trường"})));
+                } else {
+                    const saved = localStorage.getItem('hdxd_ds_bac_bo');
+                    setDsBacBo(saved ? JSON.parse(saved) : []);
+                }
+            }
+        } catch (error) { console.error(error); }
+    };
+
+    useEffect(() => { fetchDots(); }, []);
+    useEffect(() => {
+        const currentDot = dsDotHocBong.find(d => d.maDot.toString() === selectedMaDot.toString());
+        fetchHoSo(selectedMaDot, currentDot);
+    }, [selectedMaDot, dsDotHocBong]);
+
+    const isReadOnly = () => {
+        const currentDot = dsDotHocBong.find(d => d.maDot.toString() === selectedMaDot.toString());
+        return currentDot && currentDot.trangThai !== 'DangXetDuyet';
+    };
     const danhSachKhoa = ['Tất cả', ...new Set(hoSos.map(h => h.tenKhoa).filter(Boolean))];
     const dsSauLoc = selectedKhoa === 'Tất cả' ? hoSos : hoSos.filter(h => h.tenKhoa === selectedKhoa);
     const diemTBKhoa = dsSauLoc.length > 0 ? dsSauLoc.reduce((s, h) => s + h.diemHocTap, 0) / dsSauLoc.length : 0;
@@ -47,7 +80,10 @@ const XetChonSinhVien = () => {
         try {
             const allIds = hoSos.map(hs => hs.maHoSo);
             const res = await finalDecisionService.hoiDongXetChon(allIds);
-            if (res.success) { alert("Đã chốt danh sách!"); fetchHoSo(); }
+            if (res.success) { 
+                alert("Đã chốt danh sách!"); 
+                fetchDots(); // Tải lại đợt vì trạng thái đợt sẽ đổi thành DuKien
+            }
         } catch (error) { alert(error.message); }
     };
 
@@ -58,17 +94,36 @@ const XetChonSinhVien = () => {
                     <h2 className="text-3xl font-extrabold text-gray-900">Xét chọn Sinh viên</h2>
                     <p className="text-gray-500 mt-1">Rà soát và xử lý ngoại lệ vi phạm trước khi chốt danh sách.</p>
                 </div>
-                <select
-                    value={selectedKhoa}
-                    onChange={(e) => setSelectedKhoa(e.target.value)}
-                    className="border-2 border-gray-200 rounded-xl px-4 py-2 font-medium text-gray-700 focus:border-blue-500 outline-none"
-                >
-                    {danhSachKhoa.map(k => <option key={k} value={k}>{k}</option>)}
-                </select>
+                <div className="flex gap-3">
+                    <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-gray-300">
+                        <CalendarClock size={16} className="text-gray-400" />
+                        <select
+                            value={selectedMaDot}
+                            onChange={(e) => setSelectedMaDot(e.target.value)}
+                            className="bg-transparent border-none outline-none text-sm font-medium text-gray-700 focus:ring-0"
+                        >
+                            {dsDotHocBong.map(dot => (
+                                <option key={dot.maDot} value={dot.maDot}>
+                                    {dot.loaiDot} - HK{dot.hocKy} ({dot.namHoc}) {dot.trangThai !== 'DangXetDuyet' ? '[Lịch sử]' : ''}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
 
-                <button onClick={handleApproveAll} className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-xl font-bold shadow-lg transition-all flex items-center gap-2">
-                    <ShieldCheck size={20} /> Hoàn tất Duyệt Toàn trường
-                </button>
+                    <select
+                        value={selectedKhoa}
+                        onChange={(e) => setSelectedKhoa(e.target.value)}
+                        className="border-2 border-gray-200 rounded-xl px-4 py-2 font-medium text-gray-700 focus:border-blue-500 outline-none"
+                    >
+                        {danhSachKhoa.map(k => <option key={k} value={k}>{k}</option>)}
+                    </select>
+
+                    {!isReadOnly() && (
+                        <button onClick={handleApproveAll} className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-xl font-bold shadow-lg transition-all flex items-center gap-2">
+                            <ShieldCheck size={20} /> Hoàn tất Duyệt Toàn trường
+                        </button>
+                    )}
+                </div>
             </div>
 
             {/* BẢNG DANH SÁCH CHỜ RÀ SOÁT */}
@@ -84,7 +139,7 @@ const XetChonSinhVien = () => {
                             <th className="p-5 font-bold text-gray-600 text-sm uppercase text-center border-l border-gray-200">ĐRL</th>
                             <th className="p-5 font-bold text-gray-600 text-sm uppercase text-center border-l border-gray-200 bg-blue-50/30">Hệ 10</th>
                             <th className="p-5 font-bold text-gray-600 text-sm uppercase text-center">Xếp loại</th>
-                            <th className="p-5 font-bold text-gray-600 text-sm uppercase text-center">Hành động</th>
+                            {!isReadOnly() && <th className="p-5 font-bold text-gray-600 text-sm uppercase text-center">Hành động</th>}
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
@@ -107,12 +162,14 @@ const XetChonSinhVien = () => {
                                         <td className="p-5 text-center">
                                             <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold">{hs.xepLoaiHB}</span>
                                         </td>
-                                        <td className="p-5 text-center">
-                                            <button onClick={() => { setSelectedStudentToReject(hs); setShowModal(true); }}
-                                                className="px-4 py-2 bg-red-50 text-red-600 font-bold rounded-lg hover:bg-red-600 hover:text-white transition-all flex items-center gap-2 mx-auto">
-                                                <UserX size={16} /> Bác bỏ vi phạm
-                                            </button>
-                                        </td>
+                                        {!isReadOnly() && (
+                                            <td className="p-5 text-center">
+                                                <button onClick={() => { setSelectedStudentToReject(hs); setShowModal(true); }}
+                                                    className="px-4 py-2 bg-red-50 text-red-600 font-bold rounded-lg hover:bg-red-600 hover:text-white transition-all flex items-center gap-2 mx-auto">
+                                                    <UserX size={16} /> Bác bỏ vi phạm
+                                                </button>
+                                            </td>
+                                        )}
                                     </tr>
                                 );
                             })}
@@ -124,7 +181,7 @@ const XetChonSinhVien = () => {
             {dsBacBo.length > 0 && (
                 <div className="bg-white rounded-3xl shadow-sm border border-red-100 overflow-hidden">
                     <div className="p-5 border-b border-red-100 flex gap-2 items-center text-red-700 font-bold text-lg bg-red-50/40">
-                        <UserX size={20} /> Hồ sơ bị bác bỏ trong phiên ({dsBacBo.length})
+                        <UserX size={20} /> {isReadOnly() ? "Hồ sơ đã bị từ chối" : "Hồ sơ bị bác bỏ trong phiên"} ({dsBacBo.length})
                     </div>
                     <table className="w-full text-left">
                         <thead>

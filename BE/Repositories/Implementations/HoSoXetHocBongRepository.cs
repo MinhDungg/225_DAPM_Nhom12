@@ -40,7 +40,10 @@ public class HoSoXetHocBongRepository : IHoSoXetHocBongRepository
             .Include(h => h.SinhVien)
                 .ThenInclude(sv => sv.Lop)
             .Include(h => h.SinhVien.DiemRenLuyens)
-            .Where(h => h.TrangThai == "ChoXet" && h.SinhVien.Lop.MaKhoa == maKhoa)
+            .Where(h => h.MaDot > 0
+                     && h.TrangThai != null
+                     && h.TrangThai.Trim() == "ChoXet"
+                     && h.SinhVien.Lop.MaKhoa == maKhoa)
             .Distinct()
             .ToListAsync();
     }
@@ -51,10 +54,27 @@ public class HoSoXetHocBongRepository : IHoSoXetHocBongRepository
             .Include(h => h.SinhVien)
                 .ThenInclude(sv => sv.Lop)
             .Include(h => h.SinhVien.DiemRenLuyens)
-            .Include(h => h.SinhVien.KetQuaHocTaps) // THÊM: Load kết quả học tập để kiểm tra số tín chỉ
-            .Where(h => h.TrangThai == "ChoXet" 
-                     && h.SinhVien.Lop.MaKhoa == maKhoa 
-                     && h.MaDot == maDot)
+            .Include(h => h.SinhVien.KetQuaHocTaps)
+            .Where(h => h.MaDot == maDot
+                     && h.TrangThai != null
+                     && h.TrangThai.Trim() == "ChoXet"
+                     && h.SinhVien.Lop.MaKhoa == maKhoa)
+            .Distinct()
+            .ToListAsync();
+    }
+
+    public async Task<List<HoSoXetHocBong>> LayDanhSachChoXetTheoKhoaVaDotAsync(int maKhoa, int maDot)
+    {
+        return await _context.HoSoXetHocBongs
+            .Include(h => h.SinhVien)
+                .ThenInclude(sv => sv.Lop)
+            .Include(h => h.SinhVien)
+                .ThenInclude(sv => sv.KetQuaHocTaps)
+            .Include(h => h.SinhVien.DiemRenLuyens)
+            .Where(h => h.MaDot == maDot
+                     && h.TrangThai != null
+                     && h.TrangThai.Trim() == "ChoXet"
+                     && h.SinhVien.Lop.MaKhoa == maKhoa)
             .Distinct()
             .ToListAsync();
     }
@@ -70,79 +90,110 @@ public class HoSoXetHocBongRepository : IHoSoXetHocBongRepository
 
     public async Task<int> ChotDanhSachDeXuatAsync(int maKhoa, int maDot, List<int> danhSachMaHoSo, int maCB)
     {
-        // Lấy danh sách hồ sơ cần chốt
-        var hoSos = await _context.HoSoXetHocBongs
-            .Include(h => h.SinhVien)
-                .ThenInclude(sv => sv.Lop)
-            .Where(h => danhSachMaHoSo.Contains(h.MaHoSo)
-                     && h.MaDot == maDot
-                     && h.SinhVien.Lop.MaKhoa == maKhoa
-                     && h.TrangThai == "ChoXet")
-            .Distinct()
-            .ToListAsync();
+        using var transaction = await _context.Database.BeginTransactionAsync();
 
-        // Cập nhật trạng thái và cán bộ duyệt
-        foreach (var hoSo in hoSos)
+        try
         {
-            hoSo.TrangThai = "KhoaDeXuat";
-            hoSo.MaCB_Duyet = maCB;
-            _context.HoSoXetHocBongs.Update(hoSo);
-        }
-
-        await _context.SaveChangesAsync();
-        return hoSos.Count;
-    }
-
-    /// <summary>
-        /// Lấy danh sách hồ sơ xét học bổng theo trạng thái (kèm thông tin Sinh viên và Lớp).
-        /// </summary>
-      
-        public async Task<IEnumerable<HoSoXetHocBong>> GetProfilesByStatusAsync(string status)
-        {
-            return await _context.HoSoXetHocBongs
-                .Include(app => app.SinhVien)
-                    .ThenInclude(sv => sv.Lop) // Nối thêm bảng Lớp nếu DTO cần TenLop
-                        .ThenInclude(lop => lop.Khoa) // Nối thêm bảng Khoa để lấy TenKhoa
-                .Where(app => app.TrangThai == status)
-                .AsNoTracking() // Tối ưu hiệu suất vì chỉ đọc dữ liệu (Read-only)
-                .ToListAsync();
-        }
-
-        
-        /// Cập nhật trạng thái cho một danh sách hồ sơ.
-        /// <returns>True nếu cập nhật thành công, False nếu không tìm thấy hồ sơ</returns>
-        public async Task<bool> UpdateProfilesStatusAsync(List<int> profileIds, string newStatus)
-        {
-            if (profileIds == null || !profileIds.Any())
-                return false;
-
-            var applications = await _context.HoSoXetHocBongs
-                .Where(app => profileIds.Contains(app.MaHoSo))
+            var hoSosDuocChon = await _context.HoSoXetHocBongs
+                .Include(h => h.SinhVien)
+                    .ThenInclude(sv => sv.Lop)
+                .Where(h => danhSachMaHoSo.Contains(h.MaHoSo)
+                         && h.MaDot == maDot
+                         && h.SinhVien.Lop.MaKhoa == maKhoa
+                         && h.TrangThai == "ChoXet")
+                .Distinct()
                 .ToListAsync();
 
-            if (!applications.Any())
-                return false;
-
-            foreach (var app in applications)
+            foreach (var hoSo in hoSosDuocChon)
             {
-                app.TrangThai = newStatus;
+                hoSo.TrangThai = "KhoaDeXuat";
+                hoSo.MaCB_Duyet = maCB;
+                hoSo.XepLoaiHB = PhanLoaiHocBong(hoSo.GPA, hoSo.DiemRenLuyen);
+                _context.HoSoXetHocBongs.Update(hoSo);
+            }
+
+            var soHoSoChuyenLoai = await _context.HoSoXetHocBongs
+                .Include(h => h.SinhVien)
+                    .ThenInclude(sv => sv.Lop)
+                .Where(h => h.MaDot == maDot
+                         && h.TrangThai == "ChoXet"
+                         && !danhSachMaHoSo.Contains(h.MaHoSo)
+                         && h.SinhVien.Lop.MaKhoa == maKhoa)
+                .ToListAsync();
+
+            foreach (var hoSo in soHoSoChuyenLoai)
+            {
+                hoSo.TrangThai = "Loai";
+                hoSo.MaCB_Duyet = maCB;
+                _context.HoSoXetHocBongs.Update(hoSo);
             }
 
             await _context.SaveChangesAsync();
-            return true;
+            await transaction.CommitAsync();
+            return hoSosDuocChon.Count;
         }
-
-        public async Task<IEnumerable<HoSoXetHocBong>> GetProfilesByMaSVAsync(string maSV)
+        catch
         {
-            return await _context.HoSoXetHocBongs
-                .Include(h => h.DotHocBong)
-                .Where(h => h.MaSV == maSV)
-                .OrderByDescending(h => h.NgayNop)
-                .AsNoTracking()
-                .ToListAsync();
+            await transaction.RollbackAsync();
+            throw;
+        }
+    }
+
+    private static string PhanLoaiHocBong(double gpa, int diemRenLuyen)
+    {
+        if (gpa >= 3.6 && diemRenLuyen >= 90)
+            return "XuatSac";
+
+        if (gpa >= 3.2 && diemRenLuyen >= 80)
+            return "Gioi";
+
+        if (gpa >= 2.5 && diemRenLuyen >= 65)
+            return "Kha";
+
+        return "KhongDuDieuKien";
+    }
+
+    public async Task<IEnumerable<HoSoXetHocBong>> GetProfilesByStatusAsync(string status)
+    {
+        return await _context.HoSoXetHocBongs
+            .Include(app => app.SinhVien)
+                .ThenInclude(sv => sv.Lop)
+                    .ThenInclude(lop => lop.Khoa)
+            .Where(app => app.TrangThai == status)
+            .AsNoTracking()
+            .ToListAsync();
+    }
+
+    public async Task<bool> UpdateProfilesStatusAsync(List<int> profileIds, string newStatus)
+    {
+        if (profileIds == null || !profileIds.Any())
+            return false;
+
+        var applications = await _context.HoSoXetHocBongs
+            .Where(app => profileIds.Contains(app.MaHoSo))
+            .ToListAsync();
+
+        if (!applications.Any())
+            return false;
+
+        foreach (var app in applications)
+        {
+            app.TrangThai = newStatus;
         }
 
+        await _context.SaveChangesAsync();
+        return true;
+    }
 
+    public async Task<IEnumerable<HoSoXetHocBong>> GetProfilesByMaSVAsync(string maSV)
+    {
+        return await _context.HoSoXetHocBongs
+            .Include(h => h.DotHocBong)
+            .Where(h => h.MaSV == maSV)
+            .OrderByDescending(h => h.NgayNop)
+            .AsNoTracking()
+            .ToListAsync();
+    }
 
     public async Task<HoSoXetHocBong?> GetByIdAsync(int id)
     {
@@ -170,57 +221,51 @@ public class HoSoXetHocBongRepository : IHoSoXetHocBongRepository
             .ToListAsync();
     }
 
-    /// <param name="maCB_PheDuyet">Mã cán bộ (Hiệu trưởng) thực hiện phê duyệt</param>
-    /// <returns>True nếu giao dịch thành công</returns>
     public async Task<bool> FinalizeScholarshipRoundAsync(int maDot, int maCB_PheDuyet)
+    {
+        using var transaction = await _context.Database.BeginTransactionAsync();
+        try
         {
-            using var transaction = await _context.Database.BeginTransactionAsync();
-            try
-            {
-                // 1. Cập nhật trạng thái Đợt học bổng
-                var dot = await _context.DotHocBongs.FindAsync(maDot);
-                if (dot == null || dot.TrangThai == "ChinhThuc")
-                    return false; // Đã chốt rồi hoặc không tồn tại thì bỏ qua
-
-                dot.TrangThai = "ChinhThuc";
-
-                // 2. Lấy danh sách hồ sơ "HoiDongDuyet"
-                var confirmedProfiles = await _context.HoSoXetHocBongs
-                    .Where(h => h.MaDot == maDot && h.TrangThai == "HoiDongDuyet")
-                    .ToListAsync();
-
-                if (confirmedProfiles.Any())
-                {
-                    // 3. Sao chép dữ liệu sang bảng DSHOCBONG (Snapshot)
-                    var dsChinhThuc = confirmedProfiles.Select(h => new DSHocBong
-                    {
-                        MaDot = h.MaDot,
-                        MaSV = h.MaSV,
-                        XepLoai = h.XepLoaiHB,
-                        SoTien = 0, // Giá trị này sẽ được KH-TC xử lý sau
-                        NgayPheDuyet = DateTime.Now,
-                        MaCB_PheDuyet = maCB_PheDuyet
-                    });
-
-                    await _context.DSHocBongs.AddRangeAsync(dsChinhThuc);
-
-                    // 4. Cập nhật trạng thái hồ sơ gốc
-                    foreach (var h in confirmedProfiles)
-                    {
-                        h.TrangThai = "ChinhThuc";
-                    }
-                }
-
-                await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
-                return true;
-            }
-            catch
-            {
-                await transaction.RollbackAsync();
+            var dot = await _context.DotHocBongs.FindAsync(maDot);
+            if (dot == null || dot.TrangThai == "ChinhThuc")
                 return false;
+
+            dot.TrangThai = "ChinhThuc";
+
+            var confirmedProfiles = await _context.HoSoXetHocBongs
+                .Where(h => h.MaDot == maDot && h.TrangThai == "HoiDongDuyet")
+                .ToListAsync();
+
+            if (confirmedProfiles.Any())
+            {
+                var dsChinhThuc = confirmedProfiles.Select(h => new DSHocBong
+                {
+                    MaDot = h.MaDot,
+                    MaSV = h.MaSV,
+                    XepLoai = h.XepLoaiHB,
+                    SoTien = 0,
+                    NgayPheDuyet = DateTime.Now,
+                    MaCB_PheDuyet = maCB_PheDuyet
+                });
+
+                await _context.DSHocBongs.AddRangeAsync(dsChinhThuc);
+
+                foreach (var h in confirmedProfiles)
+                {
+                    h.TrangThai = "ChinhThuc";
+                }
             }
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+            return true;
         }
+        catch
+        {
+            await transaction.RollbackAsync();
+            return false;
+        }
+    }
 
     public async Task DeleteAsync(int maHoSo)
     {

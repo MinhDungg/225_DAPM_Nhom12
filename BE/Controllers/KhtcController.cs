@@ -123,8 +123,8 @@ public class KhtcController : ControllerBase
             return Ok(new BaseResponse<List<PhanBoKinhPhiResponseDTO>>
             {
                 Success = true,
-                Message = $"Lay phan bo kinh phi thanh cong. So luong: {result.Count}",
-                Data = result
+                Message = $"Lay phan bo kinh phi thanh cong. So luong: {result?.Count ?? 0}",
+                Data = result ?? new List<PhanBoKinhPhiResponseDTO>()
             });
         }
         catch (Exception ex)
@@ -134,7 +134,7 @@ public class KhtcController : ControllerBase
             {
                 Success = false,
                 Message = "Loi he thong",
-                Data = null
+                Data = new List<PhanBoKinhPhiResponseDTO>()
             });
         }
     }

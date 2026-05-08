@@ -7,8 +7,9 @@ const FinalDecisionService = {
     // ==========================================================
 
     // Lấy danh sách tổng hợp toàn trường (từ các Khoa đề xuất lên)
-    getTongHopToanTruong: async () => {
-        const response = await api.get('/api/ctsv/tonghop');
+    getTongHopToanTruong: async (maDot = null) => {
+        const url = maDot ? `/api/ctsv/tonghop?maDot=${maDot}` : '/api/ctsv/tonghop';
+        const response = await api.get(url);
         return response.data;
     },
 
@@ -21,6 +22,18 @@ const FinalDecisionService = {
     // CTSV khóa danh sách và nộp Tờ trình lên BGH
     trinhHieuTruong: async (maDot) => {
         const response = await api.put(`/api/ctsv/trinh-hieu-truong/${maDot}`);
+        return response.data;
+    },
+
+    // CTSV công bố lấy ý kiến
+    congBoLayYKien: async (maDot) => {
+        const response = await api.post(`/api/tructhuoc/cong-bo-lay-y-kien/${maDot}`);
+        return response.data;
+    },
+
+    // CTSV tua nhanh thời gian (chỉ dùng cho mục đích demo)
+    tuaNhanhDemo: async (maDot) => {
+        const response = await api.put(`/api/tructhuoc/tua-nhanh-demo/${maDot}`);
         return response.data;
     },
 

@@ -41,11 +41,21 @@ const kinhPhiService = {
   },
 
   /**
-   * Lấy danh sách phân bổ kinh phí đã lưu của một đợt.
-   * GET /api/khtc/phan-bo/:maDot
+   * Lấy kinh phí của Khoa cho một đợt học bổng.
+   * GET /api/khoa/phan-bo/:maDot
    * @param {number} maDot
    */
   getPhanBoTheoMaDot: async (maDot) => {
+    const response = await api.get(`/api/khoa/phan-bo/${maDot}`);
+    return response.data;
+  },
+
+  /**
+   * Lấy danh sách phân bổ kinh phí của tất cả Khoa cho một đợt học bổng.
+   * GET /api/khtc/phan-bo/:maDot
+   * @param {number} maDot
+   */
+  getPhanBoTheoMaDotKHTC: async (maDot) => {
     const response = await api.get(`/api/khtc/phan-bo/${maDot}`);
     return response.data;
   },

@@ -1,28 +1,32 @@
-# TÀI LIỆU ĐẶC TẢ V15: ĐIỀU CHỈNH LOGIC HIỂN THỊ VÀ QUYỀN TRUY CẬP MODULE KHTC
+# TÀI LIỆU ĐẶC TẢ V21: ĐỒNG BỘ UX/UI VÀ TỐI ƯU HÓA LUỒNG XẾP HẠNG CHO GIAO DIỆN KHOA
 
-**Gửi Gemini PM / Codex:** Tech Lead yêu cầu điều chỉnh lại logic hiển thị danh sách đợt học bổng và quyền thao tác (Nhập/Chỉ xem) của phòng Kế hoạch - Tài chính (KHTC). Hãy thực hiện chính xác các task sau:
+**Gửi Gemini PM / Codex:** Tech Lead yêu cầu tái cấu trúc phân hệ Trưởng Khoa (`KhoaDashboard.jsx` và `KhoaService.cs`). Áp dụng Master-Detail UI (Drill-down) và tối ưu hóa luồng dữ liệu: Backend chỉ truy vấn hồ sơ hợp lệ, tự động lấy ngân sách từ KHTC và giữ nguyên logic tỷ lệ chuẩn (x1.2, x1.4).
 
-## TASK 1: CẬP NHẬT SERVICE LỌC DANH SÁCH ĐỢT
-- **File làm việc:** `FE/src/services/kinhPhiService.js`
-- **Hàm cần sửa:** `getDotHocBongKHTC()`
-- **Yêu cầu:** Sửa đổi logic `.filter()`. KHTC hiện tại cần nhìn thấy các đợt ở 3 trạng thái: 
-  - `KhoiTao` (Để nạp dữ liệu kinh phí).
-  - `DaCoDiem` (Để nạp dữ liệu kinh phí).
-  - `ChinhThuc` (Để xem lại lịch sử phân bổ).
-- *(Xóa bỏ logic lọc theo `DangXetDuyet` và `DuKien` cũ).*
+## TASK 1: [BACKEND] LẤY KINH PHÍ TỰ ĐỘNG & TỐI ƯU TRUY VẤN HỒ SƠ
+- **File:** `BE/Services/Implementations/KhoaService.cs`
+- **Logic cập nhật (Hàm `XepHangVaPhanBoAsync`):**
+  1. Query bảng `PhanBoKinhPhi` dựa vào `MaDot` và `MaKhoa`. Ném lỗi (`Exception`) nếu Khoa chưa được KHTC rót kinh phí.
+  2. Lấy `KinhPhi` làm tổng ngân sách rải tiền và `MucHBLoaiKha` làm mức sàn (base).
+  3. **Tối ưu Truy vấn:** Chỉ lấy danh sách hồ sơ từ repository với điều kiện `TrangThai == "ChoXet"` thuộc `MaKhoa` và `MaDot` tương ứng. (TUYỆT ĐỐI KHÔNG viết code kiểm tra lại `CoDiemF` hay `SoTC` vì bộ lọc thô của CTSV đã xử lý việc này).
+  4. Trong hàm `PhanLoaiHocBong`, giữ nguyên các hằng số tỷ lệ cứng (`1.2m` cho Giỏi, `1.4m` cho Xuất sắc) nhân với `MucHBLoaiKha` (mức sàn) để ra số tiền thực tế.
 
-## TASK 2: BỔ SUNG CẤU HÌNH BADGE TRẠNG THÁI
-- **File làm việc:** `FE/src/pages/TaiChinh/TaiChinhKinhPhi.jsx`
-- **Yêu cầu:** Cập nhật biến `BADGE` (hoặc `TRANG_THAI_BADGE`) để hiển thị đúng màu sắc cho 3 trạng thái mới:
-  - `KhoiTao`: `{ label: 'Mới khởi tạo', cls: 'bg-blue-100 text-blue-700 border border-blue-200' }`
-  - `DaCoDiem`: `{ label: 'Đã có điểm', cls: 'bg-teal-100 text-teal-700 border border-teal-200' }`
-  - `ChinhThuc`: `{ label: 'Đã hoàn tất', cls: 'bg-slate-100 text-slate-700 border border-slate-200' }`
+## TASK 2: [FRONTEND] GIAO DIỆN CHỌN ĐỢT (CARD-BASED MASTER VIEW)
+- **File:** `FE/src/pages/Khoa/KhoaDashboard.jsx`
+- **Layout:** Trình bày danh sách các đợt học bổng đang mở (Trạng thái: `DangXetDuyet`) dưới dạng các **Thẻ (Cards)** thay vì Select Dropdown.
+- **Nội dung Card:** 
+  - Icon đặc trưng (VD: `BookOpen`).
+  - Tên đợt (VD: `Khuyến khích học tập`).
+  - Học kỳ, Năm học.
+- **Tương tác:** Nhấn vào Card sẽ cập nhật State `selectedDot` và trượt sang màn hình Chi tiết (Drill-down).
 
-## TASK 3: TÍCH HỢP CHẾ ĐỘ CHỈ XEM (READ-ONLY) CHO LỊCH SỬ
-- **File làm việc:** `TaiChinhKinhPhi.jsx`
-- **Yêu cầu Logic:** Khai báo một biến kiểm tra trạng thái: `const isReadOnly = selectedDot?.trangThai === 'ChinhThuc';`
-- **Cập nhật Giao diện (UI):**
-  1. **Khóa Bảng nhập liệu:** Tại các ô `<input>` nhập tiền (`kinhPhi`, `mucHBLoaiKha`), truyền prop `disabled={isReadOnly}`. Đổi màu nền sang xám (`bg-slate-50`) và cursor thành `not-allowed` nếu đang bị khóa.
-  2. **Ẩn Nút thao tác:** Nếu `isReadOnly === true`, **KHÔNG** hiển thị cụm nút "Tải file mẫu" và "Upload Excel".
-  3. **Ẩn Nút Submit:** Tương tự, **KHÔNG** hiển thị nút "Chốt Ngân Sách" ở dưới cùng bảng nếu đang ở chế độ Chỉ xem.
-  4. Thay vào đó, có thể hiển thị một Badge nhỏ góc trên bảng: *"🔒 Đợt học bổng đã hoàn tất (Chỉ xem)"*.
+## TASK 3: [FRONTEND] GIAO DIỆN XÉT DUYỆT (DETAIL DRILL-DOWN VIEW)
+- **Vị trí:** Xuất hiện sau khi click chọn 1 Card đợt học bổng.
+- **Header Section:**
+  - Nút `< Quay lại` danh sách đợt.
+  - Tiêu đề: Tên đợt (Học kỳ - Năm học).
+  - **Thẻ thông tin Ngân sách:** Gọi API lấy `KinhPhi` từ Backend và hiển thị nổi bật "Tổng ngân sách Khoa được cấp" để Trưởng khoa nắm rõ giới hạn chi tiêu. 
+- **Body Section:**
+  - Hiển thị danh sách tất cả sinh viên đạt chuẩn của Khoa (Chờ xét).
+  - Nút **"Chạy thuật toán Xếp hạng & Phân bổ"**. Khi bấm, gọi API `POST /api/khoa/xephang` (Chỉ truyền `maDot`, không truyền ngân sách).
+  - Trả kết quả về, cập nhật bảng với cột "Mức HB", "Thứ Hạng", và Trạng thái "Được nhận / Hết ngân sách".
+- **Footer Section:** Nút "Chốt danh sách đề xuất" để cập nhật trạng thái các hồ sơ trúng tuyển thành `KhoaDeXuat` và gửi lên Hội đồng.
