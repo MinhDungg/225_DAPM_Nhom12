@@ -62,10 +62,14 @@ public class KhoaService : IKhoaService
             hoSos = await _hoSoRepository.LayDanhSachChoXetTheoKhoaVaDotAsync(canBo.MaKhoa.Value, maDot);
         }
 
-        return MapDanhSachChoDuyet(hoSos);
+        // Lấy thông tin phân bổ kinh phí để tính mức học bổng
+        var phanBoKinhPhi = await _phanBoKinhPhiRepository.LayTheoMaDotVaMaKhoaAsync(maDot, canBo.MaKhoa.Value);
+        decimal mucHBLoaiKha = phanBoKinhPhi?.MucHBLoaiKha ?? 0;
+
+        return MapDanhSachChoDuyet(hoSos, mucHBLoaiKha);
     }
 
-    private static List<HoSoChoDuyetResponseDTO> MapDanhSachChoDuyet(List<HoSoXetHocBong> hoSos)
+    private static List<HoSoChoDuyetResponseDTO> MapDanhSachChoDuyet(List<HoSoXetHocBong> hoSos, decimal mucHBLoaiKha = 0)
     {
         return hoSos
             .GroupBy(h => h.MaSV)
@@ -73,18 +77,35 @@ public class KhoaService : IKhoaService
                 .OrderByDescending(h => h.NgayNop)
                 .ThenByDescending(h => h.MaHoSo)
                 .First())
-            .Select(h => new HoSoChoDuyetResponseDTO
+            .Select(h =>
             {
-                MaHoSo = h.MaHoSo,
-                MaSV = h.MaSV,
-                HoTenSinhVien = h.SinhVien.HoTen,
-                TenLop = h.SinhVien.Lop.TenLop,
-                DiemHocTap = h.DiemHocTap,
-                GPA = h.GPA,
-                DiemRenLuyen = h.DiemRenLuyen,
-                XepLoaiHB = h.XepLoaiHB,
-                NgayNop = h.NgayNop,
-                TrangThai = h.TrangThai ?? "ChoXet"
+                // Tính mức học bổng dựa trên xếp loại
+                decimal? mucHocBong = null;
+                if (mucHBLoaiKha > 0 && !string.IsNullOrEmpty(h.XepLoaiHB))
+                {
+                    mucHocBong = h.XepLoaiHB switch
+                    {
+                        "XuatSac" => mucHBLoaiKha * 1.4m,
+                        "Gioi" => mucHBLoaiKha * 1.2m,
+                        "Kha" => mucHBLoaiKha,
+                        _ => null
+                    };
+                }
+
+                return new HoSoChoDuyetResponseDTO
+                {
+                    MaHoSo = h.MaHoSo,
+                    MaSV = h.MaSV,
+                    HoTenSinhVien = h.SinhVien.HoTen,
+                    TenLop = h.SinhVien.Lop.TenLop,
+                    DiemHocTap = h.DiemHocTap,
+                    GPA = h.GPA,
+                    DiemRenLuyen = h.DiemRenLuyen,
+                    XepLoaiHB = h.XepLoaiHB,
+                    MucHocBong = mucHocBong ?? h.MucHocBong,
+                    NgayNop = h.NgayNop,
+                    TrangThai = h.TrangThai ?? "ChoXet"
+                };
             })
             .ToList();
     }

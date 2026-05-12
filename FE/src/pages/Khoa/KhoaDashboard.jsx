@@ -119,8 +119,9 @@ const KhoaDashboard = () => {
       );
       if (response.success) {
         await layDanhSachDaDeXuat();
-        await layDanhSachChoDuyetTheoDot(selectedDot.maDot);
-        toast.success("Chốt danh sách đề xuất thành công.");
+        await loadDots(); // Reload danh sách đợt để cập nhật trạng thái
+        setSelectedDot(null); // Quay về trang chủ
+        toast.success("Chốt danh sách đề xuất thành công. Đợt đã chuyển sang lịch sử.");
       }
     } catch (err) {
       setError(err.message || "Không thể chốt danh sách.");
@@ -136,6 +137,25 @@ const KhoaDashboard = () => {
 
   const dangXetDuyetList = danhSachDot.filter(dot => dot.trangThai === "DangXetDuyet");
   const lichSuList = danhSachDot.filter(dot => dot.trangThai !== "DangXetDuyet");
+
+  const isReadOnly = selectedDot ? selectedDot.trangThai !== "DangXetDuyet" : false;
+  
+  const pendingList = ketQuaXepHang
+    ? selectedResults
+    : isReadOnly
+      ? hoSoChoDuyet.filter((hs) => hs.trangThai !== "Loai")
+      : hoSoChoDuyet;
+
+  // Tính tổng số tiền đã chi cho các hồ sơ đã được duyệt (khi xem lịch sử)
+  const tongTienDaChi = useMemo(() => {
+    if (!isReadOnly || !hoSoChoDuyet.length) return 0;
+    console.log('hoSoChoDuyet:', hoSoChoDuyet); // Debug
+    const total = hoSoChoDuyet
+      .filter(hs => hs.trangThai !== "Loai" && hs.mucHocBong)
+      .reduce((sum, hs) => sum + (Number(hs.mucHocBong) || 0), 0);
+    console.log('tongTienDaChi:', total); // Debug
+    return total;
+  }, [hoSoChoDuyet, isReadOnly]);
 
   if (!selectedDot) {
     return (
@@ -198,17 +218,9 @@ const KhoaDashboard = () => {
             <div className="col-span-full text-center text-gray-500">Chưa có lịch sử.</div>
           )}
         </div>
-        {hoSoDaDeXuat.length > 0 && <div className="bg-white rounded-3xl shadow-sm border border-green-200 p-6"><h3 className="font-bold text-gray-800 flex items-center gap-2"><CheckCircle className="text-green-600" size={20} />Danh sách đã đề xuất lên Trường ({hoSoDaDeXuat.length})</h3></div>}
       </div>
     );
   }
-
-  const isReadOnly = selectedDot.trangThai !== "DangXetDuyet";
-  const pendingList = ketQuaXepHang
-    ? selectedResults
-    : isReadOnly
-      ? hoSoChoDuyet.filter((hs) => hs.trangThai !== "Loai")
-      : hoSoChoDuyet;
 
   return (
     <div className="space-y-6 pb-10">
@@ -240,7 +252,7 @@ const KhoaDashboard = () => {
             </p>
             <h4 className="text-2xl font-extrabold text-gray-900 mt-2">
               {isReadOnly
-                ? `${budgetInfo.kinhPhi.toLocaleString("vi-VN")} đ`
+                ? `${tongTienDaChi.toLocaleString("vi-VN")} đ / ${budgetInfo.kinhPhi.toLocaleString("vi-VN")} đ`
                 : `${ketQuaXepHang?.tongChiTieu ? ketQuaXepHang.tongChiTieu.toLocaleString("vi-VN") : "0"} đ / ${budgetInfo.kinhPhi.toLocaleString("vi-VN")} đ`}
             </h4>
           </div>
@@ -275,6 +287,7 @@ const KhoaDashboard = () => {
                   <th className="p-4 text-center">GPA</th>
                   <th className="p-4 text-center">ĐRL</th>
                   {isReadOnly && <th className="p-4 text-center">Loại học bổng</th>}
+                  {isReadOnly && <th className="p-4 text-center">Mức HB</th>}
                   {ketQuaXepHang && <>
                     <th className="p-4 text-center">Xếp loại học bổng</th>
                     <th className="p-4 text-center">Mức HB</th>
@@ -314,6 +327,7 @@ const KhoaDashboard = () => {
                       <td className="p-4 text-center">{Number(hs.gpa).toFixed(2)}</td>
                       <td className="p-4 text-center">{hs.diemRenLuyen}</td>
                       {isReadOnly && <td className="p-4 text-center">{hs.xepLoaiHB || hs.xepLoaiHocBong || hs.XepLoaiHocBong || "—"}</td>}
+                      {isReadOnly && <td className="p-4 text-center">{hs.mucHocBong ? hs.mucHocBong.toLocaleString("vi-VN") + " đ" : "—"}</td>}
                     </tr>
                   )
                 ))}
