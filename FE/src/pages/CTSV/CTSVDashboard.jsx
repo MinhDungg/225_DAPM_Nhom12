@@ -8,18 +8,27 @@ const CTSVDashboard = () => {
         thongTinDot: { hocKy: '', namHoc: '', loaiDot: '', trangThai: '', lyDoTraVe: '' },
         danhSachCho: []
     });
+    
+    const removeAccents = (str) => {
+        if (!str) return '';
+        return String(str)
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase();
+    };
     const [loading, setLoading] = useState(false);
 
     const [dsDotHocBong, setDsDotHocBong] = useState([]);
     const [selectedMaDot, setSelectedMaDot] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         const fetchDotHocBong = async () => {
             try {
                 const res = await FinalDecisionService.layDsDotHocBong();
-                if (res.success && res.data.length > 0) {
+                if (res?.success && Array.isArray(res?.data) && res.data.length > 0) {
                     setDsDotHocBong(res.data);
-                    setSelectedMaDot(res.data[0].maDot.toString());
+                    setSelectedMaDot(res.data[0]?.maDot?.toString() || '');
                 }
             } catch (error) {
                 console.error("Lỗi lấy danh sách đợt:", error);
@@ -38,10 +47,12 @@ const CTSVDashboard = () => {
         setLoading(true);
         try {
             const res = await FinalDecisionService.getToTrinhHieuTruong(maDot);
-            if (res.success) {
+            if (res && res.success && res.data) {
+                const thongTin = res.data.thongTinDot || { hocKy: '', namHoc: '', loaiDot: '', trangThai: '', lyDoTraVe: '' };
+                const danhSach = Array.isArray(res.data.danhSach) ? res.data.danhSach : [];
                 setData({
-                    thongTinDot: res.data.thongTinDot,
-                    danhSachCho: res.data.danhSach.filter(p => p.trangThai === 'HoiDongDuyet' || p.trangThai === 'ChinhThuc')
+                    thongTinDot: thongTin,
+                    danhSachCho: danhSach.filter(p => p && (p.trangThai === 'HoiDongDuyet' || p.trangThai === 'ChinhThuc'))
                 });
             } else {
                 setData({
@@ -51,6 +62,10 @@ const CTSVDashboard = () => {
             }
         } catch (error) {
             console.error("Lỗi tải dữ liệu CTSV", error);
+            setData({
+                thongTinDot: { hocKy: '', namHoc: '', loaiDot: '', trangThai: '', lyDoTraVe: '' },
+                danhSachCho: []
+            });
         } finally {
             setLoading(false);
         }
@@ -144,6 +159,17 @@ const CTSVDashboard = () => {
     const trangThai = data.thongTinDot?.trangThai;
     const isReadOnly = trangThai === 'ChoPheDuyet' || trangThai === 'ChinhThuc';
 
+    const filteredList = (data?.danhSachCho || []).filter(hs => {
+        if (!hs) return false;
+        const q = removeAccents(searchQuery);
+        return (
+            (hs.maSV && removeAccents(hs.maSV).includes(q)) ||
+            (hs.hoTen && removeAccents(hs.hoTen).includes(q)) ||
+            (hs.tenLop && removeAccents(hs.tenLop).includes(q)) ||
+            (hs.tenKhoa && removeAccents(hs.tenKhoa).includes(q))
+        );
+    });
+
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
             {/* Header Control Panel */}
@@ -154,11 +180,11 @@ const CTSVDashboard = () => {
                     </div>
                     <div>
                         <h2 className="text-lg font-bold text-gray-900 leading-tight">
-                            {data.thongTinDot.loaiDot || 'Chọn đợt học bổng'}
+                            {data?.thongTinDot?.loaiDot || 'Chọn đợt học bổng'}
                         </h2>
                         <p className="text-sm text-gray-500 mt-0.5">
-                            Học kỳ: <span className="font-medium text-gray-700">{data.thongTinDot.hocKy || '-'}</span> |
-                            Năm học: <span className="font-medium text-gray-700">{data.thongTinDot.namHoc || '-'}</span>
+                            Học kỳ: <span className="font-medium text-gray-700">{data?.thongTinDot?.hocKy || '-'}</span> |
+                            Năm học: <span className="font-medium text-gray-700">{data?.thongTinDot?.namHoc || '-'}</span>
                         </p>
                     </div>
                 </div>
@@ -175,11 +201,11 @@ const CTSVDashboard = () => {
                             {dsDotHocBong.length === 0 ? (
                                 <option value="">Đang tải dữ liệu...</option>
                             ) : (
-                                dsDotHocBong.map((dot) => (
-                                    <option key={dot.maDot} value={dot.maDot}>
-                                        {dot.loaiDot} (Kỳ {dot.hocKy} - {dot.namHoc})
+                                dsDotHocBong.map((dot) => dot ? (
+                                    <option key={dot.maDot || Math.random()} value={dot.maDot || ''}>
+                                        {dot.loaiDot || 'N/A'} (Kỳ {dot.hocKy || '-'} - {dot.namHoc || '-'})
                                     </option>
-                                ))
+                                ) : null)
                             )}
                         </select>
                     </div>
@@ -210,9 +236,9 @@ const CTSVDashboard = () => {
                     {/* Nút trình ký */}
                     <button
                         onClick={handleTrinhBGH}
-                        disabled={loading || isReadOnly || data.danhSachCho.length === 0 || trangThai !== 'LayYKienHoanTat'}
+                        disabled={loading || isReadOnly || (data?.danhSachCho || []).length === 0 || trangThai !== 'LayYKienHoanTat'}
                         className={`flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-colors w-full lg:w-auto
-                            ${(loading || isReadOnly || data.danhSachCho.length === 0 || trangThai !== 'LayYKienHoanTat')
+                            ${(loading || isReadOnly || (data?.danhSachCho || []).length === 0 || trangThai !== 'LayYKienHoanTat')
                                 ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
                                 : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm border border-transparent'}`}
                     >
@@ -224,7 +250,7 @@ const CTSVDashboard = () => {
             </div>
 
             {/* Thông báo Lý do trả về từ Hiệu trưởng */}
-            {data.thongTinDot.lyDoTraVe && trangThai === 'DangXetDuyet' && (
+            {data?.thongTinDot?.lyDoTraVe && trangThai === 'DangXetDuyet' && (
                 <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
                     <div className="text-red-600 shrink-0 mt-0.5">
                         <AlertTriangle size={20} />
@@ -234,7 +260,7 @@ const CTSVDashboard = () => {
                             Hồ sơ bị trả lại từ Ban Giám Hiệu
                         </h4>
                         <p className="text-red-700 text-sm mb-1">
-                            <span className="font-medium">Lý do:</span> {data.thongTinDot.lyDoTraVe}
+                            <span className="font-medium">Lý do:</span> {data?.thongTinDot?.lyDoTraVe}
                         </p>
                         <p className="text-red-600/80 text-xs">
                             Vui lòng rà soát, chỉnh sửa hoặc xóa các hồ sơ không hợp lệ, sau đó thực hiện trình lại.
@@ -252,10 +278,17 @@ const CTSVDashboard = () => {
                         <h3 className="font-semibold text-gray-900 text-base">
                             Danh sách Hội đồng đã duyệt
                             <span className="ml-2 text-sm font-normal text-gray-500">
-                                ({data.danhSachCho.length} hồ sơ)
+                                ({filteredList.length} hồ sơ)
                             </span>
                         </h3>
                     </div>
+                    <input
+                        type="text"
+                        placeholder="Tìm theo MSSV, Tên, Lớp, Khoa..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 w-full md:w-64"
+                    />
                     {trangThai && (
                         <span className={`px-2.5 py-1 rounded-md text-xs font-medium border
                             ${trangThai === 'ChinhThuc' ? 'bg-green-50 text-green-700 border-green-200' :
@@ -291,22 +324,22 @@ const CTSVDashboard = () => {
                             </tr>
                         </thead>
                         <tbody className="text-sm text-gray-700 divide-y divide-gray-100">
-                            {data.danhSachCho.length === 0 ? (
+                            {filteredList.length === 0 ? (
                                 <tr>
                                     <td colSpan={isReadOnly ? 8 : 9} className="text-center py-12 text-gray-500">
                                         Chưa có hồ sơ nào được Hội đồng duyệt cho đợt này.
                                     </td>
                                 </tr>
                             ) : (
-                                data.danhSachCho.map((item) => (
-                                    <tr key={item.maHoSo} className="hover:bg-gray-50 transition-colors">
+                                filteredList.map((item) => item ? (
+                                    <tr key={item.maHoSo || Math.random()} className="hover:bg-gray-50 transition-colors">
                                         <td className="px-6 py-4">
-                                            <div className="font-medium text-gray-900">{item.maSV}</div>
-                                            <div className="text-xs text-gray-500 mt-0.5">{item.hoTen}</div>
+                                            <div className="font-medium text-gray-900">{item.maSV || '-'}</div>
+                                            <div className="text-xs text-gray-500 mt-0.5">{item.hoTen || '-'}</div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="text-gray-700">{item.tenLop}</div>
-                                            <div className="text-xs text-gray-500 mt-0.5">{item.tenKhoa}</div>
+                                            <div className="text-gray-700">{item.tenLop || '-'}</div>
+                                            <div className="text-xs text-gray-500 mt-0.5">{item.tenKhoa || '-'}</div>
                                         </td>
                                         <td className="px-6 py-4 text-right font-medium">
                                             {item.gpa ? Number(item.gpa).toLocaleString('vi-VN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0,00'}
@@ -315,7 +348,7 @@ const CTSVDashboard = () => {
                                             {item.diemHocTap ? Number(item.diemHocTap).toLocaleString('vi-VN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0,00'}
                                         </td>
                                         <td className="px-6 py-4 text-center">
-                                            {item.diemRenLuyen}
+                                            {item.diemRenLuyen || '0'}
                                         </td>
                                         <td className="px-6 py-4 text-center">
                                             {item.coDiemF ?
@@ -325,11 +358,11 @@ const CTSVDashboard = () => {
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className="bg-gray-100 text-gray-700 px-2.5 py-1 rounded-md text-xs font-medium">
-                                                {item.xepLoaiHB}
+                                                {item.xepLoaiHB || '-'}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-right font-medium text-gray-900">
-                                            {item.soTien?.toLocaleString('vi-VN')}
+                                            {item.soTien != null ? Number(item.soTien).toLocaleString('vi-VN') : '-'}
                                         </td>
                                         {!isReadOnly && (
                                             <td className="px-6 py-4 text-center">
@@ -343,7 +376,7 @@ const CTSVDashboard = () => {
                                             </td>
                                         )}
                                     </tr>
-                                ))
+                                ) : null)
                             )}
                         </tbody>
                     </table>

@@ -11,6 +11,7 @@ const XetChonSinhVien = () => {
     const [selectedStudentToReject, setSelectedStudentToReject] = useState(null);
     const [lyDoTuChoi, setLyDoTuChoi] = useState("");
     const [selectedKhoa, setSelectedKhoa] = useState('Tất cả');
+    const [searchQuery, setSearchQuery] = useState("");
 
     const fetchDots = async () => {
         try {
@@ -57,7 +58,17 @@ const XetChonSinhVien = () => {
         return currentDot && currentDot.trangThai !== 'DangXetDuyet';
     };
     const danhSachKhoa = ['Tất cả', ...new Set(hoSos.map(h => h.tenKhoa).filter(Boolean))];
-    const dsSauLoc = selectedKhoa === 'Tất cả' ? hoSos : hoSos.filter(h => h.tenKhoa === selectedKhoa);
+    const dsKhoaLoc = selectedKhoa === 'Tất cả' ? hoSos : hoSos.filter(h => h.tenKhoa === selectedKhoa);
+    const dsSauLoc = (dsKhoaLoc || []).filter(hs => {
+        const q = searchQuery.toLowerCase();
+        return (
+            (hs.maSV && String(hs.maSV).toLowerCase().includes(q)) ||
+            (hs.hoTen && String(hs.hoTen).toLowerCase().includes(q)) ||
+            (hs.hoTenSinhVien && String(hs.hoTenSinhVien).toLowerCase().includes(q)) ||
+            (hs.tenLop && String(hs.tenLop).toLowerCase().includes(q)) ||
+            (hs.tenKhoa && String(hs.tenKhoa).toLowerCase().includes(q))
+        );
+    });
     const diemTBKhoa = dsSauLoc.length > 0 ? dsSauLoc.reduce((s, h) => s + h.diemHocTap, 0) / dsSauLoc.length : 0;
 
     const handleReject = async () => {
@@ -118,6 +129,14 @@ const XetChonSinhVien = () => {
                         {danhSachKhoa.map(k => <option key={k} value={k}>{k}</option>)}
                     </select>
 
+                    <input
+                        type="text"
+                        placeholder="Tìm theo MSSV, Tên, Lớp, Khoa..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="border-2 border-gray-200 rounded-xl px-4 py-2 text-sm focus:border-blue-500 outline-none"
+                    />
+
                     {!isReadOnly() && (
                         <button onClick={handleApproveAll} className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-xl font-bold shadow-lg transition-all flex items-center gap-2">
                             <ShieldCheck size={20} /> Hoàn tất Duyệt Toàn trường
@@ -129,7 +148,7 @@ const XetChonSinhVien = () => {
             {/* BẢNG DANH SÁCH CHỜ RÀ SOÁT */}
             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="p-6 border-b border-gray-100 font-bold text-gray-800 text-lg">
-                    Danh sách chờ rà soát — Mặc định hợp lệ ({hoSos.length} hồ sơ)
+                    Danh sách chờ rà soát — Mặc định hợp lệ ({dsSauLoc.length} hồ sơ)
                 </div>
                 <table className="w-full text-left">
                     <thead>

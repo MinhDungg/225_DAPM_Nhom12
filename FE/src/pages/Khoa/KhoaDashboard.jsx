@@ -25,6 +25,15 @@ const KhoaDashboard = () => {
   const [ketQuaXepHang, setKetQuaXepHang] = useState(null);
   const [danhSachChon, setDanhSachChon] = useState([]);
   const [hoSoDaDeXuat, setHoSoDaDeXuat] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const removeAccents = (str) => {
+    if (!str) return '';
+    return String(str)
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+  };
 
   useEffect(() => {
     loadDots();
@@ -210,6 +219,17 @@ const KhoaDashboard = () => {
       ? hoSoChoDuyet.filter((hs) => hs.trangThai !== "Loai")
       : hoSoChoDuyet;
 
+  const filteredList = (pendingList || []).filter((hs) => {
+    const q = removeAccents(searchQuery);
+    return (
+      (hs.maSV && removeAccents(hs.maSV).includes(q)) ||
+      (hs.hoTen && removeAccents(hs.hoTen).includes(q)) ||
+      (hs.hoTenSinhVien && removeAccents(hs.hoTenSinhVien).includes(q)) ||
+      (hs.tenLop && removeAccents(hs.tenLop).includes(q)) ||
+      (hs.tenKhoa && removeAccents(hs.tenKhoa).includes(q))
+    );
+  });
+
   return (
     <div className="space-y-6 pb-10">
       <div className="flex items-center justify-between border-b border-gray-200 pb-4">
@@ -254,9 +274,19 @@ const KhoaDashboard = () => {
       {error && <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3"><AlertCircle className="text-red-600" size={20} /><p className="text-red-700 font-medium">{error}</p></div>}
 
       <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-          <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2"><Award className="text-blue-600" size={20} />{isReadOnly ? "Danh sách hồ sơ (Chỉ xem - Lịch sử)" : "Danh sách hồ sơ"}</h3>
-          <span className="text-sm text-gray-500">{pendingList.length} hồ sơ</span>
+        <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Award className="text-blue-600" size={20} />
+            <h3 className="text-lg font-bold text-gray-800">{isReadOnly ? "Danh sách hồ sơ (Chỉ xem - Lịch sử)" : "Danh sách hồ sơ"}</h3>
+            <span className="text-sm text-gray-500 ml-2">({filteredList.length} hồ sơ)</span>
+          </div>
+          <input
+            type="text"
+            placeholder="Tìm theo MSSV, Tên, Lớp, Khoa..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full md:w-80 px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:border-blue-500"
+          />
         </div>
         <div className="overflow-x-auto">
           {loading ? (
@@ -283,7 +313,7 @@ const KhoaDashboard = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {pendingList.map((hs, index) => (
+                {filteredList.map((hs, index) => (
                   ketQuaXepHang ? (
                     <tr key={hs.maHoSo}>
                       <td className="p-4 text-center font-semibold text-gray-800">{index + 1}</td>
