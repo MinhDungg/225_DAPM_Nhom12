@@ -1,6 +1,7 @@
 using BE.Data;
 using BE.DTOs.Request;
 using BE.DTOs.Response;
+using BE.Helpers;
 using BE.Models;
 using BE.Repositories.Interfaces;
 using BE.Services.Interfaces;
@@ -102,13 +103,11 @@ public class KhoaService : IKhoaService
         var tongNganSach = phanBoKinhPhi.KinhPhi;
         var mucHBLoaiKha = phanBoKinhPhi.MucHBLoaiKha;
 
-        // ── Bước 1: Truy xuất hồ sơ hợp lệ (ChoXet) ──────────
-        // TỐI ƯU: Đã gỡ bỏ Include KetQuaHocTap vì không còn cần thiết
+        // ── Bước 1: Truy xuất TOÀN BỘ hồ sơ (kể cả Loai) để tính quân số thực tế ──
         var hoSos = await _context.HoSoXetHocBongs
             .Include(h => h.SinhVien)
                 .ThenInclude(sv => sv.Lop)
-            .Where(h => h.TrangThai == "ChoXet"
-                     && h.SinhVien.Lop.MaKhoa == canBo.MaKhoa.Value
+            .Where(h => h.SinhVien.Lop.MaKhoa == canBo.MaKhoa.Value
                      && h.MaDot == request.MaDot)
             .ToListAsync();
 
@@ -121,9 +120,10 @@ public class KhoaService : IKhoaService
             };
         }
 
+        // Tổng quân số thực tế (bao gồm cả hồ sơ bị Loai)
         int tongSoHoSo = hoSos.Count;
 
-        // ── Bước 1 (tiếp): Nhóm hồ sơ theo Khóa học (2 ký tự đầu TenLop) ─────
+        // ── Bước 2: Nhóm TOÀN BỘ hồ sơ theo Khóa học để tính tỷ lệ ngân sách ──
         var nhomTheoKhoa = hoSos
             .GroupBy(h =>
             {
@@ -140,36 +140,42 @@ public class KhoaService : IKhoaService
         foreach (var nhomKhoa in nhomTheoKhoa)
         {
             string maKhoaHoc = nhomKhoa.Key;
-            var danhSachTrongKhoa = nhomKhoa.ToList();
 
-            // Bước 2: Tính ngân sách riêng cho Khóa
-            decimal tyLe = (decimal)danhSachTrongKhoa.Count / (decimal)tongSoHoSo;
+            // Bước 2: Tính ngân sách dựa trên quân số THỰC TẾ của Khóa (kể cả Loai)
+            decimal tyLe = (decimal)nhomKhoa.Count() / (decimal)tongSoHoSo;
             decimal nganSachCuaKhoa = Math.Round(tongNganSach * tyLe, 0);
 
-            // Bước 3a: Phân loại từng hồ sơ (TỐI ƯU: Không check lại F và Tín chỉ nữa)
-            var danhSachPhanLoai = new List<(HoSoXetHocBong HoSo, string XepLoai, decimal MucHocBong)>();
-
-            foreach (var hoSo in danhSachTrongKhoa)
-            {
-                var (xepLoai, mucHocBong) = PhanLoaiHocBong(hoSo.GPA, hoSo.DiemRenLuyen, mucHBLoaiKha);
-                danhSachPhanLoai.Add((hoSo, xepLoai, mucHocBong));
-            }
-
-            // Bước 3b: Sắp xếp theo Điểm học tập hệ 10 -> Điểm rèn luyện
-            var duDieuKien = danhSachPhanLoai
-                .Where(x => x.XepLoai != "KhongDuDieuKien")
-                .OrderByDescending(x => x.HoSo.DiemHocTap)   // Tiêu chí 1
-                .ThenByDescending(x => x.HoSo.DiemRenLuyen)  // Tiêu chí 2
+            // Bước 3 — The Pivot: Chỉ lấy hồ sơ ChoXet để rải tiền
+            var danhSachChoXet = nhomKhoa
+                .Where(h => h.TrangThai == TrangThaiHocBong.ChoXet)
                 .ToList();
 
-            // KhongDuDieuKien giờ đây chỉ là những bạn < 2.5 hoặc ĐRL < 65
+            if (!danhSachChoXet.Any())
+                continue; // Không có ai ChoXet trong Khóa này → bỏ qua
+
+            // Bước 3a: Phân loại từng hồ sơ ChoXet
+            var danhSachPhanLoai = new List<(HoSoXetHocBong HoSo, string XepLoai, decimal MucHocBong)>();
+
+            foreach (var hoSo in danhSachChoXet)
+            {
+                var phanLoai = PhanLoaiHocBong(hoSo.GPA, hoSo.DiemRenLuyen, mucHBLoaiKha);
+                danhSachPhanLoai.Add((HoSo: hoSo, XepLoai: phanLoai.XepLoai, MucHocBong: phanLoai.MucHocBong));
+            }
+
+            // Bước 3b: Sắp xếp theo Điểm học tập hệ 10 → Điểm rèn luyện
+            var duDieuKien = danhSachPhanLoai
+                .Where(x => x.XepLoai != "KhongDuDieuKien")
+                .OrderByDescending(x => x.HoSo.DiemHocTap)
+                .ThenByDescending(x => x.HoSo.DiemRenLuyen)
+                .ToList();
+
             var khongDuDieuKien = danhSachPhanLoai
                 .Where(x => x.XepLoai == "KhongDuDieuKien")
                 .OrderByDescending(x => x.HoSo.DiemHocTap)
                 .ThenByDescending(x => x.HoSo.DiemRenLuyen)
                 .ToList();
 
-            // Bước 3c: Rải tiền nội bộ Khóa
+            // Bước 3c: Rải tiền nội bộ Khóa — chỉ dùng nganSachCuaKhoa
             decimal conLaiCuaKhoa = nganSachCuaKhoa;
             int thuHangTrongKhoa = 1;
 
@@ -194,6 +200,8 @@ public class KhoaService : IKhoaService
                 });
             }
 
+            // Bước 4: Thêm hồ sơ ChoXet không đủ điều kiện (GPA/DRL thấp)
+            // TUYỆT ĐỐI không thêm hồ sơ TrangThai == "Loai" vào đây
             foreach (var item in khongDuDieuKien)
             {
                 ketQuaChung.Add(new SinhVienXepHangDTO
@@ -218,7 +226,7 @@ public class KhoaService : IKhoaService
             TongNganSach = tongNganSach,
             TongChiTieu = tongChiTieu,
             SoLuongDuocNhan = soLuongDuocNhan,
-            TongSoHoSo = tongSoHoSo,
+            TongSoHoSo = ketQuaChung.Count,  // Số hồ sơ ChoXet được xét (không tính Loai)
             DanhSachXepHang = danhSachFinal
         };
     }
@@ -296,7 +304,7 @@ public class KhoaService : IKhoaService
         var hoSos = await _context.HoSoXetHocBongs
             .Include(h => h.SinhVien)
                 .ThenInclude(sv => sv.Lop)
-            .Where(h => h.TrangThai == "KhoaDeXuat" && h.SinhVien.Lop.MaKhoa == canBo.MaKhoa.Value)
+            .Where(h => h.TrangThai == TrangThaiHocBong.KhoaDeXuat && h.SinhVien.Lop.MaKhoa == canBo.MaKhoa.Value)
             .OrderByDescending(h => h.GPA)
             .ThenByDescending(h => h.DiemRenLuyen)
             .ToListAsync();
