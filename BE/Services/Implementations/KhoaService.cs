@@ -91,143 +91,135 @@ public class KhoaService : IKhoaService
 
     public async Task<XepHangResponseDTO> XepHangVaPhanBoAsync(int maTaiKhoan, XepHangRequestDTO request)
     {
-        var canBo = await _context.CanBos
-            .FirstOrDefaultAsync(cb => cb.MaTK == maTaiKhoan);
-
+        var canBo = await _context.CanBos.FirstOrDefaultAsync(cb => cb.MaTK == maTaiKhoan);
         if (canBo == null || canBo.MaKhoa == null)
-            throw new Exception("Khong tim thay thong tin can bo hoac khoa");
+            throw new Exception("Không tìm thấy thông tin cán bộ hoặc khoa");
 
         var phanBoKinhPhi = await _phanBoKinhPhiRepository.LayTheoMaDotVaMaKhoaAsync(request.MaDot, canBo.MaKhoa.Value);
-
         if (phanBoKinhPhi == null)
             throw new Exception("Khoa chưa được cấp kinh phí cho đợt này");
 
         var tongNganSach = phanBoKinhPhi.KinhPhi;
         var mucHBLoaiKha = phanBoKinhPhi.MucHBLoaiKha;
 
+        // ── Bước 1: Truy xuất hồ sơ hợp lệ (ChoXet) ──────────
+        // TỐI ƯU: Đã gỡ bỏ Include KetQuaHocTap vì không còn cần thiết
         var hoSos = await _context.HoSoXetHocBongs
             .Include(h => h.SinhVien)
                 .ThenInclude(sv => sv.Lop)
-            .Where(h => h.TrangThai == "ChoXet" && h.SinhVien.Lop.MaKhoa == canBo.MaKhoa.Value && h.MaDot == request.MaDot)
+            .Where(h => h.TrangThai == "ChoXet"
+                     && h.SinhVien.Lop.MaKhoa == canBo.MaKhoa.Value
+                     && h.MaDot == request.MaDot)
             .ToListAsync();
 
         if (!hoSos.Any())
         {
             return new XepHangResponseDTO
             {
-                TongNganSach = tongNganSach,
-                TongChiTieu = 0,
-                SoLuongDuocNhan = 0,
-                TongSoHoSo = 0,
+                TongNganSach = tongNganSach, TongChiTieu = 0, SoLuongDuocNhan = 0, TongSoHoSo = 0,
                 DanhSachXepHang = new List<SinhVienXepHangDTO>()
             };
         }
 
-        var dotHocBong = await _context.DotHocBongs
-            .FirstOrDefaultAsync(d => d.MaDot == request.MaDot);
+        int tongSoHoSo = hoSos.Count;
 
-        if (dotHocBong == null)
-            throw new Exception("Khong tim thay thong tin dot hoc bong");
-
-        var danhSachXepHang = new List<(HoSoXetHocBong HoSo, string XepLoai, decimal MucHocBong, int DiemDRL, string LyDoLoai)>();
-
-        foreach (var hoSo in hoSos)
-        {
-            int diemDRL = hoSo.DiemRenLuyen;
-
-            var ketQuaHocTap = hoSo.SinhVien.KetQuaHocTaps
-                .FirstOrDefault(k => k.HocKy == dotHocBong.HocKy && k.NamHoc == dotHocBong.NamHoc);
-
-            int soTinChi = ketQuaHocTap?.SoTC ?? 0;
-            if (soTinChi == 0) soTinChi = SO_TIN_CHI;
-
-            if (soTinChi < SO_TIN_CHI)
+        // ── Bước 1 (tiếp): Nhóm hồ sơ theo Khóa học (2 ký tự đầu TenLop) ─────
+        var nhomTheoKhoa = hoSos
+            .GroupBy(h =>
             {
-                danhSachXepHang.Add((hoSo, "KhongDuDieuKien", 0, diemDRL,
-                    $"Khong du {SO_TIN_CHI} tin chi (chi co {soTinChi} TC)"));
-                continue;
-            }
-
-            if (ketQuaHocTap?.CoDiemF ?? false)
-            {
-                danhSachXepHang.Add((hoSo, "KhongDuDieuKien", 0, diemDRL, "Co diem F trong hoc ky"));
-                continue;
-            }
-
-            var (xepLoai, mucHocBong) = PhanLoaiHocBong(hoSo.GPA, diemDRL, mucHBLoaiKha);
-            string lyDoLoai = xepLoai == "KhongDuDieuKien" ? "Khong du dieu kien GPA hoac DRL" : "";
-            danhSachXepHang.Add((hoSo, xepLoai, mucHocBong, diemDRL, lyDoLoai));
-        }
-
-        var danhSachDuDieuKien = danhSachXepHang
-            .Where(x => x.XepLoai != "KhongDuDieuKien")
-            .OrderByDescending(x => x.HoSo.DiemHocTap)
-            .ThenByDescending(x => x.DiemDRL)
+                var tenLop = h.SinhVien?.Lop?.TenLop ?? "";
+                return tenLop.Length >= 2 ? tenLop.Substring(0, 2) : tenLop;
+            })
             .ToList();
 
-        var danhSachKhongDuDieuKien = danhSachXepHang
-            .Where(x => x.XepLoai == "KhongDuDieuKien")
-            .OrderByDescending(x => x.HoSo.DiemHocTap)
-            .ThenByDescending(x => x.DiemDRL)
-            .ToList();
-
+        var ketQuaChung = new List<SinhVienXepHangDTO>();
         decimal tongChiTieu = 0;
         int soLuongDuocNhan = 0;
-        var danhSachKetQua = new List<SinhVienXepHangDTO>();
 
-        for (int i = 0; i < danhSachDuDieuKien.Count; i++)
+        // ── Bước 2 & 3: Duyệt từng nhóm Khóa ────────────────────────────────────
+        foreach (var nhomKhoa in nhomTheoKhoa)
         {
-            var item = danhSachDuDieuKien[i];
-            bool duocNhan = false;
+            string maKhoaHoc = nhomKhoa.Key;
+            var danhSachTrongKhoa = nhomKhoa.ToList();
 
-            if (item.MucHocBong > 0 && tongChiTieu + item.MucHocBong <= tongNganSach)
+            // Bước 2: Tính ngân sách riêng cho Khóa
+            decimal tyLe = (decimal)danhSachTrongKhoa.Count / (decimal)tongSoHoSo;
+            decimal nganSachCuaKhoa = Math.Round(tongNganSach * tyLe, 0);
+
+            // Bước 3a: Phân loại từng hồ sơ (TỐI ƯU: Không check lại F và Tín chỉ nữa)
+            var danhSachPhanLoai = new List<(HoSoXetHocBong HoSo, string XepLoai, decimal MucHocBong)>();
+
+            foreach (var hoSo in danhSachTrongKhoa)
             {
-                tongChiTieu += item.MucHocBong;
-                soLuongDuocNhan++;
-                duocNhan = true;
+                var (xepLoai, mucHocBong) = PhanLoaiHocBong(hoSo.GPA, hoSo.DiemRenLuyen, mucHBLoaiKha);
+                danhSachPhanLoai.Add((hoSo, xepLoai, mucHocBong));
             }
 
-            danhSachKetQua.Add(new SinhVienXepHangDTO
+            // Bước 3b: Sắp xếp theo Điểm học tập hệ 10 -> Điểm rèn luyện
+            var duDieuKien = danhSachPhanLoai
+                .Where(x => x.XepLoai != "KhongDuDieuKien")
+                .OrderByDescending(x => x.HoSo.DiemHocTap)   // Tiêu chí 1
+                .ThenByDescending(x => x.HoSo.DiemRenLuyen)  // Tiêu chí 2
+                .ToList();
+
+            // KhongDuDieuKien giờ đây chỉ là những bạn < 2.5 hoặc ĐRL < 65
+            var khongDuDieuKien = danhSachPhanLoai
+                .Where(x => x.XepLoai == "KhongDuDieuKien")
+                .OrderByDescending(x => x.HoSo.DiemHocTap)
+                .ThenByDescending(x => x.HoSo.DiemRenLuyen)
+                .ToList();
+
+            // Bước 3c: Rải tiền nội bộ Khóa
+            decimal conLaiCuaKhoa = nganSachCuaKhoa;
+            int thuHangTrongKhoa = 1;
+
+            foreach (var item in duDieuKien)
             {
-                ThuHang = i + 1,
-                MaHoSo = item.HoSo.MaHoSo,
-                MaSV = item.HoSo.MaSV,
-                HoTen = item.HoSo.SinhVien.HoTen,
-                TenLop = item.HoSo.SinhVien.Lop.TenLop,
-                DiemHocTap = item.HoSo.DiemHocTap,
-                GPA = item.HoSo.GPA,
-                DiemRenLuyen = item.DiemDRL,
-                XepLoai = item.XepLoai,
-                MucHocBong = item.MucHocBong,
-                DuocNhan = duocNhan
-            });
+                bool duocNhan = false;
+
+                if (item.MucHocBong > 0 && conLaiCuaKhoa >= item.MucHocBong)
+                {
+                    conLaiCuaKhoa -= item.MucHocBong;
+                    tongChiTieu += item.MucHocBong;
+                    soLuongDuocNhan++;
+                    duocNhan = true;
+                }
+
+                ketQuaChung.Add(new SinhVienXepHangDTO
+                {
+                    ThuHang = thuHangTrongKhoa++, MaHoSo = item.HoSo.MaHoSo, MaSV = item.HoSo.MaSV,
+                    HoTen = item.HoSo.SinhVien.HoTen, TenLop = item.HoSo.SinhVien.Lop.TenLop, KhoaHoc = maKhoaHoc,
+                    DiemHocTap = item.HoSo.DiemHocTap, GPA = item.HoSo.GPA, DiemRenLuyen = item.HoSo.DiemRenLuyen,
+                    XepLoai = item.XepLoai, MucHocBong = item.MucHocBong, DuocNhan = duocNhan
+                });
+            }
+
+            foreach (var item in khongDuDieuKien)
+            {
+                ketQuaChung.Add(new SinhVienXepHangDTO
+                {
+                    ThuHang = 0, MaHoSo = item.HoSo.MaHoSo, MaSV = item.HoSo.MaSV,
+                    HoTen = item.HoSo.SinhVien.HoTen, TenLop = item.HoSo.SinhVien.Lop.TenLop, KhoaHoc = maKhoaHoc,
+                    DiemHocTap = item.HoSo.DiemHocTap, GPA = item.HoSo.GPA, DiemRenLuyen = item.HoSo.DiemRenLuyen,
+                    XepLoai = item.XepLoai, MucHocBong = 0, DuocNhan = false
+                });
+            }
         }
 
-        foreach (var item in danhSachKhongDuDieuKien)
-        {
-            danhSachKetQua.Add(new SinhVienXepHangDTO
-            {
-                ThuHang = 0,
-                MaHoSo = item.HoSo.MaHoSo,
-                MaSV = item.HoSo.MaSV,
-                HoTen = item.HoSo.SinhVien.HoTen,
-                TenLop = item.HoSo.SinhVien.Lop.TenLop,
-                DiemHocTap = item.HoSo.DiemHocTap,
-                GPA = item.HoSo.GPA,
-                DiemRenLuyen = item.DiemDRL,
-                XepLoai = item.XepLoai,
-                MucHocBong = 0,
-                DuocNhan = false
-            });
-        }
+        // ── Bước 4: Sắp xếp kết quả chung để hiển thị đẹp trên UI ──────────────
+        var danhSachFinal = ketQuaChung
+            .OrderByDescending(x => x.DuocNhan)
+            .ThenByDescending(x => x.DiemHocTap)
+            .ThenByDescending(x => x.DiemRenLuyen)
+            .ToList();
 
         return new XepHangResponseDTO
         {
             TongNganSach = tongNganSach,
             TongChiTieu = tongChiTieu,
             SoLuongDuocNhan = soLuongDuocNhan,
-            TongSoHoSo = hoSos.Count,
-            DanhSachXepHang = danhSachKetQua
+            TongSoHoSo = tongSoHoSo,
+            DanhSachXepHang = danhSachFinal
         };
     }
 
