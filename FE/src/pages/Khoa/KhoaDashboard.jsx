@@ -14,6 +14,7 @@ import {
 import khoaService from "../../services/khoaService";
 import kinhPhiService from "../../services/kinhPhiService";
 import FinalDecisionService from "../../services/finalDecisionService";
+import { exportKhoaExcel, exportKhoaPdf } from "../../utils/exportUtils";
 
 const KhoaDashboard = () => {
   const [loading, setLoading] = useState(false);
@@ -25,6 +26,13 @@ const KhoaDashboard = () => {
   const [ketQuaXepHang, setKetQuaXepHang] = useState(null);
   const [danhSachChon, setDanhSachChon] = useState([]);
   const [hoSoDaDeXuat, setHoSoDaDeXuat] = useState([]);
+  const [exporting, setExporting] = useState(false);
+  const handleExport = async (fn) => {
+    setExporting(true);
+    try { await fn(); }
+    catch (e) { alert('Lỗi xuất file: ' + e.message); }
+    finally { setExporting(false); }
+  };
 
   useEffect(() => {
     loadDots();
@@ -224,7 +232,7 @@ const KhoaDashboard = () => {
               <button onClick={handleXepHang} disabled={loading} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl font-bold disabled:opacity-50">
                 {loading ? <Loader className="animate-spin" size={18} /> : <Calculator size={18} />} Duyệt nhanh
               </button>
-              <button onClick={handleChotDanhSach} disabled={loading || danhSachChon.length===0} className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-xl font-bold disabled:opacity-50">
+              <button onClick={handleChotDanhSach} disabled={loading || danhSachChon.length === 0} className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-xl font-bold disabled:opacity-50">
                 <Send size={18} /> Chốt danh sách đề xuất
               </button>
             </>
@@ -256,7 +264,17 @@ const KhoaDashboard = () => {
       <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
           <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2"><Award className="text-blue-600" size={20} />{isReadOnly ? "Danh sách hồ sơ (Chỉ xem - Lịch sử)" : "Danh sách hồ sơ"}</h3>
-          <span className="text-sm text-gray-500">{pendingList.length} hồ sơ</span>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <span className="text-sm text-gray-500">{pendingList.length} hồ sơ</span>
+            <button onClick={() => handleExport(() => exportKhoaExcel(selectedDot?.maDot))} disabled={exporting}
+              style={{ background: '#1D6F42', color: '#fff', padding: '6px 14px', borderRadius: 6, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
+              📊 Xuất Excel
+            </button>
+            <button onClick={() => handleExport(() => exportKhoaPdf(selectedDot?.maDot))} disabled={exporting}
+              style={{ background: '#C00', color: '#fff', padding: '6px 14px', borderRadius: 6, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
+              📄 Xuất PDF
+            </button>
+          </div>
         </div>
         <div className="overflow-x-auto">
           {loading ? (
@@ -322,7 +340,7 @@ const KhoaDashboard = () => {
           )}
         </div>
       </div>
-    </div>
+    </div >
   );
 };
 

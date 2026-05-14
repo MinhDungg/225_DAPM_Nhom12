@@ -56,12 +56,19 @@ public class ExportController : ControllerBase
     [Authorize(Roles = "CTSV,HoiDong")]
     public async Task<IActionResult> HoiDongExcel([FromQuery] int? maDot)
     {
-        bool isHoiDong = User.IsInRole("HoiDong");
-        var data = await _finalDecisionService.GetRecommendedProfilesAsync(isHoiDong, maDot);
-        var bytes = _export.ToExcel(MapHoSo(data), HoSoHeaders, "Hội Đồng");
-        return File(bytes,
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            $"HoiDong_HoSo_{DateTime.Now:yyyyMMdd}.xlsx");
+        try
+        {
+            bool isHoiDong = User.IsInRole("HoiDong");
+            var data = await _finalDecisionService.GetRecommendedProfilesAsync(isHoiDong, maDot);
+            var bytes = _export.ToExcel(MapHoSo(data), HoSoHeaders, "Hội Đồng");
+            return File(bytes,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                $"HoiDong_HoSo_{DateTime.Now:yyyyMMdd}.xlsx");
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Lỗi tạo Excel: " + ex.Message });
+        }
     }
 
     [HttpGet("hoidong/pdf")]
@@ -72,8 +79,8 @@ public class ExportController : ControllerBase
         {
             bool isHoiDong = User.IsInRole("HoiDong");
             var data = await _finalDecisionService.GetRecommendedProfilesAsync(isHoiDong, maDot);
-            var bytes = _export.ToPdf(MapHoSo(data), HoSoHeaders, "Danh Sách Hồ Sơ — Hội Đồng Xét Duyệt");
-            return File(bytes, "application/pdf", $"HoiDong_HoSo_{DateTime.Now:yyyyMMdd}.pdf");
+            var bytes = _export.ToHtml(MapHoSo(data), HoSoHeaders, "Danh Sách Hồ Sơ — Hội Đồng Xét Duyệt");
+            return File(bytes, "text/html; charset=utf-8", $"HoiDong_HoSo_{DateTime.Now:yyyyMMdd}.html");
         }
         catch (Exception ex)
         {
@@ -85,51 +92,69 @@ public class ExportController : ControllerBase
     // ── KHOA ─────────────────────────────────────────────────────
 
     [HttpGet("khoa/excel")]
-    public async Task<IActionResult> KhoaExcel()
+    public async Task<IActionResult> KhoaExcel([FromQuery] int? maDot)
     {
-        var userId = GetUserId();
-        if (userId == null) return Unauthorized();
-        var data = await _khoaService.LayDanhSachChoDuyetAsync(userId.Value);
-        var rows = data.Select(x => new Dictionary<string, string>
+        try
         {
-            ["Mã HS"]      = x.MaHoSo.ToString(),
-            ["Mã SV"]      = x.MaSV ?? "",
-            ["Họ Tên"]     = x.HoTenSinhVien ?? "",
-            ["Lớp"]        = x.TenLop ?? "",
-            ["GPA"]        = x.GPA.ToString("F2"),      
-            ["Điểm HT"]    = x.DiemHocTap.ToString("F2"),
-            ["Điểm RL"]    = x.DiemRenLuyen.ToString("F2"),
-            ["Xếp Loại HB"]= x.XepLoaiHB ?? "",
-            ["Trạng Thái"] = x.TrangThai ?? ""
-        }).ToList();
-        var headers = new List<string> { "Mã HS", "Mã SV", "Họ Tên", "Lớp", "GPA", "Điểm HT", "Điểm RL", "Xếp Loại HB", "Trạng Thái" };
-        var bytes = _export.ToExcel(rows, headers, "Khoa");
-        return File(bytes,
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            $"Khoa_DanhSach_{DateTime.Now:yyyyMMdd}.xlsx");
+            var userId = GetUserId();
+            if (userId == null) return Unauthorized();
+            var data = maDot.HasValue ?
+                await _khoaService.LayDanhSachChoXetTheoDotAsync(userId.Value, maDot.Value):
+                await _khoaService.LayDanhSachChoDuyetAsync(userId.Value);
+            var rows = data.Select(x => new Dictionary<string, string>
+            {
+                ["Mã HS"]       = x.MaHoSo.ToString(),
+                ["Mã SV"]       = x.MaSV ?? "",
+                ["Họ Tên"]      = x.HoTenSinhVien ?? "",
+                ["Lớp"]         = x.TenLop ?? "",
+                ["GPA"]         = x.GPA.ToString("F2"),
+                ["Điểm HT"]     = x.DiemHocTap.ToString("F2"),
+                ["Điểm RL"]     = x.DiemRenLuyen.ToString("F2"),
+                ["Xếp Loại HB"] = x.XepLoaiHB ?? "",
+                ["Trạng Thái"]  = x.TrangThai ?? ""
+            }).ToList();
+            var headers = new List<string> { "Mã HS", "Mã SV", "Họ Tên", "Lớp", "GPA", "Điểm HT", "Điểm RL", "Xếp Loại HB", "Trạng Thái" };
+            var bytes = _export.ToExcel(rows, headers, "Khoa");
+            return File(bytes,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                $"Khoa_DanhSach_{DateTime.Now:yyyyMMdd}.xlsx");
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Lỗi tạo Excel: " + ex.Message });
+        }
     }
 
     [HttpGet("khoa/pdf")]
-    public async Task<IActionResult> KhoaPdf()
+    public async Task<IActionResult> KhoaPdf([FromQuery] int? maDot)
     {
-        var userId = GetUserId();
-        if (userId == null) return Unauthorized();
-        var data = await _khoaService.LayDanhSachChoDuyetAsync(userId.Value);
-        var rows = data.Select(x => new Dictionary<string, string>
+        try
         {
-            ["Mã HS"]      = x.MaHoSo.ToString(),
-            ["Mã SV"]      = x.MaSV ?? "",
-            ["Họ Tên"]     = x.HoTenSinhVien ?? "",
-            ["Lớp"]        = x.TenLop ?? "",
-            ["GPA"]        = x.GPA.ToString("F2"),
-            ["Điểm HT"]    = x.DiemHocTap.ToString("F2"),
-            ["Điểm RL"]    = x.DiemRenLuyen.ToString("F2"),
-            ["Xếp Loại HB"]= x.XepLoaiHB ?? "",
-            ["Trạng Thái"] = x.TrangThai ?? ""
-        }).ToList();
-        var headers = new List<string> { "Mã HS", "Mã SV", "Họ Tên", "Lớp", "GPA", "Điểm HT", "Điểm RL", "Xếp Loại HB", "Trạng Thái" };
-        var bytes = _export.ToPdf(rows, headers, "Danh Sách Hồ Sơ — Khoa");
-        return File(bytes, "application/pdf", $"Khoa_DanhSach_{DateTime.Now:yyyyMMdd}.pdf");
+            var userId = GetUserId();
+            if (userId == null) return Unauthorized();
+            var data = maDot.HasValue ?
+                await _khoaService.LayDanhSachChoXetTheoDotAsync(userId.Value, maDot.Value):
+                await _khoaService.LayDanhSachChoDuyetAsync(userId.Value);
+            var rows = data.Select(x => new Dictionary<string, string>
+            {
+                ["Mã HS"]       = x.MaHoSo.ToString(),
+                ["Mã SV"]       = x.MaSV ?? "",
+                ["Họ Tên"]      = x.HoTenSinhVien ?? "",
+                ["Lớp"]         = x.TenLop ?? "",
+                ["GPA"]         = x.GPA.ToString("F2"),
+                ["Điểm HT"]     = x.DiemHocTap.ToString("F2"),
+                ["Điểm RL"]     = x.DiemRenLuyen.ToString("F2"),
+                ["Xếp Loại HB"] = x.XepLoaiHB ?? "",
+                ["Trạng Thái"]  = x.TrangThai ?? ""
+            }).ToList();
+            var headers = new List<string> { "Mã HS", "Mã SV", "Họ Tên", "Lớp", "GPA", "Điểm HT", "Điểm RL", "Xếp Loại HB", "Trạng Thái" };
+            var bytes = _export.ToHtml(rows, headers, "Danh Sách Hồ Sơ — Khoa");
+            return File(bytes, "text/html; charset=utf-8", $"Khoa_DanhSach_{DateTime.Now:yyyyMMdd}.html");
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Lỗi tạo PDF: " + ex.Message });
+        }
     }
 
     // ── TÀI CHÍNH ────────────────────────────────────────────────
@@ -138,40 +163,51 @@ public class ExportController : ControllerBase
     [Authorize(Roles = "KHTC,CTSV")]
     public async Task<IActionResult> TaiChinhExcel(int maDot)
     {
-        var data = await _kinhPhiService.LayPhanBoTheoMaDotAsync(maDot);
-        var rows = (data ?? new()).Select(x => new Dictionary<string, string>
+        try
         {
-            ["Mã Phân Bổ"]   = x.MaPhanBo.ToString(),
-            ["Mã Đợt"]       = x.MaDot.ToString(),
-            ["Mã Khoa"]      = x.MaKhoa.ToString(),
-            ["Kinh Phí"]     = x.KinhPhi.ToString("N0"),
-            ["Mức HB Loại Khá"] = x.MucHBLoaiKha.ToString("N0")
-        }).ToList();
-
-        var headers = new List<string> { "Mã Phân Bổ", "Mã Đợt", "Mã Khoa", "Kinh Phí", "Mức HB Loại Khá" };
-
-        var bytes = _export.ToExcel(rows, headers, "Kinh Phí");
-        return File(bytes,
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            $"TaiChinh_KinhPhi_{maDot}_{DateTime.Now:yyyyMMdd}.xlsx");
+            var data = await _kinhPhiService.LayPhanBoTheoMaDotAsync(maDot);
+            var rows = (data ?? new()).Select(x => new Dictionary<string, string>
+            {
+                ["Mã Phân Bổ"]      = x.MaPhanBo.ToString(),
+                ["Mã Đợt"]          = x.MaDot.ToString(),
+                ["Mã Khoa"]         = x.MaKhoa.ToString(),
+                ["Kinh Phí"]        = x.KinhPhi.ToString("N0"),
+                ["Mức HB Loại Khá"] = x.MucHBLoaiKha.ToString("N0")
+            }).ToList();
+            var headers = new List<string> { "Mã Phân Bổ", "Mã Đợt", "Mã Khoa", "Kinh Phí", "Mức HB Loại Khá" };
+            var bytes = _export.ToExcel(rows, headers, "Kinh Phí");
+            return File(bytes,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                $"TaiChinh_KinhPhi_{maDot}_{DateTime.Now:yyyyMMdd}.xlsx");
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Lỗi tạo Excel: " + ex.Message });
+        }
     }
 
     [HttpGet("taichinh/pdf/{maDot:int}")]
     [Authorize(Roles = "KHTC,CTSV")]
     public async Task<IActionResult> TaiChinhPdf(int maDot)
     {
-        var data = await _kinhPhiService.LayPhanBoTheoMaDotAsync(maDot);
-        var rows = (data ?? new()).Select(x => new Dictionary<string, string>
+        try
         {
-            ["Mã Phân Bổ"]      = x.MaPhanBo.ToString(),
-            ["Mã Đợt"]          = x.MaDot.ToString(),
-            ["Mã Khoa"]         = x.MaKhoa.ToString(),
-            ["Kinh Phí"]        = x.KinhPhi.ToString("N0"),
-            ["Mức HB Loại Khá"] = x.MucHBLoaiKha.ToString("N0")
-        }).ToList();
-        var headers = new List<string> { "Mã Phân Bổ", "Mã Đợt", "Mã Khoa", "Kinh Phí", "Mức HB Loại Khá" };
-
-        var bytes = _export.ToPdf(rows, headers, $"Phân Bổ Kinh Phí — Đợt {maDot}");
-        return File(bytes, "application/pdf", $"TaiChinh_KinhPhi_{maDot}_{DateTime.Now:yyyyMMdd}.pdf");
+            var data = await _kinhPhiService.LayPhanBoTheoMaDotAsync(maDot);
+            var rows = (data ?? new()).Select(x => new Dictionary<string, string>
+            {
+                ["Mã Phân Bổ"]      = x.MaPhanBo.ToString(),
+                ["Mã Đợt"]          = x.MaDot.ToString(),
+                ["Mã Khoa"]         = x.MaKhoa.ToString(),
+                ["Kinh Phí"]        = x.KinhPhi.ToString("N0"),
+                ["Mức HB Loại Khá"] = x.MucHBLoaiKha.ToString("N0")
+            }).ToList();
+            var headers = new List<string> { "Mã Phân Bổ", "Mã Đợt", "Mã Khoa", "Kinh Phí", "Mức HB Loại Khá" };
+            var bytes = _export.ToHtml(rows, headers, $"Phân Bổ Kinh Phí — Đợt {maDot}");
+            return File(bytes, "text/html; charset=utf-8", $"TaiChinh_KinhPhi_{maDot}_{DateTime.Now:yyyyMMdd}.html");
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Lỗi tạo PDF: " + ex.Message });
+        }
     }
 }

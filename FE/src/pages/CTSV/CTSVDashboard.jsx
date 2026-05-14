@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Send, Landmark, Info, Trash2, CalendarClock, AlertTriangle, Loader2, Megaphone, FastForward } from 'lucide-react';
 import FinalDecisionService from '../../services/finalDecisionService';
 import KhieuNaiService from '../../services/khieuNaiService';
+import { exportCTSVExcel, exportCTSVPdf } from '../../utils/exportUtils';
 
 const CTSVDashboard = () => {
     const [data, setData] = useState({
@@ -11,6 +12,14 @@ const CTSVDashboard = () => {
     const [loading, setLoading] = useState(false);
 
     const [dsDotHocBong, setDsDotHocBong] = useState([]);
+    const [exporting, setExporting] = useState(false);
+    const handleExport = async (fn) => {
+        setExporting(true);
+        try { await fn(); }
+        catch (e) { alert('Lỗi xuất file: ' + e.message); }
+        finally { setExporting(false); }
+    };
+
     const [selectedMaDot, setSelectedMaDot] = useState('');
 
     useEffect(() => {
@@ -248,7 +257,17 @@ const CTSVDashboard = () => {
                 {/* Table Header Section */}
                 <div className="px-6 py-4 border-b border-gray-200 flex flex-wrap items-center justify-between gap-4">
                     <div className="flex items-center gap-2">
-                        <Info size={18} className="text-gray-400" />
+                        <Info size={18} className="text-gray-400" /><div style={{ display: 'flex', gap: 8 }}>
+                            <button onClick={() => handleExport(() => exportCTSVExcel(selectedMaDot))} disabled={exporting}
+                                style={{ background: '#1D6F42', color: '#fff', padding: '6px 14px', borderRadius: 6, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
+                                📊 Xuất Excel
+                            </button>
+                            <button onClick={() => handleExport(() => exportCTSVPdf(selectedMaDot))} disabled={exporting}
+                                style={{ background: '#C00', color: '#fff', padding: '6px 14px', borderRadius: 6, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
+                                📄 Xuất PDF
+                            </button>
+                        </div>
+
                         <h3 className="font-semibold text-gray-900 text-base">
                             Danh sách Hội đồng đã duyệt
                             <span className="ml-2 text-sm font-normal text-gray-500">

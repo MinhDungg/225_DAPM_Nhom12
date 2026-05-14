@@ -10,7 +10,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
-
+QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
 // Add services to the container.
 
 // Add CORS
@@ -104,7 +104,7 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 });
-builder.Services.AddScoped<BE.Services.Implementations.ExportService>();
+builder.Services.AddSingleton<BE.Services.Implementations.ExportService>();
 
 
 var app = builder.Build();
@@ -115,6 +115,19 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+// Global exception handler — prevents BE crash on unhandled exceptions
+app.UseExceptionHandler(errApp =>
+{
+    errApp.Run(async ctx =>
+    {
+        ctx.Response.StatusCode = 500;
+        ctx.Response.ContentType = "application/json";
+        var ex = ctx.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+        var msg = ex?.Error?.Message ?? "Unknown error";
+        await ctx.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(new { message = msg }));
+    });
+});
 
 // Tạm thời tắt Https Redirection ở môi trường dev để tránh lỗi CORS Preflight (OPTIONS) bị redirect sang HTTPS
 if (!app.Environment.IsDevelopment())

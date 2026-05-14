@@ -1,19 +1,10 @@
 using ClosedXML.Excel;
-using QuestPDF.Fluent;
-using QuestPDF.Helpers;
-using QuestPDF.Infrastructure;
 
 namespace BE.Services.Implementations;
 
 public class ExportService
 {
-    public ExportService()
-    {
-        QuestPDF.Settings.License = LicenseType.Community;
-    }
-
-    // Kiểu dữ liệu đầu vào: List các dòng, mỗi dòng là Dictionary<tên cột, giá trị>
-    
+    // ── EXCEL ──────────────────────────────────────────────────────
     public byte[] ToExcel(List<Dictionary<string, string>> rows, List<string> headers, string sheetName = "Sheet1")
     {
         using var wb = new XLWorkbook();
@@ -22,7 +13,7 @@ public class ExportService
         for (int i = 0; i < headers.Count; i++)
         {
             var cell = ws.Cell(1, i + 1);
-            cell.Value = headers[i];
+            cell.SetValue(headers[i]);
             cell.Style.Font.Bold = true;
             cell.Style.Fill.BackgroundColor = XLColor.FromHtml("#1a56db");
             cell.Style.Font.FontColor = XLColor.White;
@@ -33,7 +24,7 @@ public class ExportService
             for (int c = 0; c < headers.Count; c++)
             {
                 rows[r].TryGetValue(headers[c], out var val);
-                ws.Cell(r + 2, c + 1).Value = val ?? "";
+                ws.Cell(r + 2, c + 1).SetValue(val ?? "");
             }
         }
 
@@ -43,48 +34,45 @@ public class ExportService
         return ms.ToArray();
     }
 
-    public byte[] ToPdf(List<Dictionary<string, string>> rows, List<string> headers, string title)
+    // ── HTML (thay thế PDF — browser tự in/lưu PDF) ─────────────────
+    public byte[] ToHtml(List<Dictionary<string, string>> rows, List<string> headers, string title)
     {
-        return Document.Create(c => c.Page(page =>
+        if (headers == null || headers.Count == 0) headers = new List<string> { "Dữ liệu" };
+        if (rows == null) rows = new List<Dictionary<string, string>>();
+
+        var sb = new System.Text.StringBuilder();
+        sb.Append($@"<!DOCTYPE html>
+    <html lang=""vi""><head><meta charset=""UTF-8"">
+<title>{System.Net.WebUtility.HtmlEncode(title)}</title>
+<style>
+  body {{ font-family: Arial, sans-serif; font-size: 12px; margin: 20px; }}
+  h2 {{ color: #1a56db; margin-bottom: 12px; }}
+  table {{ border-collapse: collapse; width: 100%; }}
+  th {{ background: #1a56db; color: #fff; padding: 8px 10px; text-align: left; }}
+  td {{ padding: 6px 10px; border-bottom: 1px solid #e5e7eb; }}
+  tr:nth-child(even) td {{ background: #f9fafb; }}
+  @media print {{ button {{ display: none; }} }}
+</style></head><body>
+<button onclick=""window.print()"" style=""margin-bottom:12px;padding:7px 18px;background:#1a56db;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;"">🖨️ In / Lưu PDF</button>
+<h2>{System.Net.WebUtility.HtmlEncode(title)}</h2>
+<table><thead><tr>");
+
+        foreach (var h in headers)
+            sb.Append($"<th>{System.Net.WebUtility.HtmlEncode(h)}</th>");
+        sb.Append("</tr></thead><tbody>");
+
+        foreach (var row in rows)
         {
-            page.Size(PageSizes.A4.Landscape());
-            page.Margin(1.5f, Unit.Centimetre);
-            page.DefaultTextStyle(t => t.FontSize(9).FontFamily("Times New Roman"));
-
-            page.Header().PaddingBottom(8)
-                .Text(title).Bold().FontSize(14).FontColor(Colors.Blue.Darken2);
-
-            page.Content().Table(table =>
+            sb.Append("<tr>");
+            foreach (var h in headers)
             {
-                table.ColumnsDefinition(cols =>
-                {
-                    foreach (var _ in headers) cols.RelativeColumn();
-                });
+                row.TryGetValue(h, out var val);
+                sb.Append($"<td>{System.Net.WebUtility.HtmlEncode(val ?? "")}</td>");
+            }
+            sb.Append("</tr>");
+        }
 
-                table.Header(h =>
-                {
-                    foreach (var hdr in headers)
-                        h.Cell().Background(Colors.Blue.Darken2).Padding(5)
-                         .Text(hdr).FontColor(Colors.White).Bold();
-                });
-
-                bool even = false;
-                foreach (var row in rows)
-                {
-                    var bg = even ? Colors.Grey.Lighten4 : Colors.White;
-                    foreach (var key in headers)
-                    {
-                        row.TryGetValue(key, out var val);
-                        table.Cell().Background(bg).Padding(4)
-                             .BorderBottom(0.5f, Unit.Point).BorderColor(Colors.Grey.Lighten2)
-                             .Text(val ?? "");
-                    }
-                    even = !even;
-                }
-            });
-
-            page.Footer().AlignCenter()
-                .Text(x => { x.Span("Trang "); x.CurrentPageNumber(); x.Span(" / "); x.TotalPages(); });
-        })).GeneratePdf();
+        sb.Append("</tbody></table></body></html>");
+        return System.Text.Encoding.UTF8.GetBytes(sb.ToString());
     }
 }
