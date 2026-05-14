@@ -104,6 +104,8 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 });
+builder.Services.AddScoped<BE.Services.Implementations.ExportService>();
+
 
 var app = builder.Build();
 

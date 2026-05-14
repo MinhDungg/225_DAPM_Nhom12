@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ShieldCheck, UserX, AlertTriangle, CalendarClock } from 'lucide-react';
 import finalDecisionService from '../../services/finalDecisionService';
+import { exportHoiDongExcel, exportHoiDongPdf } from '../../utils/exportUtils';
 
 const XetChonSinhVien = () => {
     const [hoSos, setHoSos] = useState([]);
@@ -11,6 +12,13 @@ const XetChonSinhVien = () => {
     const [selectedStudentToReject, setSelectedStudentToReject] = useState(null);
     const [lyDoTuChoi, setLyDoTuChoi] = useState("");
     const [selectedKhoa, setSelectedKhoa] = useState('Tất cả');
+    const [exporting, setExporting] = useState(false);
+    const handleExport = async (fn) => {
+        setExporting(true);
+        try { await fn(); }
+        catch (e) { alert('Lỗi xuất file: ' + e.message); }
+        finally { setExporting(false); }
+    };
 
     const fetchDots = async () => {
         try {
@@ -26,6 +34,7 @@ const XetChonSinhVien = () => {
         } catch (error) { console.error(error); }
     };
 
+
     const fetchHoSo = async (maDot, currentDot) => {
         if (!maDot) return;
         try {
@@ -37,7 +46,7 @@ const XetChonSinhVien = () => {
                 const readOnly = currentDot && currentDot.trangThai !== 'DangXetDuyet';
                 if (readOnly) {
                     // Nếu là lịch sử, lấy danh sách bị bác bỏ từ server
-                    setDsBacBo(all.filter(hs => hs.trangThai === 'TuChoi').map(hs => ({...hs, lyDo: hs.ghiChu || hs.lyDo || "Vi phạm cấp trường"})));
+                    setDsBacBo(all.filter(hs => hs.trangThai === 'TuChoi').map(hs => ({ ...hs, lyDo: hs.ghiChu || hs.lyDo || "Vi phạm cấp trường" })));
                 } else {
                     const saved = localStorage.getItem('hdxd_ds_bac_bo');
                     setDsBacBo(saved ? JSON.parse(saved) : []);
@@ -80,8 +89,8 @@ const XetChonSinhVien = () => {
         try {
             const allIds = hoSos.map(hs => hs.maHoSo);
             const res = await finalDecisionService.hoiDongXetChon(allIds);
-            if (res.success) { 
-                alert("Đã chốt danh sách!"); 
+            if (res.success) {
+                alert("Đã chốt danh sách!");
                 fetchDots(); // Tải lại đợt vì trạng thái đợt sẽ đổi thành DuKien
             }
         } catch (error) { alert(error.message); }
@@ -125,6 +134,15 @@ const XetChonSinhVien = () => {
                     )}
                 </div>
             </div>
+            <button onClick={() => handleExport(() => exportHoiDongExcel(selectedMaDot))} disabled={exporting}
+                style={{ background: '#1D6F42', color: '#fff', padding: '7px 16px', borderRadius: 6, border: 'none', cursor: 'pointer', fontWeight: 600 }}>
+                📊 Xuất Excel
+            </button>
+            <button onClick={() => handleExport(() => exportHoiDongPdf(selectedMaDot))} disabled={exporting}
+                style={{ background: '#C00', color: '#fff', padding: '7px 16px', borderRadius: 6, border: 'none', cursor: 'pointer', fontWeight: 600 }}>
+                📄 Xuất PDF
+            </button>
+
 
             {/* BẢNG DANH SÁCH CHỜ RÀ SOÁT */}
             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
