@@ -129,14 +129,14 @@ public class HoSoXetHocBongRepository : IHoSoXetHocBongRepository
             }
 
             // Chuyển đợt học bổng từ "DangXetDuyet" sang "ChinhThuc" (lịch sử)
-            var dotHocBong = await _context.DotHocBongs
-                .FirstOrDefaultAsync(d => d.MaDot == maDot);
+            // var dotHocBong = await _context.DotHocBongs
+            //     .FirstOrDefaultAsync(d => d.MaDot == maDot);
 
-            if (dotHocBong != null && dotHocBong.TrangThai == "DangXetDuyet")
-            {
-                dotHocBong.TrangThai = "ChinhThuc";
-                _context.DotHocBongs.Update(dotHocBong);
-            }
+            // if (dotHocBong != null && dotHocBong.TrangThai == "DangXetDuyet")
+            // {
+            //     dotHocBong.TrangThai = "ChinhThuc";
+            //     _context.DotHocBongs.Update(dotHocBong);
+            // }
 
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();

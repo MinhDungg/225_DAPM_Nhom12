@@ -121,7 +121,7 @@ const KhoaDashboard = () => {
         await layDanhSachDaDeXuat();
         await loadDots(); // Reload danh sách đợt để cập nhật trạng thái
         setSelectedDot(null); // Quay về trang chủ
-        toast.success("Chốt danh sách đề xuất thành công. Đợt đã chuyển sang lịch sử.");
+        toast.success("Chốt danh sách đề xuất thành công.");
       }
     } catch (err) {
       setError(err.message || "Không thể chốt danh sách.");
