@@ -13,6 +13,12 @@ const FinalDecisionService = {
         return response.data;
     },
 
+    // Lấy lịch sử chi học bổng
+    getLichSuChi: async () => {
+        const response = await api.get('/api/hieutruong/lich-su-chi');
+        return response.data;
+    },
+
     // Hội đồng duyệt danh sách
     hoiDongXetChon: async (profileIds) => {
         const response = await api.put('/api/hoidong/xetchon', profileIds);

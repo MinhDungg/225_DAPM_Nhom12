@@ -33,6 +33,15 @@ const KhoaDashboard = () => {
     catch (e) { alert('Lỗi xuất file: ' + e.message); }
     finally { setExporting(false); }
   };
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const removeAccents = (str) => {
+    if (!str) return '';
+    return String(str)
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+  };
 
   useEffect(() => {
     loadDots();
@@ -127,7 +136,8 @@ const KhoaDashboard = () => {
       );
       if (response.success) {
         await layDanhSachDaDeXuat();
-        await layDanhSachChoDuyetTheoDot(selectedDot.maDot);
+        await loadDots(); // Reload danh sách đợt để cập nhật trạng thái
+        // setSelectedDot(null); // Quay về trang chủ
         toast.success("Chốt danh sách đề xuất thành công.");
       }
     } catch (err) {
@@ -144,6 +154,25 @@ const KhoaDashboard = () => {
 
   const dangXetDuyetList = danhSachDot.filter(dot => dot.trangThai === "DangXetDuyet");
   const lichSuList = danhSachDot.filter(dot => dot.trangThai !== "DangXetDuyet");
+
+  const isReadOnly = selectedDot ? selectedDot.trangThai !== "DangXetDuyet" : false;
+  
+  const pendingList = ketQuaXepHang
+    ? selectedResults
+    : isReadOnly
+      ? hoSoChoDuyet.filter((hs) => hs.trangThai !== "Loai")
+      : hoSoChoDuyet;
+
+  // Tính tổng số tiền đã chi cho các hồ sơ đã được duyệt (khi xem lịch sử)
+  const tongTienDaChi = useMemo(() => {
+    if (!isReadOnly || !hoSoChoDuyet.length) return 0;
+    console.log('hoSoChoDuyet:', hoSoChoDuyet); // Debug
+    const total = hoSoChoDuyet
+      .filter(hs => hs.trangThai !== "Loai" && hs.mucHocBong)
+      .reduce((sum, hs) => sum + (Number(hs.mucHocBong) || 0), 0);
+    console.log('tongTienDaChi:', total); // Debug
+    return total;
+  }, [hoSoChoDuyet, isReadOnly]);
 
   if (!selectedDot) {
     return (
@@ -206,17 +235,27 @@ const KhoaDashboard = () => {
             <div className="col-span-full text-center text-gray-500">Chưa có lịch sử.</div>
           )}
         </div>
-        {hoSoDaDeXuat.length > 0 && <div className="bg-white rounded-3xl shadow-sm border border-green-200 p-6"><h3 className="font-bold text-gray-800 flex items-center gap-2"><CheckCircle className="text-green-600" size={20} />Danh sách đã đề xuất lên Trường ({hoSoDaDeXuat.length})</h3></div>}
       </div>
     );
   }
 
-  const isReadOnly = selectedDot.trangThai !== "DangXetDuyet";
-  const pendingList = ketQuaXepHang
-    ? selectedResults
-    : isReadOnly
-      ? hoSoChoDuyet.filter((hs) => hs.trangThai !== "Loai")
-      : hoSoChoDuyet;
+  // const isReadOnly = selectedDot.trangThai !== "DangXetDuyet";
+  // const pendingList = ketQuaXepHang
+  //   ? selectedResults
+  //   : isReadOnly
+  //     ? hoSoChoDuyet.filter((hs) => hs.trangThai !== "Loai")
+  //     : hoSoChoDuyet;
+
+  const filteredList = (pendingList || []).filter((hs) => {
+    const q = removeAccents(searchQuery);
+    return (
+      (hs.maSV && removeAccents(hs.maSV).includes(q)) ||
+      (hs.hoTen && removeAccents(hs.hoTen).includes(q)) ||
+      (hs.hoTenSinhVien && removeAccents(hs.hoTenSinhVien).includes(q)) ||
+      (hs.tenLop && removeAccents(hs.tenLop).includes(q)) ||
+      (hs.tenKhoa && removeAccents(hs.tenKhoa).includes(q))
+    );
+  });
 
   return (
     <div className="space-y-6 pb-10">
@@ -248,7 +287,7 @@ const KhoaDashboard = () => {
             </p>
             <h4 className="text-2xl font-extrabold text-gray-900 mt-2">
               {isReadOnly
-                ? `${budgetInfo.kinhPhi.toLocaleString("vi-VN")} đ`
+                ? `${tongTienDaChi.toLocaleString("vi-VN")} đ / ${budgetInfo.kinhPhi.toLocaleString("vi-VN")} đ`
                 : `${ketQuaXepHang?.tongChiTieu ? ketQuaXepHang.tongChiTieu.toLocaleString("vi-VN") : "0"} đ / ${budgetInfo.kinhPhi.toLocaleString("vi-VN")} đ`}
             </h4>
           </div>
@@ -262,18 +301,30 @@ const KhoaDashboard = () => {
       {error && <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3"><AlertCircle className="text-red-600" size={20} /><p className="text-red-700 font-medium">{error}</p></div>}
 
       <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-          <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2"><Award className="text-blue-600" size={20} />{isReadOnly ? "Danh sách hồ sơ (Chỉ xem - Lịch sử)" : "Danh sách hồ sơ"}</h3>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <span className="text-sm text-gray-500">{pendingList.length} hồ sơ</span>
-            <button onClick={() => handleExport(() => exportKhoaExcel(selectedDot?.maDot))} disabled={exporting}
-              style={{ background: '#1D6F42', color: '#fff', padding: '6px 14px', borderRadius: 6, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
-              📊 Xuất Excel
-            </button>
-            <button onClick={() => handleExport(() => exportKhoaPdf(selectedDot?.maDot))} disabled={exporting}
-              style={{ background: '#C00', color: '#fff', padding: '6px 14px', borderRadius: 6, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
-              📄 Xuất PDF
-            </button>
+        <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Award className="text-blue-600" size={20} />
+            <h3 className="text-lg font-bold text-gray-800">{isReadOnly ? "Danh sách hồ sơ (Chỉ xem - Lịch sử)" : "Danh sách hồ sơ"}</h3>
+            <span className="text-sm text-gray-500 ml-2">({filteredList.length} hồ sơ)</span>
+          </div>
+          <div className="flex flex-col md:flex-row gap-4 items-center w-full md:w-auto">
+            <input
+              type="text"
+              placeholder="Tìm theo MSSV, Tên, Lớp, Khoa..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full md:w-80 px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:border-blue-500"
+            />
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <button onClick={() => handleExport(() => exportKhoaExcel(selectedDot?.maDot))} disabled={exporting}
+                style={{ background: '#1D6F42', color: '#fff', padding: '6px 14px', borderRadius: 6, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13, minWidth: '110px' }}>
+                📊 Xuất Excel
+              </button>
+              <button onClick={() => handleExport(() => exportKhoaPdf(selectedDot?.maDot))} disabled={exporting}
+                style={{ background: '#C00', color: '#fff', padding: '6px 14px', borderRadius: 6, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13, minWidth: '100px' }}>
+                📄 Xuất PDF
+              </button>
+            </div>
           </div>
         </div>
         <div className="overflow-x-auto">
@@ -293,6 +344,7 @@ const KhoaDashboard = () => {
                   <th className="p-4 text-center">GPA</th>
                   <th className="p-4 text-center">ĐRL</th>
                   {isReadOnly && <th className="p-4 text-center">Loại học bổng</th>}
+                  {isReadOnly && <th className="p-4 text-center">Mức HB</th>}
                   {ketQuaXepHang && <>
                     <th className="p-4 text-center">Xếp loại học bổng</th>
                     <th className="p-4 text-center">Mức HB</th>
@@ -301,7 +353,7 @@ const KhoaDashboard = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {pendingList.map((hs, index) => (
+                {filteredList.map((hs, index) => (
                   ketQuaXepHang ? (
                     <tr key={hs.maHoSo}>
                       <td className="p-4 text-center font-semibold text-gray-800">{index + 1}</td>
@@ -332,6 +384,7 @@ const KhoaDashboard = () => {
                       <td className="p-4 text-center">{Number(hs.gpa).toFixed(2)}</td>
                       <td className="p-4 text-center">{hs.diemRenLuyen}</td>
                       {isReadOnly && <td className="p-4 text-center">{hs.xepLoaiHB || hs.xepLoaiHocBong || hs.XepLoaiHocBong || "—"}</td>}
+                      {isReadOnly && <td className="p-4 text-center">{hs.mucHocBong ? hs.mucHocBong.toLocaleString("vi-VN") + " đ" : "—"}</td>}
                     </tr>
                   )
                 ))}

@@ -18,6 +18,17 @@ const HieuTruongDashboard = () => {
     const [showRejectModal, setShowRejectModal] = useState(false);
     const [lyDoTraVe, setLyDoTraVe] = useState('');
     const [isRejecting, setIsRejecting] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+
+    const filteredList = (data?.danhSach || []).filter(hs => {
+        const q = searchQuery.toLowerCase();
+        return (
+            (hs.maSV && String(hs.maSV).toLowerCase().includes(q)) ||
+            (hs.hoTen && String(hs.hoTen).toLowerCase().includes(q)) ||
+            (hs.tenLop && String(hs.tenLop).toLowerCase().includes(q)) ||
+            (hs.tenKhoa && String(hs.tenKhoa).toLowerCase().includes(q))
+        );
+    });
 
     // 1. Gọi API lấy danh sách đợt học bổng khi trang vừa load
     useEffect(() => {
@@ -208,6 +219,15 @@ const HieuTruongDashboard = () => {
                         {/* Bảng Danh sách sinh viên */}
                         {showList && (
                             <div className="overflow-hidden rounded-2xl border border-slate-200 shadow-sm animate-in slide-in-from-top-4">
+                                <div className="p-4 border-b border-slate-200 bg-white">
+                                    <input
+                                        type="text"
+                                        placeholder="Tìm theo MSSV, Tên, Lớp, Khoa..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        className="w-full md:w-80 px-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 text-sm"
+                                    />
+                                </div>
                                 <table className="w-full text-left bg-white">
                                     <thead className="bg-slate-50 text-[11px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-200">
                                         <tr>
@@ -221,10 +241,10 @@ const HieuTruongDashboard = () => {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
-                                        {data.danhSach.length === 0 ? (
+                                        {filteredList.length === 0 ? (
                                             <tr><td colSpan="7" className="text-center p-4 text-slate-500">Chưa có sinh viên nào.</td></tr>
                                         ) : (
-                                            data.danhSach.map((sv) => (
+                                            filteredList.map((sv) => (
                                                 <tr key={sv.maHoSo} className="hover:bg-slate-50/50 transition-colors text-sm text-slate-700 font-medium">
                                                     <td className="p-4">
                                                         <div className="font-bold text-slate-800">{sv.maSV}</div>

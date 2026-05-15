@@ -38,12 +38,13 @@ public class ExportController : ControllerBase
 
     // Headers chung cho HoSo
     static readonly List<string> HoSoHeaders = new()
-        { "Mã HS", "Mã SV", "Họ Tên", "Lớp", "Khoa", "GPA", "Điểm HT", "Điểm RL", "Xếp Loại HB", "Trạng Thái" };
+        { "STT", "Mã SV", "Họ Tên", "Lớp", "Khoa", "GPA", "Điểm HT", "Điểm RL", "Xếp Loại HB", "Mức Học Bổng", "Trạng Thái" };
 
-    static List<Dictionary<string, string>> MapHoSo(IEnumerable<HoSoResponseDTO> list) =>
-        list.Select(x => new Dictionary<string, string>
+    static List<Dictionary<string, string>> MapHoSo(IEnumerable<HoSoResponseDTO> list) {
+        int stt = 1;
+        return list.Select(x => new Dictionary<string, string>
         {
-            ["Mã HS"]       = x.MaHoSo.ToString(),
+            ["STT"]         = (stt++).ToString(),
             ["Mã SV"]       = x.MaSV ?? "",
             ["Họ Tên"]      = x.HoTen ?? "",
             ["Lớp"]         = x.TenLop ?? "",
@@ -52,8 +53,10 @@ public class ExportController : ControllerBase
             ["Điểm HT"]     = x.DiemHocTap.ToString("F2"),
             ["Điểm RL"]     = x.DiemRenLuyen.ToString("F2"),
             ["Xếp Loại HB"] = x.XepLoaiHB ?? "",
+            ["Mức Học Bổng"]= x.MucHocBong.HasValue ? x.MucHocBong.Value.ToString("N0") + " đ" : "",
             ["Trạng Thái"]  = x.TrangThai ?? ""
         }).ToList();
+    }
 
     // ── TEST EXCEL ─────────────────────────────────────────
     [HttpGet("test-excel")]
@@ -65,9 +68,10 @@ public class ExportController : ControllerBase
             await _khoaService.LayDanhSachChoDuyetAsync(1);
 
         var filtered = data.Where(x => !string.IsNullOrWhiteSpace(x.XepLoaiHB)).ToList();
+        int stt = 1;
         var rows = filtered.Select(x => new Dictionary<string, string>
         {
-            ["Mã HS"]       = x.MaHoSo.ToString(),
+            ["STT"]         = (stt++).ToString(),
             ["Mã SV"]       = x.MaSV ?? "",
             ["Họ Tên"]      = x.HoTenSinhVien ?? "",
             ["Lớp"]         = x.TenLop ?? "",
@@ -75,10 +79,11 @@ public class ExportController : ControllerBase
             ["Điểm HT"]     = x.DiemHocTap.ToString("F2"),
             ["Điểm RL"]     = x.DiemRenLuyen.ToString("F2"),
             ["Xếp Loại HB"] = x.XepLoaiHB ?? "",
+            ["Mức Học Bổng"]= x.MucHocBong.HasValue ? x.MucHocBong.Value.ToString("N0") + " đ" : "",
             ["Trạng Thái"]  = x.TrangThai ?? ""
         }).ToList();
         
-        var headers = new List<string> { "Mã HS", "Mã SV", "Họ Tên", "Lớp", "GPA", "Điểm HT", "Điểm RL", "Xếp Loại HB", "Trạng Thái" };
+        var headers = new List<string> { "STT", "Mã SV", "Họ Tên", "Lớp", "GPA", "Điểm HT", "Điểm RL", "Xếp Loại HB", "Mức Học Bổng", "Trạng Thái" };
         
         var stream = _export.ToExcel(rows, headers, "DS Dự Kiến");
         return File(stream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Test.xlsx");
@@ -95,17 +100,18 @@ public class ExportController : ControllerBase
             var data = await _finalDecisionService.GetRecommendedProfilesAsync(isHoiDong, maDot);
 
             string hocKy = ""; string namHoc = "";
+            BE.Models.DotHocBong? dot = null;
             if (maDot.HasValue)
             {
-                var dot = await _context.DotHocBongs.FirstOrDefaultAsync(d => d.MaDot == maDot.Value);
+                dot = await _context.DotHocBongs.FirstOrDefaultAsync(d => d.MaDot == maDot.Value);
                 hocKy = dot?.HocKy.ToString() ?? "";
                 namHoc = dot?.NamHoc ?? "";
             }
 
-            string loai = isHoiDong ? "ChinhThuc" : "DeXuat";
-            string sheetTitle = isHoiDong
+            string loai = (dot?.TrangThai == "ChinhThuc") ? "ChinhThuc" : "DeNghi";
+            string sheetTitle = (loai == "ChinhThuc")
                 ? (!string.IsNullOrEmpty(hocKy) ? $"DS Chính Thức HK{hocKy} {namHoc}" : "DS Chính Thức")
-                : (!string.IsNullOrEmpty(hocKy) ? $"DS Đề Xuất HK{hocKy} {namHoc}" : "DS Đề Xuất");
+                : (!string.IsNullOrEmpty(hocKy) ? $"DS Đề Nghị HK{hocKy} {namHoc}" : "DS Đề Nghị");
             string fileName = !string.IsNullOrEmpty(hocKy)
                 ? $"DanhSachHBKK_HK{hocKy}_{namHoc}_{loai}.xlsx"
                 : $"DanhSachHBKK_{loai}_{DateTime.Now:yyyyMMdd}.xlsx";
@@ -129,18 +135,19 @@ public class ExportController : ControllerBase
             var data = await _finalDecisionService.GetRecommendedProfilesAsync(isHoiDong, maDot);
 
             string hocKy = ""; string namHoc = "";
+            BE.Models.DotHocBong? dot = null;
             if (maDot.HasValue)
             {
-                var dot = await _context.DotHocBongs.FirstOrDefaultAsync(d => d.MaDot == maDot.Value);
+                dot = await _context.DotHocBongs.FirstOrDefaultAsync(d => d.MaDot == maDot.Value);
                 hocKy = dot?.HocKy.ToString() ?? "";
                 namHoc = dot?.NamHoc ?? "";
             }
 
-            string loai = isHoiDong ? "ChinhThuc" : "DeXuat";
+            string loai = (dot?.TrangThai == "ChinhThuc") ? "ChinhThuc" : "DeNghi";
             string hkSuffix = !string.IsNullOrEmpty(hocKy) ? $" | Học Kỳ {hocKy} - {namHoc}" : "";
-            string pageTitle = isHoiDong
+            string pageTitle = (loai == "ChinhThuc")
                 ? $"Danh Sách Học Bổng KKHT Chính Thức{hkSuffix}"
-                : $"Danh Sách Học Bổng KKHT Đề Xuất Lên Hội Đồng{hkSuffix}";
+                : $"Danh Sách Học Bổng KKHT Đề Nghị{hkSuffix}";
             string fileName = !string.IsNullOrEmpty(hocKy)
                 ? $"DanhSachHBKK_HK{hocKy}_{namHoc}_{loai}.html"
                 : $"DanhSachHBKK_{loai}_{DateTime.Now:yyyyMMdd}.html";
@@ -168,17 +175,19 @@ public class ExportController : ControllerBase
                 await _khoaService.LayDanhSachChoDuyetAsync(userId.Value);
 
             string hocKy = ""; string namHoc = "";
+            BE.Models.DotHocBong? dot = null;
             if (maDot.HasValue)
             {
-                var dot = await _context.DotHocBongs.FirstOrDefaultAsync(d => d.MaDot == maDot.Value);
+                dot = await _context.DotHocBongs.FirstOrDefaultAsync(d => d.MaDot == maDot.Value);
                 hocKy = dot?.HocKy.ToString() ?? "";
                 namHoc = dot?.NamHoc ?? "";
             }
 
             var filtered = data.Where(x => !string.IsNullOrWhiteSpace(x.XepLoaiHB)).ToList();
+            int stt = 1;
             var rows = filtered.Select(x => new Dictionary<string, string>
             {
-                ["Mã HS"]       = x.MaHoSo.ToString(),
+                ["STT"]         = (stt++).ToString(),
                 ["Mã SV"]       = x.MaSV ?? "",
                 ["Họ Tên"]      = x.HoTenSinhVien ?? "",
                 ["Lớp"]         = x.TenLop ?? "",
@@ -186,14 +195,18 @@ public class ExportController : ControllerBase
                 ["Điểm HT"]     = x.DiemHocTap.ToString("F2"),
                 ["Điểm RL"]     = x.DiemRenLuyen.ToString("F2"),
                 ["Xếp Loại HB"] = x.XepLoaiHB ?? "",
+                ["Mức Học Bổng"]= x.MucHocBong.HasValue ? x.MucHocBong.Value.ToString("N0") + " đ" : "",
                 ["Trạng Thái"]  = x.TrangThai ?? ""
             }).ToList();
             
-            var headers = new List<string> { "Mã HS", "Mã SV", "Họ Tên", "Lớp", "GPA", "Điểm HT", "Điểm RL", "Xếp Loại HB", "Trạng Thái" };
-            string sheetTitle = !string.IsNullOrEmpty(hocKy) ? $"DS Dự Kiến HK{hocKy} {namHoc}" : "DS Dự Kiến";
+            var headers = new List<string> { "STT", "Mã SV", "Họ Tên", "Lớp", "GPA", "Điểm HT", "Điểm RL", "Xếp Loại HB", "Mức Học Bổng", "Trạng Thái" };
+            string loai = (dot?.TrangThai == "ChinhThuc") ? "ChinhThuc" : "DeNghi";
+            string sheetTitle = (loai == "ChinhThuc")
+                ? (!string.IsNullOrEmpty(hocKy) ? $"DS Chính Thức HK{hocKy} {namHoc}" : "DS Chính Thức")
+                : (!string.IsNullOrEmpty(hocKy) ? $"DS Khoa Đề Nghị HK{hocKy} {namHoc}" : "DS Khoa Đề Nghị");
             string fileName = !string.IsNullOrEmpty(hocKy)
-                ? $"DanhSachHBKK_HK{hocKy}_{namHoc}_DuKien.xlsx"
-                : $"DanhSachHBKK_DuKien_{DateTime.Now:yyyyMMdd}.xlsx";
+                ? $"DanhSachHBKK_HK{hocKy}_{namHoc}_Khoa{loai}.xlsx"
+                : $"DanhSachHBKK_Khoa{loai}_{DateTime.Now:yyyyMMdd}.xlsx";
 
             var stream = _export.ToExcel(rows, headers, sheetTitle);
             return File(stream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
@@ -217,17 +230,19 @@ public class ExportController : ControllerBase
                 await _khoaService.LayDanhSachChoDuyetAsync(userId.Value);
 
             string hocKy = ""; string namHoc = "";
+            BE.Models.DotHocBong? dot = null;
             if (maDot.HasValue)
             {
-                var dot = await _context.DotHocBongs.FirstOrDefaultAsync(d => d.MaDot == maDot.Value);
+                dot = await _context.DotHocBongs.FirstOrDefaultAsync(d => d.MaDot == maDot.Value);
                 hocKy = dot?.HocKy.ToString() ?? "";
                 namHoc = dot?.NamHoc ?? "";
             }
 
             var filtered = data.Where(x => !string.IsNullOrWhiteSpace(x.XepLoaiHB)).ToList();
+            int stt = 1;
             var rows = filtered.Select(x => new Dictionary<string, string>
             {
-                ["Mã HS"]       = x.MaHoSo.ToString(),
+                ["STT"]         = (stt++).ToString(),
                 ["Mã SV"]       = x.MaSV ?? "",
                 ["Họ Tên"]      = x.HoTenSinhVien ?? "",
                 ["Lớp"]         = x.TenLop ?? "",
@@ -235,16 +250,19 @@ public class ExportController : ControllerBase
                 ["Điểm HT"]     = x.DiemHocTap.ToString("F2"),
                 ["Điểm RL"]     = x.DiemRenLuyen.ToString("F2"),
                 ["Xếp Loại HB"] = x.XepLoaiHB ?? "",
+                ["Mức Học Bổng"]= x.MucHocBong.HasValue ? x.MucHocBong.Value.ToString("N0") + " đ" : "",
                 ["Trạng Thái"]  = x.TrangThai ?? ""
             }).ToList();
             
-            var headers = new List<string> { "Mã HS", "Mã SV", "Họ Tên", "Lớp", "GPA", "Điểm HT", "Điểm RL", "Xếp Loại HB", "Trạng Thái" };
-            string pageTitle = !string.IsNullOrEmpty(hocKy)
-                ? $"Danh Sách Học Bổng KKHT Dự Kiến — Khoa | Học Kỳ {hocKy} - {namHoc}"
-                : "Danh Sách Học Bổng KKHT Dự Kiến — Khoa";
+            var headers = new List<string> { "STT", "Mã SV", "Họ Tên", "Lớp", "GPA", "Điểm HT", "Điểm RL", "Xếp Loại HB", "Mức Học Bổng", "Trạng Thái" };
+            string loai = (dot?.TrangThai == "ChinhThuc") ? "ChinhThuc" : "DeNghi";
+            string hkSuffix = !string.IsNullOrEmpty(hocKy) ? $" | Học Kỳ {hocKy} - {namHoc}" : "";
+            string pageTitle = (loai == "ChinhThuc")
+                ? $"Danh Sách Học Bổng KKHT Chính Thức — Khoa{hkSuffix}"
+                : $"Danh Sách Học Bổng KKHT Khoa Đề Nghị{hkSuffix}";
             string htmlFileName = !string.IsNullOrEmpty(hocKy)
-                ? $"DanhSachHBKK_HK{hocKy}_{namHoc}_DuKien.html"
-                : $"DanhSachHBKK_DuKien_{DateTime.Now:yyyyMMdd}.html";
+                ? $"DanhSachHBKK_HK{hocKy}_{namHoc}_Khoa{loai}.html"
+                : $"DanhSachHBKK_Khoa{loai}_{DateTime.Now:yyyyMMdd}.html";
 
             var bytes = _export.ToHtml(rows, headers, pageTitle);
             return File(bytes, "text/html; charset=utf-8", htmlFileName);

@@ -4,7 +4,7 @@ import {
     Home, FileText, Bell, User, LogOut, ChevronDown,
     Database, Users, ShieldCheck, Landmark, FileCheck,
     ClipboardList, CheckSquare, MessageSquareWarning,
-    GraduationCap, LifeBuoy, Sparkles, PlusCircle, FileSpreadsheet
+    GraduationCap, LifeBuoy, Sparkles, PlusCircle, FileSpreadsheet, History
 } from 'lucide-react';
 
 const Layout = ({ role }) => {
@@ -66,7 +66,8 @@ const Layout = ({ role }) => {
         ],
         'HieuTruong': [
             { path: '/hieu-truong', icon: Home, label: 'Trang chủ BGH' },
-            { path: '/hieu-truong/phe-duyet', icon: CheckSquare, label: 'Phê duyệt danh sách' }
+            { path: '/hieu-truong/phe-duyet', icon: CheckSquare, label: 'Phê duyệt danh sách' },
+            { path: '/hieu-truong/lich-su', icon: History, label: 'Lịch sử chi học bổng' }
         ]
     };
 

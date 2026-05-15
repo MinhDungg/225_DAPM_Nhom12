@@ -133,6 +133,7 @@ CREATE TABLE [HOSOXETHOCBONG] (
   [GPA] real NOT NULL DEFAULT 0, -- THÊM MỚI
   [DiemRenLuyen] int NOT NULL CONSTRAINT CHK_DiemRenLuyen CHECK ([DiemRenLuyen] >= 0 AND [DiemRenLuyen] <= 100),
   [XepLoaiHB] nvarchar(50),
+  [MucHocBong] decimal(18,2) NULL, -- THÊM MỚI: Mức học bổng được phê duyệt
   [TrangThai] varchar(50) DEFAULT 'ChoXet' CONSTRAINT CHK_TrangThai_HoSo CHECK ([TrangThai] IN ('ChoXet', 'KhoaDeXuat', 'HoiDongDuyet', 'TuChoi', 'ChinhThuc', 'Loai')),
   [GhiChu] nvarchar(MAX) NULL, -- THÊM MỚI
   [MaCB_Duyet] int
