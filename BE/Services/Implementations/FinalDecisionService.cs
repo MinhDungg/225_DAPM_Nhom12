@@ -191,6 +191,12 @@ namespace BE.Services.Implementations
                 });
             }
 
+            // Tính tổng tiền đã chi trong lịch sử (các đợt đã ChinhThuc)
+            var allChinhThucProfiles = await _hoSoRepository.GetProfilesByStatusAsync("ChinhThuc");
+            decimal tongTienDaChi = allChinhThucProfiles
+                .Where(h => h.MucHocBong.HasValue)
+                .Sum(h => h.MucHocBong ?? 0);
+
             return new TongHopHieuTruongResponseDTO
             {
                 ThongTinDot = new ThongTinDotDTO
@@ -203,6 +209,7 @@ namespace BE.Services.Implementations
                 },
                 TongSinhVien = profilesForRound.Count,
                 TongKinhPhi = tongKinhPhi,
+                TongTienDaChi = tongTienDaChi,
                 DanhSach = danhSachDTO
             };
         }
@@ -309,6 +316,57 @@ namespace BE.Services.Implementations
 
 
             return new BaseResponse<bool> { Success = true, Message = "Từ chối hồ sơ thành công.", Data = true };
+        }
+
+        public async Task<IEnumerable<LichSuChiHocBongDTO>> GetLichSuChiHocBongAsync()
+        {
+            // Lấy tất cả các đợt học bổng
+            var allDots = await _dotHocBongRepository.LayDanhSachAsync();
+            
+            // Lọc các đợt đã hoàn thành hoặc đang xử lý
+            var completedDots = allDots
+                .Where(d => d.TrangThai == "ChinhThuc" || d.TrangThai == "ChoPheDuyet" || d.TrangThai == "DangXetDuyet")
+                .ToList();
+
+            var lichSuList = new List<LichSuChiHocBongDTO>();
+
+            foreach (var dot in completedDots)
+            {
+                // Lấy TẤT CẢ hồ sơ của đợt này (không chỉ ChinhThuc)
+                var allHoSos = await _hoSoRepository.GetProfilesByStatusAsync("ChinhThuc");
+                var hoSosChinhThuc = allHoSos.Where(h => h.MaDot == dot.MaDot).ToList();
+
+                // Nếu đợt chưa có hồ sơ ChinhThuc, thử lấy các hồ sơ khác
+                if (!hoSosChinhThuc.Any())
+                {
+                    var hoSosKhoaDeXuat = await _hoSoRepository.GetProfilesByStatusAsync("KhoaDeXuat");
+                    var hoSosHoiDongDuyet = await _hoSoRepository.GetProfilesByStatusAsync("HoiDongDuyet");
+                    
+                    hoSosChinhThuc = hoSosKhoaDeXuat
+                        .Concat(hoSosHoiDongDuyet)
+                        .Where(h => h.MaDot == dot.MaDot)
+                        .ToList();
+                }
+
+                // Tính tổng tiền thực tế đã phân bổ
+                decimal tongChi = hoSosChinhThuc
+                    .Where(h => h.MucHocBong.HasValue)
+                    .Sum(h => h.MucHocBong ?? 0);
+
+                lichSuList.Add(new LichSuChiHocBongDTO
+                {
+                    MaDot = dot.MaDot,
+                    LoaiDot = dot.LoaiDot,
+                    HocKy = dot.HocKy,
+                    NamHoc = dot.NamHoc,
+                    SoSinhVien = hoSosChinhThuc.Count,
+                    TongChi = tongChi,
+                    TrangThai = dot.TrangThai
+                });
+            }
+
+            // Sắp xếp theo năm học và học kỳ giảm dần
+            return lichSuList.OrderByDescending(l => l.NamHoc).ThenByDescending(l => l.HocKy);
         }
 
     }

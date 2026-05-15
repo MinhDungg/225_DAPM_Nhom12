@@ -10,6 +10,7 @@ public class HoSoChoDuyetResponseDTO
     public float GPA { get; set; }
     public int DiemRenLuyen { get; set; }
     public string? XepLoaiHB { get; set; }
+    public decimal? MucHocBong { get; set; } // Thêm mức học bổng
     public double DiemNCKH { get; set; }
     public double DiemHDCD { get; set; }
     public DateTime NgayNop { get; set; }

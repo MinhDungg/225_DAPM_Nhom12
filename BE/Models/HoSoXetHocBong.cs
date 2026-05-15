@@ -10,6 +10,7 @@ public class HoSoXetHocBong
     public float DiemHocTap { get; set; }
     public int DiemRenLuyen { get; set; }
     public string? XepLoaiHB { get; set; }
+    public decimal? MucHocBong { get; set; } // Thêm mức học bổng
     public string TrangThai { get; set; } = null!;
     public string? GhiChu { get; set; }
     public int? MaCB_Duyet { get; set; }

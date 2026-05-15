@@ -15,6 +15,7 @@ import {
   TaiChinhDashboard,
   HieuTruongDashboard
 } from './pages';
+import LichSuChiHocBong from './pages/HieuTruong/LichSuChiHocBong.jsx';
 import TaoDotHocBong from './pages/CTSV/TaoDotHocBong.jsx';
 import DaoTaoImport from './pages/DaoTao/DaoTaoImport.jsx';
 import DaoTaoDanhSachDot from './pages/DaoTao/DaoTaoDanhSachDot.jsx';
@@ -44,6 +45,7 @@ function App() {
           <Route path="khoa" element={<KhoaDashboard />} />
           <Route path="tai-chinh" element={<TaiChinhDashboard />} />
           <Route path="hieu-truong" element={<HieuTruongDashboard />} />
+          <Route path="hieu-truong/lich-su" element={<LichSuChiHocBong />} />
 
           {/* ===== ROUTE CHO CHỨC NĂNG KHIẾU NẠI ===== */}
           <Route path="sinh-vien/khieu-nai" element={<KhieuNaiSinhVien />} />

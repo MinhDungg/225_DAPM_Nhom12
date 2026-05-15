@@ -16,6 +16,7 @@ namespace BE.DTOs.Response
         public ThongTinDotDTO ThongTinDot { get; set; } = null!;
         public int TongSinhVien { get; set; }
         public decimal TongKinhPhi { get; set; }
+        public decimal TongTienDaChi { get; set; } // Tổng tiền đã chi trong lịch sử
         public IEnumerable<HoSoResponseDTO> DanhSach { get; set; } = new List<HoSoResponseDTO>();
     }
 }
