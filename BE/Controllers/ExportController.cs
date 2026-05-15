@@ -196,10 +196,10 @@ public class ExportController : ControllerBase
                 ["Điểm RL"]     = x.DiemRenLuyen.ToString("F2"),
                 ["Xếp Loại HB"] = x.XepLoaiHB ?? "",
                 ["Mức Học Bổng"]= x.MucHocBong.HasValue ? x.MucHocBong.Value.ToString("N0") + " đ" : "",
-                ["Trạng Thái"]  = x.TrangThai ?? ""
+                // ["Trạng Thái"]  = x.TrangThai ?? ""
             }).ToList();
             
-            var headers = new List<string> { "STT", "Mã SV", "Họ Tên", "Lớp", "GPA", "Điểm HT", "Điểm RL", "Xếp Loại HB", "Mức Học Bổng", "Trạng Thái" };
+            var headers = new List<string> { "STT", "Mã SV", "Họ Tên", "Lớp", "GPA", "Điểm HT", "Điểm RL", "Xếp Loại HB", "Mức Học Bổng" };
             string loai = (dot?.TrangThai == "ChinhThuc") ? "ChinhThuc" : "DeNghi";
             string sheetTitle = (loai == "ChinhThuc")
                 ? (!string.IsNullOrEmpty(hocKy) ? $"DS Chính Thức HK{hocKy} {namHoc}" : "DS Chính Thức")
@@ -251,10 +251,10 @@ public class ExportController : ControllerBase
                 ["Điểm RL"]     = x.DiemRenLuyen.ToString("F2"),
                 ["Xếp Loại HB"] = x.XepLoaiHB ?? "",
                 ["Mức Học Bổng"]= x.MucHocBong.HasValue ? x.MucHocBong.Value.ToString("N0") + " đ" : "",
-                ["Trạng Thái"]  = x.TrangThai ?? ""
+                // ["Trạng Thái"]  = x.TrangThai ?? ""
             }).ToList();
             
-            var headers = new List<string> { "STT", "Mã SV", "Họ Tên", "Lớp", "GPA", "Điểm HT", "Điểm RL", "Xếp Loại HB", "Mức Học Bổng", "Trạng Thái" };
+            var headers = new List<string> { "STT", "Mã SV", "Họ Tên", "Lớp", "GPA", "Điểm HT", "Điểm RL", "Xếp Loại HB", "Mức Học Bổng" };
             string loai = (dot?.TrangThai == "ChinhThuc") ? "ChinhThuc" : "DeNghi";
             string hkSuffix = !string.IsNullOrEmpty(hocKy) ? $" | Học Kỳ {hocKy} - {namHoc}" : "";
             string pageTitle = (loai == "ChinhThuc")
