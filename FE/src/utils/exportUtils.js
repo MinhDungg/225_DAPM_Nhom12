@@ -1,7 +1,7 @@
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5163';
 
 // Download binary file (Excel)
-export const downloadFile = async (url, filename) => {
+export const downloadFile = async (url, fallbackFilename) => {
     const token = sessionStorage.getItem('token');
     const res = await fetch(url, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -10,6 +10,24 @@ export const downloadFile = async (url, filename) => {
         const errText = await res.text();
         throw new Error(`HTTP ${res.status}: ${errText}`);
     }
+
+    // Parse filename from Content-Disposition if available
+    let filename = fallbackFilename;
+    const disposition = res.headers.get('Content-Disposition');
+    if (disposition && disposition.indexOf('filename=') !== -1) {
+        const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+        const matches = filenameRegex.exec(disposition);
+        if (matches != null && matches[1]) {
+            filename = matches[1].replace(/['"]/g, '');
+            // Xóa tiền tố utf-8'' nếu có
+            if (filename.startsWith('utf-8')) {
+                filename = decodeURIComponent(filename.substring(7));
+            } else if (filename.startsWith('UTF-8')) {
+                filename = decodeURIComponent(filename.substring(7));
+            }
+        }
+    }
+
     const blob = await res.blob();
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
@@ -20,19 +38,35 @@ export const downloadFile = async (url, filename) => {
 };
 
 // Mở HTML trong tab mới để in PDF (thay QuestPDF)
+// Mở tab TRƯỚC khi fetch để tránh popup blocker (window.open sau await bị chặn)
 export const openHtml = async (url) => {
-    const token = sessionStorage.getItem('token');
-    const res = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${token}` }
-    });
-    if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(`HTTP ${res.status}: ${errText}`);
+    // Mở tab ngay lập tức trong user gesture context
+    const newTab = window.open('', '_blank');
+    if (!newTab) {
+        alert('Trình duyệt đã chặn popup. Vui lòng cho phép popup cho trang này và thử lại.');
+        return;
     }
-    const html = await res.text();
-    const blob = new Blob([html], { type: 'text/html; charset=utf-8' });
-    const blobUrl = URL.createObjectURL(blob);
-    window.open(blobUrl, '_blank');
+    newTab.document.write('<html><body style="font-family:sans-serif;padding:20px">⏳ Đang tải dữ liệu...</body></html>');
+
+    try {
+        const token = sessionStorage.getItem('token');
+        const res = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const errText = await res.text();
+            newTab.close();
+            throw new Error(`HTTP ${res.status}: ${errText}`);
+        }
+        const html = await res.text();
+        // Ghi nội dung vào tab đã mở
+        newTab.document.open();
+        newTab.document.write(html);
+        newTab.document.close();
+    } catch (err) {
+        newTab.close();
+        throw err;
+    }
 };
 
 // ── Hội đồng ──────────────────────────────────────────────────────

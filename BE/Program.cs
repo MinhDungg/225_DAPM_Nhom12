@@ -20,7 +20,8 @@ builder.Services.AddCors(options =>
     {
         policy.AllowAnyOrigin()
               .AllowAnyMethod()
-              .AllowAnyHeader();
+              .AllowAnyHeader()
+              .WithExposedHeaders("Content-Disposition");
     });
 });
 
@@ -109,14 +110,12 @@ builder.Services.AddSingleton<BE.Services.Implementations.ExportService>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// Global exception handler — prevents BE crash on unhandled exceptions
 app.UseExceptionHandler(errApp =>
 {
     errApp.Run(async ctx =>
@@ -129,13 +128,11 @@ app.UseExceptionHandler(errApp =>
     });
 });
 
-// Tạm thời tắt Https Redirection ở môi trường dev để tránh lỗi CORS Preflight (OPTIONS) bị redirect sang HTTPS
 if (!app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
 }
 
-// 2. KÍCH HOẠT CORS TRONG PIPELINE (Bắt buộc phải nằm TRƯỚC UseAuthentication)
 app.UseCors("AllowAll");
 
 
