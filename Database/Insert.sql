@@ -164,3 +164,30 @@ INSERT INTO [HOSOXETHOCBONG] (MaSV, MaDot, DiemHocTap, GPA, DiemRenLuyen, TrangT
 ('SV011', 1, 7.5, 3.1, 80, 'ChoXet', NULL),
 ('SV012', 1, 6.5, 2.7, 70, 'Loai', N'Có điểm F trong học kỳ');
 GO
+
+
+-- =================================================================================
+-- BỔ SUNG: THÊM 9 TÀI KHOẢN & SINH VIÊN ĐỂ LÀM LỆCH TỶ LỆ QUÂN SỐ
+-- (Khóa 23: 4 SV | Khóa 24: 7 SV | Khóa 25: 10 SV)
+-- =================================================================================
+
+-- Thêm 9 tài khoản mới (SV013 - SV021)
+INSERT INTO [TAIKHOAN] (TenDangNhap, MatKhau, VaiTro, TrangThai) VALUES 
+('SV013', '123', 'SinhVien', 1), ('SV014', '123', 'SinhVien', 1), ('SV015', '123', 'SinhVien', 1),
+('SV016', '123', 'SinhVien', 1), ('SV017', '123', 'SinhVien', 1), ('SV018', '123', 'SinhVien', 1),
+('SV019', '123', 'SinhVien', 1), ('SV020', '123', 'SinhVien', 1), ('SV021', '123', 'SinhVien', 1);
+
+-- Thêm 3 sinh viên cho Khóa 24 (Lớp 24T1 - MaLop = 2)
+INSERT INTO [SINHVIEN] (MaSV, HoTen, NgaySinh, Email, SDT, MaLop, MaTK) VALUES 
+('SV013', N'Khóa Hai Tư - Lệch 1', '2006-05-05', 'sv013@ute.edu.vn', '0901000013', 2, (SELECT MaTK FROM TAIKHOAN WHERE TenDangNhap = 'SV013')),
+('SV014', N'Khóa Hai Tư - Lệch 2', '2006-06-06', 'sv014@ute.edu.vn', '0901000014', 2, (SELECT MaTK FROM TAIKHOAN WHERE TenDangNhap = 'SV014')),
+('SV015', N'Khóa Hai Tư - Lệch 3', '2006-07-07', 'sv015@ute.edu.vn', '0901000015', 2, (SELECT MaTK FROM TAIKHOAN WHERE TenDangNhap = 'SV015'));
+
+-- Thêm 6 sinh viên cho Khóa 25 (Lớp 25T1 - MaLop = 3)
+INSERT INTO [SINHVIEN] (MaSV, HoTen, NgaySinh, Email, SDT, MaLop, MaTK) VALUES 
+('SV016', N'Khóa Hai Lăm - Lệch 1', '2007-05-05', 'sv016@ute.edu.vn', '0901000016', 3, (SELECT MaTK FROM TAIKHOAN WHERE TenDangNhap = 'SV016')),
+('SV017', N'Khóa Hai Lăm - Lệch 2', '2007-06-06', 'sv017@ute.edu.vn', '0901000017', 3, (SELECT MaTK FROM TAIKHOAN WHERE TenDangNhap = 'SV017')),
+('SV018', N'Khóa Hai Lăm - Lệch 3', '2007-07-07', 'sv018@ute.edu.vn', '0901000018', 3, (SELECT MaTK FROM TAIKHOAN WHERE TenDangNhap = 'SV018')),
+('SV019', N'Khóa Hai Lăm - Lệch 4', '2007-08-08', 'sv019@ute.edu.vn', '0901000019', 3, (SELECT MaTK FROM TAIKHOAN WHERE TenDangNhap = 'SV019')),
+('SV020', N'Khóa Hai Lăm - Lệch 5', '2007-09-09', 'sv020@ute.edu.vn', '0901000020', 3, (SELECT MaTK FROM TAIKHOAN WHERE TenDangNhap = 'SV020')),
+('SV021', N'Khóa Hai Lăm - Lệch 6', '2007-10-10', 'sv021@ute.edu.vn', '0901000021', 3, (SELECT MaTK FROM TAIKHOAN WHERE TenDangNhap = 'SV021'));
