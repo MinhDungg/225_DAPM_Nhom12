@@ -381,7 +381,10 @@ const CTSVDashboard = () => {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-right font-medium text-gray-900">
-                                            {item.soTien != null ? Number(item.soTien).toLocaleString('vi-VN') : '-'}
+                                            {(item.trangThai === 'ChoXet' || (item.mucHocBong == null && item.soTien == null))
+                                                ? <span className="text-gray-400">-</span>
+                                                : <span>{Number(item.mucHocBong ?? item.soTien).toLocaleString('vi-VN')} đ</span>
+                                            }
                                         </td>
                                         {!isReadOnly && (
                                             <td className="px-6 py-4 text-center">

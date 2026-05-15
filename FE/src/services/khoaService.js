@@ -83,12 +83,12 @@ const khoaService = {
     },
 
     // Task 2.3: Chốt danh sách đề xuất
-    chotDanhSachDeXuat: async (maDot, danhSachMaHoSo) => {
+    chotDanhSachDeXuat: async (maDot, danhSachDeXuat) => {
         try {
             const token = sessionStorage.getItem('token');
             const response = await axiosInstance.put(
                 '/khoa/dexuat',
-                { maDot, danhSachMaHoSo },
+                { maDot, danhSachDeXuat },
                 {
                     headers: {
                         'Authorization': `Bearer ${token}`

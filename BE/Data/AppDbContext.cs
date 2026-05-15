@@ -275,6 +275,9 @@ public class AppDbContext : DbContext
             entity.Property(e => e.GhiChu)
                 .HasColumnType("nvarchar(max)")
                 .IsRequired(false);
+            entity.Property(e => e.MucHocBong)
+                .HasColumnType("decimal(18,2)")
+                .IsRequired(false);
 
             entity.HasOne(e => e.SinhVien)
                 .WithMany(e => e.HoSoXetHocBongs)

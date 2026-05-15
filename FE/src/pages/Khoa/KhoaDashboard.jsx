@@ -130,14 +130,20 @@ const KhoaDashboard = () => {
     setLoading(true);
     setError(null);
     try {
+      // Map danh sách được chọn thành array of objects { maHoSo, mucHocBong }
+      const danhSachDeXuat = ketQuaXepHang
+        ? ketQuaXepHang.danhSachXepHang
+            .filter((sv) => danhSachChon.includes(sv.maHoSo))
+            .map((sv) => ({ maHoSo: sv.maHoSo, mucHocBong: sv.mucHocBong }))
+        : danhSachChon.map((maHoSo) => ({ maHoSo, mucHocBong: null }));
+
       const response = await khoaService.chotDanhSachDeXuat(
         selectedDot.maDot,
-        danhSachChon,
+        danhSachDeXuat,
       );
       if (response.success) {
         await layDanhSachDaDeXuat();
-        await loadDots(); // Reload danh sách đợt để cập nhật trạng thái
-        // setSelectedDot(null); // Quay về trang chủ
+        await loadDots();
         toast.success("Chốt danh sách đề xuất thành công.");
       }
     } catch (err) {

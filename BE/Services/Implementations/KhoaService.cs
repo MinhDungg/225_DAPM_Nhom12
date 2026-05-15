@@ -297,20 +297,20 @@ public class KhoaService : IKhoaService
         if (canBo == null || canBo.MaKhoa == null)
             throw new Exception("Khong tim thay thong tin can bo hoac khoa");
 
-        if (request.DanhSachMaHoSo == null || !request.DanhSachMaHoSo.Any())
+        if (request.DanhSachDeXuat == null || !request.DanhSachDeXuat.Any())
             throw new Exception("Danh sach ho so khong duoc rong");
 
         var soLuongDaChot = await _hoSoRepository.ChotDanhSachDeXuatAsync(
             canBo.MaKhoa.Value,
             request.MaDot,
-            request.DanhSachMaHoSo,
+            request.DanhSachDeXuat,
             canBo.MaCB
         );
 
         return new ChotDeXuatResponseDTO
         {
             SoLuongDaChot = soLuongDaChot,
-            DanhSachMaHoSo = request.DanhSachMaHoSo
+            DanhSachMaHoSo = request.DanhSachDeXuat.Select(x => x.MaHoSo).ToList()
         };
     }
 
