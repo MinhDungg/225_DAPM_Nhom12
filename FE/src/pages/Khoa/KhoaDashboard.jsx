@@ -129,7 +129,7 @@ const KhoaDashboard = () => {
       if (response.success) {
         await layDanhSachDaDeXuat();
         await loadDots(); // Reload danh sách đợt để cập nhật trạng thái
-        setSelectedDot(null); // Quay về trang chủ
+        // setSelectedDot(null); // Quay về trang chủ
         toast.success("Chốt danh sách đề xuất thành công.");
       }
     } catch (err) {
