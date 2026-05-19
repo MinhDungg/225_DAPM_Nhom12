@@ -60,7 +60,13 @@ public class KhoaService : IKhoaService
         }
         else
         {
-            hoSos = await _hoSoRepository.LayDanhSachChoXetTheoKhoaVaDotAsync(canBo.MaKhoa.Value, maDot);
+            // Lấy TẤT CẢ hồ sơ (kể cả Loai) để Frontend đếm đúng tổng quân số auto-fill
+            // Frontend sẽ tự lọc chỉ hiển thị ChoXet trong bảng ứng viên
+            hoSos = await _context.HoSoXetHocBongs
+                .Include(h => h.SinhVien)
+                    .ThenInclude(sv => sv.Lop)
+                .Where(h => h.MaDot == maDot && h.SinhVien.Lop.MaKhoa == canBo.MaKhoa.Value)
+                .ToListAsync();
         }
 
         // Lấy thông tin phân bổ kinh phí để tính mức học bổng
