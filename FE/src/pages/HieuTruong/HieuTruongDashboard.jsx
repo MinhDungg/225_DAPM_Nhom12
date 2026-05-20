@@ -303,7 +303,6 @@ const HieuTruongDashboard = () => {
                                             <th className="px-6 py-3 text-right">GPA</th>
                                             <th className="px-6 py-3 text-right">Học Tập</th>
                                             <th className="px-6 py-3 text-center">Rèn Luyện</th>
-                                            <th className="px-6 py-3 text-center">Điểm F</th>
                                             <th className="px-6 py-3">Xếp Loại</th>
                                             <th className="px-6 py-3 text-right">Số Tiền (VNĐ)</th>
                                         </tr>
@@ -311,7 +310,7 @@ const HieuTruongDashboard = () => {
                                     <tbody className="text-sm text-gray-700 divide-y divide-gray-100">
                                         {filteredList.length === 0 ? (
                                             <tr>
-                                                <td colSpan={8} className="text-center py-12 text-gray-500">
+                                                <td colSpan={7} className="text-center py-12 text-gray-500">
                                                     Không có hồ sơ nào.
                                                 </td>
                                             </tr>
