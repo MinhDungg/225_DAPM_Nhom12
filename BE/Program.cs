@@ -123,6 +123,7 @@ if (!app.Environment.IsDevelopment())
 // 2. KÍCH HOẠT CORS TRONG PIPELINE (Bắt buộc phải nằm TRƯỚC UseAuthentication)
 app.UseCors("AllowAll");
 
+app.UseStaticFiles();
 
 app.UseAuthentication();
 app.UseAuthorization();

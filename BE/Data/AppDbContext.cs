@@ -225,6 +225,9 @@ public class AppDbContext : DbContext
                 .HasMaxLength(50)
                 .IsUnicode(false)
                 .HasDefaultValue("KhoiTao");
+            entity.Property(e => e.LyDoTraVe)
+                .HasColumnType("nvarchar(max)")
+                .IsRequired(false);
         });
 
         modelBuilder.Entity<PhanBoKinhPhi>(entity =>
