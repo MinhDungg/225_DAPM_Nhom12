@@ -21,7 +21,6 @@ const CTSVDashboard = () => {
     const [dsDotHocBong, setDsDotHocBong] = useState([]);
     const [selectedMaDot, setSelectedMaDot] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
-
     useEffect(() => {
         const fetchDotHocBong = async () => {
             try {
@@ -72,7 +71,12 @@ const CTSVDashboard = () => {
     };
 
     const handleTrinhBGH = async () => {
-        if (!window.confirm('Bạn có chắc chắn muốn trình danh sách này lên Ban Giám Hiệu?')) return;
+        const trangThai = data?.thongTinDot?.trangThai;
+        const confirmMsg = trangThai === 'DangXetDuyet'
+            ? 'Bạn có chắc chắn muốn trình LẠI danh sách này lên Ban Giám Hiệu sau khi đã rà soát?'
+            : 'Bạn có chắc chắn muốn trình danh sách này lên Ban Giám Hiệu?';
+
+        if (!window.confirm(confirmMsg)) return;
 
         setLoading(true);
         try {
@@ -87,7 +91,9 @@ const CTSVDashboard = () => {
 
             const res = await FinalDecisionService.trinhHieuTruong(selectedMaDot);
             if (res.success) {
-                alert('✅ Trình danh sách lên Ban Giám Hiệu thành công!');
+                alert(trangThai === 'DangXetDuyet'
+                    ? '✅ Đã trình lại danh sách lên Ban Giám Hiệu thành công!'
+                    : '✅ Trình danh sách lên Ban Giám Hiệu thành công!');
                 fetchData(selectedMaDot);
             } else {
                 alert(res.message || 'Có lỗi xảy ra khi trình ký.');
@@ -236,34 +242,39 @@ const CTSVDashboard = () => {
                     {/* Nút trình ký */}
                     <button
                         onClick={handleTrinhBGH}
-                        disabled={loading || isReadOnly || (data?.danhSachCho || []).length === 0 || trangThai !== 'LayYKienHoanTat'}
+                        disabled={loading || isReadOnly || (data?.danhSachCho || []).length === 0 || (trangThai !== 'LayYKienHoanTat' && trangThai !== 'DangXetDuyet')}
                         className={`flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-colors w-full lg:w-auto
-                            ${(loading || isReadOnly || (data?.danhSachCho || []).length === 0 || trangThai !== 'LayYKienHoanTat')
+                            ${(loading || isReadOnly || (data?.danhSachCho || []).length === 0 || (trangThai !== 'LayYKienHoanTat' && trangThai !== 'DangXetDuyet'))
                                 ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
-                                : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm border border-transparent'}`}
+                                : trangThai === 'DangXetDuyet'
+                                    ? 'bg-orange-500 text-white hover:bg-orange-600 shadow-sm border border-transparent'
+                                    : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm border border-transparent'}`}
                     >
                         {loading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                         {trangThai === 'ChoPheDuyet' ? 'ĐÃ TRÌNH BGH' :
-                            trangThai === 'ChinhThuc' ? 'ĐÃ CHỐT' : 'TRÌNH BGH'}
+                            trangThai === 'ChinhThuc' ? 'ĐÃ CHỐT' :
+                            trangThai === 'DangXetDuyet' ? 'TRÌNH LẠI BGH' : 'TRÌNH BGH'}
                     </button>
                 </div>
             </div>
 
             {/* Thông báo Lý do trả về từ Hiệu trưởng */}
             {data?.thongTinDot?.lyDoTraVe && trangThai === 'DangXetDuyet' && (
-                <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
-                    <div className="text-red-600 shrink-0 mt-0.5">
-                        <AlertTriangle size={20} />
+                <div className="bg-red-50 border border-red-200 rounded-2xl p-5 flex flex-col md:flex-row items-start gap-4 mb-6 shadow-sm">
+                    <div className="text-red-600 shrink-0 mt-0.5 bg-red-100 p-2.5 rounded-xl">
+                        <AlertTriangle size={22} />
                     </div>
-                    <div>
-                        <h4 className="font-semibold text-red-800 text-sm mb-1">
-                            Hồ sơ bị trả lại từ Ban Giám Hiệu
-                        </h4>
-                        <p className="text-red-700 text-sm mb-1">
-                            <span className="font-medium">Lý do:</span> {data?.thongTinDot?.lyDoTraVe}
-                        </p>
-                        <p className="text-red-600/80 text-xs">
-                            Vui lòng rà soát, chỉnh sửa hoặc xóa các hồ sơ không hợp lệ, sau đó thực hiện trình lại.
+                    <div className="flex-1 space-y-3">
+                        <div>
+                            <h4 className="font-bold text-red-800 text-base">
+                                Yêu cầu rà soát & Trình lại danh sách
+                            </h4>
+                            <p className="text-red-700 text-sm mt-1">
+                                <span className="font-semibold">Ý kiến/Lý do từ Ban Giám Hiệu:</span> {data?.thongTinDot?.lyDoTraVe}
+                            </p>
+                        </div>
+                        <p className="text-red-600/80 text-xs font-medium">
+                            💡 Sau khi chỉnh sửa danh sách theo yêu cầu, nhấn nút <span className="font-bold">TRÌNH LẠI BGH</span> phía trên để gửi.
                         </p>
                     </div>
                 </div>

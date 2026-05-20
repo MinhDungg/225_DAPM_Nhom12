@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const api = axios.create({
     baseURL: 'http://localhost:5163',
-    timeout: 10000,
+    timeout: 30000, // 30s - đủ cho cold start BE và query DB lớn
     headers: {
         'Content-Type': 'application/json',
     }

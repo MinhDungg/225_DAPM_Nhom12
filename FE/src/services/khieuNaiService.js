@@ -65,6 +65,29 @@ const KhieuNaiService = {
             }
             throw error;
         }
+    },
+
+    uploadMinhChung: async (file, onUploadProgress) => {
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            const response = await api.post('/api/KhieuNai/upload-minh-chung', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                },
+                timeout: 60000, // 60s riêng cho upload file - tránh timeout khi mạng chậm
+                onUploadProgress: (progressEvent) => {
+                    if (onUploadProgress && progressEvent.total) {
+                        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                        onUploadProgress(percentCompleted);
+                    }
+                }
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Lỗi tải tệp lên:', error);
+            throw error;
+        }
     }
 };
 
