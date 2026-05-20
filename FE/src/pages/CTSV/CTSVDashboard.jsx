@@ -347,7 +347,6 @@ const CTSVDashboard = () => {
                                 <th className="px-6 py-3 text-right">GPA</th>
                                 <th className="px-6 py-3 text-right">Học Tập</th>
                                 <th className="px-6 py-3 text-center">Rèn Luyện</th>
-                                <th className="px-6 py-3 text-center">Điểm F</th>
                                 <th className="px-6 py-3">Xếp Loại</th>
                                 <th className="px-6 py-3 text-right">Số Tiền (VNĐ)</th>
                                 {!isReadOnly && <th className="px-6 py-3 text-center">Thao Tác</th>}
@@ -356,7 +355,7 @@ const CTSVDashboard = () => {
                         <tbody className="text-sm text-gray-700 divide-y divide-gray-100">
                             {filteredList.length === 0 ? (
                                 <tr>
-                                    <td colSpan={isReadOnly ? 8 : 9} className="text-center py-12 text-gray-500">
+                                    <td colSpan={isReadOnly ? 7 : 8} className="text-center py-12 text-gray-500">
                                         Chưa có hồ sơ nào được Hội đồng duyệt cho đợt này.
                                     </td>
                                 </tr>
