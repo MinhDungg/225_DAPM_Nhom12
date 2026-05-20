@@ -10,7 +10,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
-
+QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
 // Add services to the container.
 
 // Add CORS
@@ -20,7 +20,8 @@ builder.Services.AddCors(options =>
     {
         policy.AllowAnyOrigin()
               .AllowAnyMethod()
-              .AllowAnyHeader();
+              .AllowAnyHeader()
+              .WithExposedHeaders("Content-Disposition");
     });
 });
 
@@ -104,23 +105,34 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 });
+builder.Services.AddSingleton<BE.Services.Implementations.ExportService>();
+
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// Tạm thời tắt Https Redirection ở môi trường dev để tránh lỗi CORS Preflight (OPTIONS) bị redirect sang HTTPS
+app.UseExceptionHandler(errApp =>
+{
+    errApp.Run(async ctx =>
+    {
+        ctx.Response.StatusCode = 500;
+        ctx.Response.ContentType = "application/json";
+        var ex = ctx.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+        var msg = ex?.Error?.Message ?? "Unknown error";
+        await ctx.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(new { message = msg }));
+    });
+});
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
 }
 
-// 2. KÍCH HOẠT CORS TRONG PIPELINE (Bắt buộc phải nằm TRƯỚC UseAuthentication)
 app.UseCors("AllowAll");
 
 app.UseStaticFiles();

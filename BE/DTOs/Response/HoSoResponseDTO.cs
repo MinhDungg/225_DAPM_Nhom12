@@ -12,5 +12,6 @@ namespace BE.DTOs.Response
         public double DiemRenLuyen { get; set; }
         public string? XepLoaiHB { get; set; }
         public string? TrangThai { get; set; }
+        public decimal? MucHocBong { get; set; }
     }
 }

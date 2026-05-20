@@ -18,6 +18,6 @@ namespace BE.Services.Interfaces
         Task<BaseResponse<bool>> CongBoLayYKienAsync(int maDot);
         Task<BaseResponse<bool>> TuaNhanhThoiGianDemoAsync(int maDot);
         Task<BaseResponse<bool>> TuChoiHoSoAsync(int maHoSo, string lyDo);
-
+        Task<IEnumerable<LichSuChiHocBongDTO>> GetLichSuChiHocBongAsync();
     }
 }

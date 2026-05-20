@@ -200,7 +200,7 @@ public class KhoaController : ControllerBase
     public async Task<IActionResult> ChotDanhSachDeXuat([FromBody] ChotDeXuatRequestDTO request)
     {
         // Validate request
-        if (request == null || request.MaDot <= 0 || request.DanhSachMaHoSo == null || !request.DanhSachMaHoSo.Any())
+        if (request == null || request.MaDot <= 0 || request.DanhSachDeXuat == null || !request.DanhSachDeXuat.Any())
         {
             return BadRequest(new BaseResponse<ChotDeXuatResponseDTO>
             {

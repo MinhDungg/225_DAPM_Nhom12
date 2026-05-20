@@ -185,5 +185,18 @@ namespace BE.Controllers
             if (result.Success) return Ok(result);
             return BadRequest(result);
         }
+
+        [HttpGet("/api/hieutruong/lich-su-chi")]
+        [Authorize(Roles = "HieuTruong,CTSV,HoiDong")]
+        public async Task<ActionResult<BaseResponse<IEnumerable<LichSuChiHocBongDTO>>>> GetLichSuChi()
+        {
+            var result = await _service.GetLichSuChiHocBongAsync();
+            return Ok(new BaseResponse<IEnumerable<LichSuChiHocBongDTO>>
+            {
+                Success = true,
+                Message = "Lấy lịch sử chi học bổng thành công",
+                Data = result
+            });
+        }
     }
 }

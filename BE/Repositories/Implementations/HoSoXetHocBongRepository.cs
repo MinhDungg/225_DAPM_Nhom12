@@ -1,4 +1,5 @@
 using BE.Data;
+using BE.DTOs.Request;
 using BE.DTOs.Response;
 using BE.Models;
 using BE.Repositories.Interfaces;
@@ -88,12 +89,16 @@ public class HoSoXetHocBongRepository : IHoSoXetHocBongRepository
         await _context.SaveChangesAsync();
     }
 
-    public async Task<int> ChotDanhSachDeXuatAsync(int maKhoa, int maDot, List<int> danhSachMaHoSo, int maCB)
+    public async Task<int> ChotDanhSachDeXuatAsync(int maKhoa, int maDot, List<HoSoDeXuatItemDTO> danhSachDeXuat, int maCB)
     {
         using var transaction = await _context.Database.BeginTransactionAsync();
 
         try
         {
+            // Tạo lookup nhanh: MaHoSo -> MucHocBong
+            var mucHocBongLookup = danhSachDeXuat.ToDictionary(x => x.MaHoSo, x => x.MucHocBong);
+            var danhSachMaHoSo = danhSachDeXuat.Select(x => x.MaHoSo).ToList();
+
             var hoSosDuocChon = await _context.HoSoXetHocBongs
                 .Include(h => h.SinhVien)
                     .ThenInclude(sv => sv.Lop)
@@ -109,6 +114,9 @@ public class HoSoXetHocBongRepository : IHoSoXetHocBongRepository
                 hoSo.TrangThai = "KhoaDeXuat";
                 hoSo.MaCB_Duyet = maCB;
                 hoSo.XepLoaiHB = PhanLoaiHocBong(hoSo.GPA, hoSo.DiemRenLuyen);
+                // Lưu số tiền học bổng dự kiến vào database
+                if (mucHocBongLookup.TryGetValue(hoSo.MaHoSo, out var mucHB))
+                    hoSo.MucHocBong = mucHB;
                 _context.HoSoXetHocBongs.Update(hoSo);
             }
 
