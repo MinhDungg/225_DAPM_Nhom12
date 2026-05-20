@@ -11,3 +11,4 @@ export { default as StudentProfile } from './SinhVien/StudentProfile';
 export { default as TaiChinhDashboard } from './TaiChinh/TaiChinhDashboard';
 export { default as KhieuNaiSinhVien } from './SinhVien/KhieuNaiSinhVien';
 export { default as KhieuNaiQuanLy } from './CTSV/KhieuNaiQuanLy';
+export { default as ThongBaoSinhVien } from './SinhVien/ThongBao';
