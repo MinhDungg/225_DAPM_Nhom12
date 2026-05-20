@@ -1,4 +1,4 @@
-﻿using BE.DTOs.Request;
+using BE.DTOs.Request;
 using BE.DTOs.Response;
 using BE.Models;
 using BE.Repositories.Interfaces;
@@ -48,8 +48,8 @@ public class KhieuNaiService : IKhieuNaiService
 
     public async Task<BaseResponse<KhieuNaiResponseDTO>> PhanHoiKhieuNaiAsync(int maKhieuNai, int maCBDuyet, PhanHoiKhieuNaiRequestDTO request)
     {
-        // 1. Kiểm tra khiếu nại
-        var khieuNai = await _khieuNaiRepo.GetByIdAsync(maKhieuNai);
+        // 1. Kiểm tra khiếu nại - dùng ForUpdate để EF track entity
+        var khieuNai = await _khieuNaiRepo.GetByIdForUpdateAsync(maKhieuNai);
         if (khieuNai == null)
         {
             return new BaseResponse<KhieuNaiResponseDTO> { Success = false, Message = "Không tìm thấy khiếu nại." };

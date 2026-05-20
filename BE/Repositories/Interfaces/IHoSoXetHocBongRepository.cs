@@ -1,3 +1,4 @@
+using BE.DTOs.Request;
 using BE.DTOs.Response;
 using BE.Models;
 
@@ -13,7 +14,7 @@ public interface IHoSoXetHocBongRepository
     Task<List<HoSoXetHocBong>> LayDanhSachChoDuyetTheoKhoaVaDotAsync(int maKhoa, int maDot);
     Task<List<HoSoXetHocBong>> LayDanhSachChoXetTheoKhoaVaDotAsync(int maKhoa, int maDot);
     Task CapNhatXepLoaiVaTrangThaiAsync(List<HoSoXetHocBong> hoSos);
-    Task<int> ChotDanhSachDeXuatAsync(int maKhoa, int maDot, List<int> danhSachMaHoSo, int maCB);
+    Task<int> ChotDanhSachDeXuatAsync(int maKhoa, int maDot, List<HoSoDeXuatItemDTO> danhSachDeXuat, int maCB);
 
     Task<IEnumerable<HoSoXetHocBong>> GetProfilesByStatusAsync(string status);
     Task<bool> UpdateProfilesStatusAsync(List<int> profileIds, string newStatus);

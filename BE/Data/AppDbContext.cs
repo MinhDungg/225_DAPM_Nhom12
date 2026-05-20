@@ -225,6 +225,9 @@ public class AppDbContext : DbContext
                 .HasMaxLength(50)
                 .IsUnicode(false)
                 .HasDefaultValue("KhoiTao");
+            entity.Property(e => e.LyDoTraVe)
+                .HasColumnType("nvarchar(max)")
+                .IsRequired(false);
         });
 
         modelBuilder.Entity<PhanBoKinhPhi>(entity =>
@@ -274,6 +277,9 @@ public class AppDbContext : DbContext
                 .HasDefaultValue("ChoXet");
             entity.Property(e => e.GhiChu)
                 .HasColumnType("nvarchar(max)")
+                .IsRequired(false);
+            entity.Property(e => e.MucHocBong)
+                .HasColumnType("decimal(18,2)")
                 .IsRequired(false);
 
             entity.HasOne(e => e.SinhVien)
