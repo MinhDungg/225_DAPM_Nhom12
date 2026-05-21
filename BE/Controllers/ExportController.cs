@@ -81,27 +81,47 @@ public class ExportController : ControllerBase
     public async Task<IActionResult> TestExcel([FromQuery] int? maDot)
     {
         var data = maDot.HasValue ?
-            await _khoaService.LayDanhSachChoXetTheoDotAsync(1, maDot.Value): 
+            await _khoaService.LayDanhSachChoXetTheoDotAsync(1, maDot.Value) : 
             await _khoaService.LayDanhSachChoDuyetAsync(1);
 
         var filtered = data.Where(x => !string.IsNullOrWhiteSpace(x.XepLoaiHB)).ToList();
+        
+        // 1. Tính tổng tiền trước khi tạo hàng
+        decimal totalSum = filtered.Sum(x => x.MucHocBong ?? 0);
+
         int stt = 1;
         var rows = filtered.Select(x => new Dictionary<string, string>
         {
-            ["STT"]         = (stt++).ToString(),
-            ["Mã SV"]       = x.MaSV ?? "",
-            ["Họ Tên"]      = x.HoTenSinhVien ?? "",
-            ["Lớp"]         = x.TenLop ?? "",
-            ["GPA"]         = x.GPA.ToString("F2"),
-            ["Điểm HT"]     = x.DiemHocTap.ToString("F2"),
-            ["Điểm RL"]     = x.DiemRenLuyen.ToString("F2"),
-            ["Xếp Loại HB"] = x.XepLoaiHB ?? "",
-            ["Mức Học Bổng"]= x.MucHocBong.HasValue ? x.MucHocBong.Value.ToString("N0") + " đ" : "",
-            ["Trạng Thái"]  = x.TrangThai ?? ""
+            ["STT"]          = (stt++).ToString(),
+            ["Mã SV"]        = x.MaSV ?? "",
+            ["Họ Tên"]       = x.HoTenSinhVien ?? "",
+            ["Lớp"]          = x.TenLop ?? "",
+            ["GPA"]          = x.GPA.ToString("F2"),
+            ["Điểm HT"]      = x.DiemHocTap.ToString("F2"),
+            ["Điểm RL"]      = x.DiemRenLuyen.ToString("F2"),
+            ["Xếp Loại HB"]  = x.XepLoaiHB ?? "",
+            ["Mức Học Bổng"] = x.MucHocBong.HasValue ? x.MucHocBong.Value.ToString("N0") + " đ" : "",
+            ["Trạng Thái"]   = x.TrangThai ?? ""
         }).ToList();
+
+        // 2. Thêm dòng TỔNG CỘNG vào cuối danh sách
+        rows.Add(new Dictionary<string, string>
+        {
+            ["STT"]          = "",
+            ["Mã SV"]        = "",
+            ["Họ Tên"]       = "",
+            ["Lớp"]          = "",
+            ["GPA"]          = "",
+            ["Điểm HT"]      = "",
+            ["Điểm RL"]      = "",
+            ["Xếp Loại HB"]  = "TỔNG CỘNG", // Từ khóa này giúp Service nhận diện để Merge ô
+            ["Mức Học Bổng"] = totalSum.ToString("N0") + " đ",
+            ["Trạng Thái"]   = ""
+        });
         
         var headers = new List<string> { "STT", "Mã SV", "Họ Tên", "Lớp", "GPA", "Điểm HT", "Điểm RL", "Xếp Loại HB", "Mức Học Bổng", "Trạng Thái" };
         
+        // Gọi hàm ToExcel (Sử dụng hàm dùng ClosedXML đã cung cấp ở tin nhắn trước)
         var stream = _export.ToExcel(rows, headers, "DS Dự Kiến");
         return File(stream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Test.xlsx");
     }
@@ -202,44 +222,45 @@ public class ExportController : ControllerBase
 
             var filtered = data.Where(x => !string.IsNullOrWhiteSpace(x.XepLoaiHB)).ToList();
             int stt = 1;
-            var rows = filtered.Select(x => new Dictionary<string, string>
+            decimal tongTien = 0;
+            var rows = filtered.Select(x =>
             {
-                ["STT"]         = (stt++).ToString(),
-                ["Mã SV"]       = x.MaSV ?? "",
-                ["Họ Tên"]      = x.HoTenSinhVien ?? "",
-                ["Lớp"]         = x.TenLop ?? "",
-                ["GPA"]         = x.GPA.ToString("F2"),
-                ["Điểm HT"]     = x.DiemHocTap.ToString("F2"),
-                ["Điểm RL"]     = x.DiemRenLuyen.ToString("F2"),
-                ["Xếp Loại HB"] = x.XepLoaiHB ?? "",
-                ["Mức Học Bổng"]= x.MucHocBong.HasValue ? x.MucHocBong.Value.ToString("N0") + " đ" : "",
-                // ["Trạng Thái"]  = x.TrangThai ?? ""
+                if (x.MucHocBong.HasValue) tongTien += x.MucHocBong.Value;
+                return new Dictionary<string, string>
+                {
+                    ["STT"]         = (stt++).ToString(),
+                    ["Mã SV"]       = x.MaSV ?? "",
+                    ["Họ Tên"]      = x.HoTenSinhVien ?? "",
+                    ["Lớp"]         = x.TenLop ?? "",
+                    ["GPA"]         = x.GPA.ToString("F2"),
+                    ["Điểm HT"]     = x.DiemHocTap.ToString("F2"),
+                    ["Điểm RL"]     = x.DiemRenLuyen.ToString("F2"),
+                    ["Xếp Loại HB"] = x.XepLoaiHB ?? "",
+                    ["Mức Học Bổng"]= x.MucHocBong.HasValue ? x.MucHocBong.Value.ToString("N0") + " đ" : "",
+                };
             }).ToList();
 
-            decimal totalSum = filtered.Sum(x => x.MucHocBong ?? 0);
+            // Dòng tổng cộng
             rows.Add(new Dictionary<string, string>
             {
-                ["STT"]         = "Tổng cộng",
-                ["Mã SV"]       = "",
-                ["Họ Tên"]      = "",
-                ["Lớp"]         = "",
-                ["GPA"]         = "",
-                ["Điểm HT"]     = "",
-                ["Điểm RL"]     = "",
-                ["Xếp Loại HB"] = "",
-                ["Mức Học Bổng"]= totalSum.ToString("N0") + " đ"
+                ["STT"] = "", ["Mã SV"] = "", ["Họ Tên"] = "", ["Lớp"] = "",
+                ["GPA"] = "", ["Điểm HT"] = "", ["Điểm RL"] = "",
+                ["Xếp Loại HB"] = "TỔNG CỘNG:",
+                ["Mức Học Bổng"] = tongTien.ToString("N0") + " đ"
             });
             
             var headers = new List<string> { "STT", "Mã SV", "Họ Tên", "Lớp", "GPA", "Điểm HT", "Điểm RL", "Xếp Loại HB", "Mức Học Bổng" };
             string loai = (dot?.TrangThai == "ChinhThuc") ? "ChinhThuc" : "DeNghi";
-            string sheetTitle = (loai == "ChinhThuc")
-                ? (!string.IsNullOrEmpty(hocKy) ? $"DS Chính Thức HK{hocKy} {namHoc}" : "DS Chính Thức")
-                : (!string.IsNullOrEmpty(hocKy) ? $"DS Khoa Đề Nghị HK{hocKy} {namHoc}" : "DS Khoa Đề Nghị");
+            string sheetTitle = !string.IsNullOrEmpty(hocKy)
+                ? $"DS Khoa HK{hocKy} {namHoc}"
+                : "DS Khoa Đề Nghị";
             string fileName = !string.IsNullOrEmpty(hocKy)
-                ? $"DanhSachHBKK_HK{hocKy}_{namHoc}_Khoa{loai}.xlsx"
-                : $"DanhSachHBKK_Khoa{loai}_{DateTime.Now:yyyyMMdd}.xlsx";
+                ? $"DanhSachHBKK_HK{hocKy}_{namHoc}.xlsx"
+                : $"DanhSachHBKK_Khoa_{DateTime.Now:yyyyMMdd}.xlsx";
+            string hkSuffix = !string.IsNullOrEmpty(hocKy) ? $" | Học Kỳ {hocKy} - {namHoc}" : "";
+            string pageTitle = $"Danh Sách Học Bổng KKHT{hkSuffix}";
 
-            var stream = _export.ToExcel(rows, headers, sheetTitle);
+            var stream = _export.ToExcel(rows, headers, sheetTitle, pageTitle);
             return File(stream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
         }
         catch (Exception ex)

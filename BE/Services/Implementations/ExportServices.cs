@@ -5,38 +5,111 @@ using System.Net;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
+using ClosedXML.Excel;
 
 namespace BE.Services.Implementations;
 
 public class ExportService
 {
     // ── EXCEL (Sử dụng Stream nguyên thủy để chống sập RAM) ─────────────
-    public Stream ToExcel(List<Dictionary<string, string>> rows, List<string> headers, string sheetName = "Sheet1")
+    public Stream ToExcel(List<Dictionary<string, string>> rows, List<string> headers, string sheetName = "Sheet1", string title = "")
     {
-        // Sanitize sheet name
         var safeSheet = Regex.Replace(sheetName, @"[\\/?*\[\]:]", "-");
         if (safeSheet.Length > 31) safeSheet = safeSheet[..31];
 
-        var objectRows = new List<Dictionary<string, object>>();
-        foreach (var r in rows)
+        using var workbook = new XLWorkbook();
+        var worksheet = workbook.Worksheets.Add(safeSheet);
+
+        int startRow = 1; // Đánh dấu dòng bắt đầu vẽ bảng
+
+        // 1. TẠO TIÊU ĐỀ CHÍNH CHO FILE EXCEL (MERGE TOÀN BỘ CỘT TẠI DÒNG 1)
+        if (!string.IsNullOrEmpty(title))
         {
-            var dict = new Dictionary<string, object>();
-            foreach (var h in headers)
-            {
-                r.TryGetValue(h, out var val);
-                dict[h] = val ?? "";
-            }
-            objectRows.Add(dict);
+            var titleCell = worksheet.Cell(1, 1);
+            titleCell.Value = title;
+            titleCell.Style.Font.Bold = true;
+            titleCell.Style.Font.FontSize = 15;
+            titleCell.Style.Font.FontColor = XLColor.FromHtml("#1A56DB");
+            titleCell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            
+            // Gộp ô (Merge) theo đúng số lượng cột của bảng (Headers)
+            var titleRange = worksheet.Range(1, 1, 1, headers.Count);
+            titleRange.Merge();
+            
+            startRow = 2; // Nếu có tiêu đề, đẩy bảng dữ liệu bắt đầu từ dòng 2
         }
 
+        // 2. TẠO THANH TIÊU ĐỀ CỘT (HEADERS)
+        for (int i = 0; i < headers.Count; i++)
+        {
+            var cell = worksheet.Cell(startRow, i + 1);
+            cell.Value = headers[i];
+            cell.Style.Font.Bold = true;
+            cell.Style.Fill.BackgroundColor = XLColor.FromHtml("#1A56DB");
+            cell.Style.Font.FontColor = XLColor.White;
+            cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+        }
+
+        // 3. ĐỔ DỮ LIỆU CÁC DÒNG
+        for (int r = 0; r < rows.Count; r++)
+        {
+            var rowDict = rows[r];
+            // Cộng thêm startRow để đẩy bảng xuống tương ứng
+            int currentRowNum = r + startRow + 1; 
+
+            bool isTotalRow = rowDict.Values.Any(v => v != null && v.Contains("TỔNG CỘNG:"));
+
+            if (isTotalRow)
+            {
+                int moneyColIndex = headers.IndexOf("Mức Học Bổng") + 1;
+                
+                if (moneyColIndex > 1)
+                {
+                    var mergeRange = worksheet.Range(currentRowNum, 1, currentRowNum, moneyColIndex - 1);
+                    mergeRange.Merge();
+                    mergeRange.Value = "TỔNG CỘNG:";
+                    mergeRange.Style.Font.Bold = true;
+                    mergeRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right; 
+                    
+                    var moneyCell = worksheet.Cell(currentRowNum, moneyColIndex);
+                    rowDict.TryGetValue("Mức Học Bổng", out var moneyVal);
+                    moneyCell.Value = moneyVal ?? "";
+                    moneyCell.Style.Font.Bold = true;
+                    moneyCell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+                }
+
+                var totalRow = worksheet.Row(currentRowNum);
+                totalRow.Style.Fill.BackgroundColor = XLColor.FromHtml("#F3F4F6");
+                for (int c = 1; c <= headers.Count; c++)
+                {
+                    worksheet.Cell(currentRowNum, c).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                }
+            }
+            else
+            {
+                for (int c = 0; c < headers.Count; c++)
+                {
+                    var cell = worksheet.Cell(currentRowNum, c + 1);
+                    rowDict.TryGetValue(headers[c], out var val);
+                    cell.Value = val ?? "";
+                    cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                    
+                    // Căn giữa các cột mã số và phân loại
+                    if (headers[c] == "STT" || headers[c] == "Mã SV" || headers[c] == "Lớp" || headers[c] == "Xếp Loại HB")
+                    {
+                        cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                    }
+                }
+            }
+        }
+
+        worksheet.Columns().AdjustToContents();
+
         var ms = new MemoryStream();
-        // Ghi trực tiếp vào Stream
-        MiniExcel.SaveAs(ms, objectRows, sheetName: safeSheet);
-        
-        // BẮT BUỘC: Tua ngược Stream về vị trí số 0 để ASP.NET có thể đọc và gửi đi
-        ms.Position = 0; 
-        
-        return ms; // Trả thẳng Stream về, không dùng using, không dùng ToArray()
+        workbook.SaveAs(ms);
+        ms.Position = 0;
+        return ms;
     }
 
     // ── REAL PDF (Sử dụng QuestPDF để xuất file PDF thật tải về máy) ─────────────────
