@@ -62,20 +62,49 @@ namespace BE.Services.Implementations
                 profiles = await _hoSoRepository.GetProfilesByStatusAsync(statusToFetch);
             }
 
-            return profiles.Select(p => new HoSoResponseDTO
+            var dotIds = profiles.Select(p => p.MaDot).Distinct().ToList();
+            var phanBoLookup = new Dictionary<(int MaDot, int MaKhoa), decimal>();
+            foreach (var dotId in dotIds)
             {
-                MaHoSo = p.MaHoSo,
-                MaSV = p.MaSV,
-                HoTen = p.SinhVien?.HoTen,
-                TenLop = p.SinhVien?.Lop?.TenLop,
-                TenKhoa = p.SinhVien?.Lop?.Khoa?.TenKhoa,
-                GPA = p.GPA,
-                DiemHocTap = p.DiemHocTap,
-                DiemRenLuyen = p.DiemRenLuyen,
-                XepLoaiHB = p.XepLoaiHB,
-                TrangThai = p.TrangThai,
-                MucHocBong = p.MucHocBong
-            });
+                var phanBos = await _phanBoKinhPhiRepository.LayTheoMaDotAsync(dotId);
+                foreach (var pb in phanBos)
+                {
+                    phanBoLookup[(pb.MaDot, pb.MaKhoa)] = pb.MucHBLoaiKha;
+                }
+            }
+
+            return profiles.Select(p =>
+            {
+                decimal? mucHB = p.MucHocBong;
+                if ((!mucHB.HasValue || mucHB == 0) && p.SinhVien?.Lop != null)
+                {
+                    if (phanBoLookup.TryGetValue((p.MaDot, p.SinhVien.Lop.MaKhoa), out var mucKha))
+                    {
+                        mucHB = p.XepLoaiHB switch
+                        {
+                            "XuatSac" => mucKha * 1.4m,
+                            "Gioi" => mucKha * 1.2m,
+                            "Kha" => mucKha,
+                            _ => 0
+                        };
+                    }
+                }
+
+                return new HoSoResponseDTO
+                {
+                    MaHoSo = p.MaHoSo,
+                    MaSV = p.MaSV,
+                    HoTen = p.SinhVien?.HoTen,
+                    TenLop = p.SinhVien?.Lop?.TenLop,
+                    TenKhoa = p.SinhVien?.Lop?.Khoa?.TenKhoa,
+                    GPA = p.GPA,
+                    DiemHocTap = p.DiemHocTap,
+                    DiemRenLuyen = p.DiemRenLuyen,
+                    XepLoaiHB = p.XepLoaiHB,
+                    TrangThai = p.TrangThai,
+                    MucHocBong = mucHB
+                };
+            }).ToList();
         }
 
         // Hội đồng chốt danh sách
@@ -172,10 +201,27 @@ namespace BE.Services.Implementations
             var allProfiles = await _hoSoRepository.GetProfilesByStatusAsync(statusToFetch);
             var profilesForRound = allProfiles.Where(h => h.MaDot == maDot).ToList();
 
+            var phanBoLookup = phanBoKinhPhis.ToDictionary(p => p.MaKhoa, p => p.MucHBLoaiKha);
+
             var danhSachDTO = new List<HoSoResponseDTO>();
             foreach (var h in profilesForRound)
             {
                 var diemRL = await _diemRenLuyenRepository.GetDiemRenLuyenAsync(h.MaSV, dotHocBong.HocKy, dotHocBong.NamHoc);
+
+                decimal? mucHB = h.MucHocBong;
+                if ((!mucHB.HasValue || mucHB == 0) && h.SinhVien?.Lop != null)
+                {
+                    if (phanBoLookup.TryGetValue(h.SinhVien.Lop.MaKhoa, out var mucKha))
+                    {
+                        mucHB = h.XepLoaiHB switch
+                        {
+                            "XuatSac" => mucKha * 1.4m,
+                            "Gioi" => mucKha * 1.2m,
+                            "Kha" => mucKha,
+                            _ => 0
+                        };
+                    }
+                }
 
                 danhSachDTO.Add(new HoSoResponseDTO
                 {
@@ -189,15 +235,42 @@ namespace BE.Services.Implementations
                     DiemRenLuyen = diemRL ?? h.DiemRenLuyen,
                     XepLoaiHB = h.XepLoaiHB,
                     TrangThai = h.TrangThai,
-                    MucHocBong = h.MucHocBong
+                    MucHocBong = mucHB
                 });
             }
 
             // Tính tổng tiền đã chi trong lịch sử (các đợt đã ChinhThuc)
             var allChinhThucProfiles = await _hoSoRepository.GetProfilesByStatusAsync("ChinhThuc");
+            var allChinhThucDotIds = allChinhThucProfiles.Select(p => p.MaDot).Distinct().ToList();
+            var allPhanBoLookup = new Dictionary<(int MaDot, int MaKhoa), decimal>();
+            foreach (var dotId in allChinhThucDotIds)
+            {
+                var phanBos = await _phanBoKinhPhiRepository.LayTheoMaDotAsync(dotId);
+                foreach (var pb in phanBos)
+                {
+                    allPhanBoLookup[(pb.MaDot, pb.MaKhoa)] = pb.MucHBLoaiKha;
+                }
+            }
+
             decimal tongTienDaChi = allChinhThucProfiles
-                .Where(h => h.MucHocBong.HasValue)
-                .Sum(h => h.MucHocBong ?? 0);
+                .Sum(h =>
+                {
+                    decimal? mucHB = h.MucHocBong;
+                    if ((!mucHB.HasValue || mucHB == 0) && h.SinhVien?.Lop != null)
+                    {
+                        if (allPhanBoLookup.TryGetValue((h.MaDot, h.SinhVien.Lop.MaKhoa), out var mucKha))
+                        {
+                            mucHB = h.XepLoaiHB switch
+                            {
+                                "XuatSac" => mucKha * 1.4m,
+                                "Gioi" => mucKha * 1.2m,
+                                "Kha" => mucKha,
+                                _ => 0
+                            };
+                        }
+                    }
+                    return mucHB ?? 0;
+                });
 
             return new TongHopHieuTruongResponseDTO
             {
@@ -351,10 +424,29 @@ namespace BE.Services.Implementations
                         .ToList();
                 }
 
+                var phanBos = await _phanBoKinhPhiRepository.LayTheoMaDotAsync(dot.MaDot);
+                var phanBoLookup = phanBos.ToDictionary(pb => pb.MaKhoa, pb => pb.MucHBLoaiKha);
+
                 // Tính tổng tiền thực tế đã phân bổ
                 decimal tongChi = hoSosChinhThuc
-                    .Where(h => h.MucHocBong.HasValue)
-                    .Sum(h => h.MucHocBong ?? 0);
+                    .Sum(h =>
+                    {
+                        decimal? mucHB = h.MucHocBong;
+                        if ((!mucHB.HasValue || mucHB == 0) && h.SinhVien?.Lop != null)
+                        {
+                            if (phanBoLookup.TryGetValue(h.SinhVien.Lop.MaKhoa, out var mucKha))
+                            {
+                                mucHB = h.XepLoaiHB switch
+                                {
+                                    "XuatSac" => mucKha * 1.4m,
+                                    "Gioi" => mucKha * 1.2m,
+                                    "Kha" => mucKha,
+                                    _ => 0
+                                };
+                            }
+                        }
+                        return mucHB ?? 0;
+                    });
 
                 lichSuList.Add(new LichSuChiHocBongDTO
                 {
