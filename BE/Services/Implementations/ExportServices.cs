@@ -1,63 +1,153 @@
-using MiniExcelLibs; // Thêm thư viện này vào
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Net;
+using iText.Html2pdf;
+using iText.Html2pdf.Resolver.Font;
+using iText.Kernel.Pdf;
+using ClosedXML.Excel; // Thêm thư viện ClosedXML nâng cao
 
 namespace BE.Services.Implementations;
 
 public class ExportService
 {
-    // ── EXCEL (Sử dụng Stream nguyên thủy để chống sập RAM) ─────────────
+    // ── EXCEL: ClosedXML hỗ trợ định dạng nâng cao (Merge & Auto-fit) ──
     public Stream ToExcel(List<Dictionary<string, string>> rows, List<string> headers, string sheetName = "Sheet1")
     {
-        // Sanitize sheet name
         var safeSheet = Regex.Replace(sheetName, @"[\\/?*\[\]:]", "-");
         if (safeSheet.Length > 31) safeSheet = safeSheet[..31];
 
-        var objectRows = new List<Dictionary<string, object>>();
-        foreach (var r in rows)
+        using var workbook = new XLWorkbook();
+        var worksheet = workbook.Worksheets.Add(safeSheet);
+
+        // 1. Tạo thanh tiêu đề (Header row) sắc nét
+        for (int i = 0; i < headers.Count; i++)
         {
-            var dict = new Dictionary<string, object>();
-            foreach (var h in headers)
-            {
-                r.TryGetValue(h, out var val);
-                dict[h] = val ?? "";
-            }
-            objectRows.Add(dict);
+            var cell = worksheet.Cell(1, i + 1);
+            cell.Value = headers[i];
+            cell.Style.Font.Bold = true;
+            cell.Style.Fill.BackgroundColor = XLColor.FromHtml("#1A56DB"); // Màu xanh thương hiệu
+            cell.Style.Font.FontColor = XLColor.White;
+            cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
         }
 
+        // 2. Điền dữ liệu các dòng
+        for (int r = 0; r < rows.Count; r++)
+        {
+            var rowDict = rows[r];
+            int currentRowNum = r + 2;
+
+            // Kiểm tra xem dòng hiện tại có chứa từ khóa TỔNG CỘNG không
+            bool isTotalRow = rowDict.Values.Any(v => v != null && v.Contains("TỔNG CỘNG:"));
+
+            if (isTotalRow)
+            {
+                // Tìm vị trí của cột chứa số tiền giải ngân để làm mốc giới hạn gộp ô
+                int moneyColIndex = headers.IndexOf("Mức Học Bổng") + 1;
+                
+                if (moneyColIndex > 1)
+                {
+                    // Thực hiện MERGE tất cả các ô tính từ cột 1 (STT) đến sát trước cột Tiền
+                    var mergeRange = worksheet.Range(currentRowNum, 1, currentRowNum, moneyColIndex - 1);
+                    mergeRange.Merge();
+                    mergeRange.Value = "TỔNG CỘNG:";
+                    mergeRange.Style.Font.Bold = true;
+                    mergeRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right; // Đẩy chữ dính sát lề phải giống mẫu kế toán
+                    
+                    // Đổ dữ liệu riêng cho ô số tiền tổng nằm kế bên ô gộp
+                    var moneyCell = worksheet.Cell(currentRowNum, moneyColIndex);
+                    rowDict.TryGetValue("Mức Học Bổng", out var moneyVal);
+                    moneyCell.Value = moneyVal ?? "";
+                    moneyCell.Style.Font.Bold = true;
+                    moneyCell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+                }
+
+                // Trang trí màu nền xám nhạt và kẻ viền cho toàn bộ dòng tổng cộng
+                var totalRow = worksheet.Row(currentRowNum);
+                totalRow.Style.Fill.BackgroundColor = XLColor.FromHtml("#F3F4F6");
+                for (int c = 1; c <= headers.Count; c++)
+                {
+                    worksheet.Cell(currentRowNum, c).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                }
+            }
+            else
+            {
+                // Điền dữ liệu cho các dòng sinh viên bình thường
+                for (int c = 0; c < headers.Count; c++)
+                {
+                    var cell = worksheet.Cell(currentRowNum, c + 1);
+                    rowDict.TryGetValue(headers[c], out var val);
+                    cell.Value = val ?? "";
+                    cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                    
+                    // Căn lề giữa cho các trường mã, lớp, điểm để bảng cân đối
+                    if (headers[c] == "STT" || headers[c] == "Mã SV" || headers[c] == "Lớp" || headers[c] == "Xếp Loại HB")
+                    {
+                        cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                    }
+                }
+            }
+        }
+
+        // BẮT BUỘC YÊU CẦU: Tự động co giãn độ rộng toàn bộ các cột dựa trên độ dài nội dung chữ
+        worksheet.Columns().AdjustToContents();
+
+        // Đẩy toàn bộ dữ liệu workbook vào Stream để chuẩn bị tải về
         var ms = new MemoryStream();
-        // Ghi trực tiếp vào Stream
-        MiniExcel.SaveAs(ms, objectRows, sheetName: safeSheet);
-        
-        // BẮT BUỘC: Tua ngược Stream về vị trí số 0 để ASP.NET có thể đọc và gửi đi
-        ms.Position = 0; 
-        
-        return ms; // Trả thẳng Stream về, không dùng using, không dùng ToArray()
+        workbook.SaveAs(ms);
+        ms.Position = 0;
+        return ms;
     }
 
-    // ── HTML (thay thế PDF — browser tự in/lưu PDF) ─────────────────
-    public byte[] ToHtml(List<Dictionary<string, string>> rows, List<string> headers, string title)
+    // ── PDF: Khởi tạo dữ liệu byte array từ HTML cấu trúc iText7 ──
+    public byte[] ToPdf(List<Dictionary<string, string>> rows, List<string> headers, string title)
     {
         if (headers == null || headers.Count == 0) headers = new List<string> { "Dữ liệu" };
         if (rows == null) rows = new List<Dictionary<string, string>>();
 
+        var html = BuildHtmlTable(rows, headers, title);
+
+        try
+        {
+            using var ms = new MemoryStream();
+            var properties = new ConverterProperties();
+            var fontProvider = new DefaultFontProvider(true, true, true);
+            properties.SetFontProvider(fontProvider);
+            
+            using var pdfWriter = new PdfWriter(ms);
+            pdfWriter.SetCloseStream(false); // Ngăn iText tự ngắt kết nối stream giữa chừng
+            
+            using var pdfDoc = new PdfDocument(pdfWriter);
+            HtmlConverter.ConvertToPdf(html, pdfDoc, properties);
+            
+            ms.Position = 0;
+            return ms.ToArray();
+        }
+        catch (Exception ex)
+        {
+            string detail = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
+            throw new Exception($"Lỗi kết xuất công cụ iText7: {detail}");
+        }
+    }
+
+    // ── XÂY DỰNG HTML TABLE ĐỂ CONVERT SANG PDF (Tự động gộp dòng cuối) ──
+    private string BuildHtmlTable(List<Dictionary<string, string>> rows, List<string> headers, string title)
+    {
         var sb = new StringBuilder();
         sb.Append($@"<!DOCTYPE html>
-    <html lang=""vi""><head><meta charset=""UTF-8"">
-<title>{WebUtility.HtmlEncode(title)}</title>
-<style>
-  body {{ font-family: Arial, sans-serif; font-size: 12px; margin: 20px; }}
-  h2 {{ color: #1a56db; margin-bottom: 12px; }}
-  table {{ border-collapse: collapse; width: 100%; }}
-  th {{ background: #1a56db; color: #fff; padding: 8px 10px; text-align: left; }}
-  td {{ padding: 6px 10px; border-bottom: 1px solid #e5e7eb; }}
-  tr:nth-child(even) td {{ background: #f9fafb; }}
-  @media print {{ button {{ display: none; }} }}
-</style></head><body>
-<button onclick=""window.print()"" style=""margin-bottom:12px;padding:7px 18px;background:#1a56db;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;"">🖨️ In / Lưu PDF</button>
-<h2>{WebUtility.HtmlEncode(title)}</h2>
-<table><thead><tr>");
+        <html lang=""vi""><head><meta charset=""UTF-8"">
+        <style>
+          body {{ font-family: 'Times New Roman', Arial, sans-serif; font-size: 11px; margin: 15px; }}
+          h2 {{ color: #1a56db; text-align: center; margin-bottom: 15px; font-size: 16px; font-weight: bold; }}
+          table {{ border-collapse: collapse; width: 100%; margin-top: 10px; }}
+          th {{ background-color: #1a56db; color: #ffffff; padding: 6px 8px; font-weight: bold; border: 1px solid #000000; text-align: center; }}
+          td {{ padding: 5px 8px; border: 1px solid #000000; }}
+          .total-row td {{ font-weight: bold; background-color: #f3f4f6 !important; }}
+          .text-right {{ text-align: right; }}
+          .text-center {{ text-align: center; }}
+        </style></head><body>
+        <h2>{WebUtility.HtmlEncode(title)}</h2>
+        <table><thead><tr>");
 
         foreach (var h in headers)
             sb.Append($"<th>{WebUtility.HtmlEncode(h)}</th>");
@@ -65,16 +155,39 @@ public class ExportService
 
         foreach (var row in rows)
         {
-            sb.Append("<tr>");
-            foreach (var h in headers)
+            bool isTongCong = row.Values.Any(v => v != null && v.Contains("TỔNG CỘNG:"));
+
+            if (isTongCong)
             {
-                row.TryGetValue(h, out var val);
-                sb.Append($"<td>{WebUtility.HtmlEncode(val ?? "")}</td>");
+                // Tính toán số lượng cột cần gộp trước cột "Mức Học Bổng"
+                int moneyColIndex = headers.IndexOf("Mức Học Bổng");
+                
+                sb.Append("<tr class=\"total-row\">");
+                // Sử dụng thuộc tính colspan để gộp toàn bộ các ô phía trước ô tiền
+                sb.Append($"<td colspan=\"{moneyColIndex}\" class=\"text-right\">TỔNG CỘNG:</td>");
+                
+                // In giá trị của ô số tiền tổng nằm ở cột kế bên
+                row.TryGetValue("Mức Học Bổng", out var totalMoney);
+                sb.Append($"<td class=\"text-right\">{WebUtility.HtmlEncode(totalMoney ?? "")}</td>");
+                sb.Append("</tr>");
             }
-            sb.Append("</tr>");
+            else
+            {
+                sb.Append("<tr>");
+                foreach (var h in headers)
+                {
+                    row.TryGetValue(h, out var val);
+                    string cssClass = "";
+                    if (h == "Mức Học Bổng") cssClass = " class=\"text-right\"";
+                    else if (h == "STT" || h == "Mã SV" || h == "Lớp" || h == "Xếp Loại HB") cssClass = " class=\"text-center\"";
+                    
+                    sb.Append($"<td{cssClass}>{WebUtility.HtmlEncode(val ?? "")}</td>");
+                }
+                sb.Append("</tr>");
+            }
         }
 
         sb.Append("</tbody></table></body></html>");
-        return Encoding.UTF8.GetBytes(sb.ToString());
+        return sb.ToString();
     }
 }

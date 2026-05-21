@@ -156,7 +156,16 @@ const KhoaDashboard = () => {
   const lichSuList = danhSachDot.filter((d) => d.trangThai !== "DangXetDuyet");
   const isReadOnly = selectedDot ? selectedDot.trangThai !== "DangXetDuyet" : false;
   const pendingList = ketQuaXepHang ? selectedResults : hoSoChoDuyet.filter((hs) => hs.trangThai !== "Loai");
-
+  const handleSmartMoneyBlur = (value, setter) => {
+  let num = Number(value);
+  
+  // Nên nếu nhập số từ 1 đến 10.000, hệ thống tự hiểu là đang gõ tắt hàng Triệu.
+  if (num > 0 && num <= 10000) {
+    setter(num * 1000000);
+    } else {
+      setter(num); // Nếu người dùng đã gõ đầy đủ số 0 thì giữ nguyên
+    }
+  };
   const tongTienDaChi = useMemo(() => {
     if (!isReadOnly || !hoSoChoDuyet.length) return 0;
     return hoSoChoDuyet.filter((hs) => hs.trangThai !== "Loai" && hs.mucHocBong).reduce((s, hs) => s + (Number(hs.mucHocBong) || 0), 0);
@@ -247,36 +256,45 @@ const KhoaDashboard = () => {
 
             {/* Tong ngan sach */}
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
-                Tong Ngan Sach (VND)
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Tổng Ngân Sách (VNĐ)
               </label>
-              <input
-                type="text"
+              <input 
+                type="number" 
                 value={tongNganSach}
                 onChange={(e) => setTongNganSach(e.target.value)}
-                placeholder="VD: 50000000"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 text-sm"
+                onBlur={(e) => handleSmartMoneyBlur(e.target.value, setTongNganSach)}
+                disabled={isReadOnly}
+                placeholder="Gõ tắt: 500 ➔ 500,000,000"
+                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
               />
-              {nganSachNum > 0 && (
-                <p className="text-xs text-blue-500 mt-1 font-medium">
-                  {nganSachNum.toLocaleString("vi-VN")} dong
+              {/* Dòng chữ nhỏ màu xanh hiển thị format có dấu phẩy để thầy cô nhìn lại cho chắc chắn */}
+              {tongNganSach > 0 && (
+                <p className="text-sm text-green-600 mt-1 font-bold">
+                  {Number(tongNganSach).toLocaleString('vi-VN')} đ
                 </p>
               )}
             </div>
 
-            {/* Muc HB loai Kha */}
+            {/* Ô MỨC HỌC BỔNG LOẠI KHÁ */}
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
-                Muc HB Loai Kha (VND)
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Mức Học Bổng Sàn (Loại Khá)
               </label>
-              <input
-                type="text"
+              <input 
+                type="number" 
                 value={mucHocBongKha}
                 onChange={(e) => setMucHocBongKha(e.target.value)}
-                placeholder="VD: 1200000"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 text-sm"
+                onBlur={(e) => handleSmartMoneyBlur(e.target.value, setMucHocBongKha)}
+                disabled={isReadOnly}
+                placeholder="Gõ tắt: 5 ➔ 5,000,000"
+                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
               />
-              {(() => { const n = parseFloat(String(mucHocBongKha).replace(/[^0-9.]/g, "")) || 0; return n > 0 ? <p className="text-xs text-blue-500 mt-1 font-medium">{n.toLocaleString("vi-VN")} dong</p> : null; })()}
+              {mucHocBongKha > 0 && (
+                <p className="text-sm text-green-600 mt-1 font-bold">
+                  {Number(mucHocBongKha).toLocaleString('vi-VN')} đ
+                </p>
+              )}
             </div>
 
             {/* Thong ke tong quan so */}

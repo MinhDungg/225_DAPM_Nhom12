@@ -149,11 +149,23 @@ public class ExportController : ControllerBase
                 ? $"Danh Sách Học Bổng KKHT Chính Thức{hkSuffix}"
                 : $"Danh Sách Học Bổng KKHT Đề Nghị{hkSuffix}";
             string fileName = !string.IsNullOrEmpty(hocKy)
-                ? $"DanhSachHBKK_HK{hocKy}_{namHoc}_{loai}.html"
-                : $"DanhSachHBKK_{loai}_{DateTime.Now:yyyyMMdd}.html";
+                ? $"DanhSachHBKK_HK{hocKy}_{namHoc}.pdf"
+                : $"DanhSachHBKK_{loai}_{DateTime.Now:yyyyMMdd}.pdf";
 
-            var bytes = _export.ToHtml(MapHoSo(data), HoSoHeaders, pageTitle);
-            return File(bytes, "text/html; charset=utf-8", fileName);
+            var rows = MapHoSo(data);
+            // Tính tổng tiền và thêm dòng TỔNG CỘNG
+            decimal tongTien = data.Where(x => x.MucHocBong.HasValue).Sum(x => x.MucHocBong!.Value);
+            rows.Add(new Dictionary<string, string>
+            {
+                ["STT"] = "", ["Mã SV"] = "", ["Họ Tên"] = "", ["Lớp"] = "", ["Khoa"] = "",
+                ["GPA"] = "", ["Điểm HT"] = "", ["Điểm RL"] = "",
+                ["Xếp Loại HB"] = "TỔNG CỘNG:",
+                ["Mức Học Bổng"] = tongTien.ToString("N0") + " đ",
+                ["Trạng Thái"] = ""
+            });
+
+            var bytes = _export.ToPdf(rows, HoSoHeaders, pageTitle);
+            return File(bytes, "application/pdf", fileName);
         }
         catch (Exception ex)
         {
@@ -185,28 +197,41 @@ public class ExportController : ControllerBase
 
             var filtered = data.Where(x => !string.IsNullOrWhiteSpace(x.XepLoaiHB)).ToList();
             int stt = 1;
-            var rows = filtered.Select(x => new Dictionary<string, string>
+            decimal tongTien = 0;
+            var rows = filtered.Select(x =>
             {
-                ["STT"]         = (stt++).ToString(),
-                ["Mã SV"]       = x.MaSV ?? "",
-                ["Họ Tên"]      = x.HoTenSinhVien ?? "",
-                ["Lớp"]         = x.TenLop ?? "",
-                ["GPA"]         = x.GPA.ToString("F2"),
-                ["Điểm HT"]     = x.DiemHocTap.ToString("F2"),
-                ["Điểm RL"]     = x.DiemRenLuyen.ToString("F2"),
-                ["Xếp Loại HB"] = x.XepLoaiHB ?? "",
-                ["Mức Học Bổng"]= x.MucHocBong.HasValue ? x.MucHocBong.Value.ToString("N0") + " đ" : "",
-                // ["Trạng Thái"]  = x.TrangThai ?? ""
+                if (x.MucHocBong.HasValue) tongTien += x.MucHocBong.Value;
+                return new Dictionary<string, string>
+                {
+                    ["STT"]         = (stt++).ToString(),
+                    ["Mã SV"]       = x.MaSV ?? "",
+                    ["Họ Tên"]      = x.HoTenSinhVien ?? "",
+                    ["Lớp"]         = x.TenLop ?? "",
+                    ["GPA"]         = x.GPA.ToString("F2"),
+                    ["Điểm HT"]     = x.DiemHocTap.ToString("F2"),
+                    ["Điểm RL"]     = x.DiemRenLuyen.ToString("F2"),
+                    ["Xếp Loại HB"] = x.XepLoaiHB ?? "",
+                    ["Mức Học Bổng"]= x.MucHocBong.HasValue ? x.MucHocBong.Value.ToString("N0") + " đ" : "",
+                };
             }).ToList();
+
+            // Dòng tổng cộng
+            rows.Add(new Dictionary<string, string>
+            {
+                ["STT"] = "", ["Mã SV"] = "", ["Họ Tên"] = "", ["Lớp"] = "",
+                ["GPA"] = "", ["Điểm HT"] = "", ["Điểm RL"] = "",
+                ["Xếp Loại HB"] = "TỔNG CỘNG:",
+                ["Mức Học Bổng"] = tongTien.ToString("N0") + " đ"
+            });
             
             var headers = new List<string> { "STT", "Mã SV", "Họ Tên", "Lớp", "GPA", "Điểm HT", "Điểm RL", "Xếp Loại HB", "Mức Học Bổng" };
             string loai = (dot?.TrangThai == "ChinhThuc") ? "ChinhThuc" : "DeNghi";
-            string sheetTitle = (loai == "ChinhThuc")
-                ? (!string.IsNullOrEmpty(hocKy) ? $"DS Chính Thức HK{hocKy} {namHoc}" : "DS Chính Thức")
-                : (!string.IsNullOrEmpty(hocKy) ? $"DS Khoa Đề Nghị HK{hocKy} {namHoc}" : "DS Khoa Đề Nghị");
+            string sheetTitle = !string.IsNullOrEmpty(hocKy)
+                ? $"DS Khoa HK{hocKy} {namHoc}"
+                : "DS Khoa Đề Nghị";
             string fileName = !string.IsNullOrEmpty(hocKy)
-                ? $"DanhSachHBKK_HK{hocKy}_{namHoc}_Khoa{loai}.xlsx"
-                : $"DanhSachHBKK_Khoa{loai}_{DateTime.Now:yyyyMMdd}.xlsx";
+                ? $"DanhSachHBKK_HK{hocKy}_{namHoc}.xlsx"
+                : $"DanhSachHBKK_Khoa_{DateTime.Now:yyyyMMdd}.xlsx";
 
             var stream = _export.ToExcel(rows, headers, sheetTitle);
             return File(stream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
@@ -240,32 +265,42 @@ public class ExportController : ControllerBase
 
             var filtered = data.Where(x => !string.IsNullOrWhiteSpace(x.XepLoaiHB)).ToList();
             int stt = 1;
-            var rows = filtered.Select(x => new Dictionary<string, string>
+            decimal tongTien = 0;
+            var rows = filtered.Select(x =>
             {
-                ["STT"]         = (stt++).ToString(),
-                ["Mã SV"]       = x.MaSV ?? "",
-                ["Họ Tên"]      = x.HoTenSinhVien ?? "",
-                ["Lớp"]         = x.TenLop ?? "",
-                ["GPA"]         = x.GPA.ToString("F2"),
-                ["Điểm HT"]     = x.DiemHocTap.ToString("F2"),
-                ["Điểm RL"]     = x.DiemRenLuyen.ToString("F2"),
-                ["Xếp Loại HB"] = x.XepLoaiHB ?? "",
-                ["Mức Học Bổng"]= x.MucHocBong.HasValue ? x.MucHocBong.Value.ToString("N0") + " đ" : "",
-                // ["Trạng Thái"]  = x.TrangThai ?? ""
+                if (x.MucHocBong.HasValue) tongTien += x.MucHocBong.Value;
+                return new Dictionary<string, string>
+                {
+                    ["STT"]         = (stt++).ToString(),
+                    ["Mã SV"]       = x.MaSV ?? "",
+                    ["Họ Tên"]      = x.HoTenSinhVien ?? "",
+                    ["Lớp"]         = x.TenLop ?? "",
+                    ["GPA"]         = x.GPA.ToString("F2"),
+                    ["Điểm HT"]     = x.DiemHocTap.ToString("F2"),
+                    ["Điểm RL"]     = x.DiemRenLuyen.ToString("F2"),
+                    ["Xếp Loại HB"] = x.XepLoaiHB ?? "",
+                    ["Mức Học Bổng"]= x.MucHocBong.HasValue ? x.MucHocBong.Value.ToString("N0") + " đ" : "",
+                };
             }).ToList();
+
+            // Dòng tổng cộng
+            rows.Add(new Dictionary<string, string>
+            {
+                ["STT"] = "", ["Mã SV"] = "", ["Họ Tên"] = "", ["Lớp"] = "",
+                ["GPA"] = "", ["Điểm HT"] = "", ["Điểm RL"] = "",
+                ["Xếp Loại HB"] = "TỔNG CỘNG:",
+                ["Mức Học Bổng"] = tongTien.ToString("N0") + " đ"
+            });
             
             var headers = new List<string> { "STT", "Mã SV", "Họ Tên", "Lớp", "GPA", "Điểm HT", "Điểm RL", "Xếp Loại HB", "Mức Học Bổng" };
-            string loai = (dot?.TrangThai == "ChinhThuc") ? "ChinhThuc" : "DeNghi";
             string hkSuffix = !string.IsNullOrEmpty(hocKy) ? $" | Học Kỳ {hocKy} - {namHoc}" : "";
-            string pageTitle = (loai == "ChinhThuc")
-                ? $"Danh Sách Học Bổng KKHT Chính Thức — Khoa{hkSuffix}"
-                : $"Danh Sách Học Bổng KKHT Khoa Đề Nghị{hkSuffix}";
-            string htmlFileName = !string.IsNullOrEmpty(hocKy)
-                ? $"DanhSachHBKK_HK{hocKy}_{namHoc}_Khoa{loai}.html"
-                : $"DanhSachHBKK_Khoa{loai}_{DateTime.Now:yyyyMMdd}.html";
+            string pageTitle = $"Danh Sách Học Bổng KKHT — Khoa Đề Nghị{hkSuffix}";
+            string fileName = !string.IsNullOrEmpty(hocKy)
+                ? $"DanhSachHBKK_HK{hocKy}_{namHoc}.pdf"
+                : $"DanhSachHBKK_Khoa_{DateTime.Now:yyyyMMdd}.pdf";
 
-            var bytes = _export.ToHtml(rows, headers, pageTitle);
-            return File(bytes, "text/html; charset=utf-8", htmlFileName);
+            var bytes = _export.ToPdf(rows, headers, pageTitle);
+            return File(bytes, "application/pdf", fileName);
         }
         catch (Exception ex)
         {
@@ -319,8 +354,8 @@ public class ExportController : ControllerBase
             }).ToList();
             
             var headers = new List<string> { "Mã Phân Bổ", "Mã Đợt", "Mã Khoa", "Kinh Phí", "Mức HB Loại Khá" };
-            var bytes = _export.ToHtml(rows, headers, $"Phân Bổ Kinh Phí — Đợt {maDot}");
-            return File(bytes, "text/html; charset=utf-8", $"TaiChinh_KinhPhi_{maDot}_{DateTime.Now:yyyyMMdd}.html");
+            var bytes = _export.ToPdf(rows, headers, $"Phân Bổ Kinh Phí — Đợt {maDot}");
+            return File(bytes, "application/pdf", $"TaiChinh_KinhPhi_{maDot}_{DateTime.Now:yyyyMMdd}.pdf");
         }
         catch (Exception ex)
         {
