@@ -274,7 +274,7 @@ const HieuTruongDashboard = () => {
                                                         </span>
                                                     </td>
                                                     <td className="p-4 text-right font-black text-slate-800">
-                                                        {sv.soTien?.toLocaleString('vi-VN')}
+                                                        {sv.mucHocBong != null ? sv.mucHocBong.toLocaleString('vi-VN') : (sv.soTien != null ? sv.soTien.toLocaleString('vi-VN') : '-')}
                                                     </td>
                                                 </tr>
                                             ))

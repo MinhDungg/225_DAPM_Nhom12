@@ -41,8 +41,8 @@ namespace BE.Services.Implementations
                 var dot = await _dotHocBongRepository.LayTheoIdAsync(maDot.Value);
                 if (dot == null) return Enumerable.Empty<HoSoResponseDTO>();
 
-                // Nếu là Hội đồng xem Lịch sử (đợt đã qua DangXetDuyet)
-                if (isHoiDong && dot.TrangThai != "DangXetDuyet" && dot.TrangThai != "KhoiTao" && dot.TrangThai != "DaCoDiem")
+                // Nếu đợt đã qua DangXetDuyet
+                if (dot.TrangThai != "DangXetDuyet" && dot.TrangThai != "KhoiTao" && dot.TrangThai != "DaCoDiem")
                 {
                     // Các hồ sơ Hội đồng đã duyệt hoặc từ chối
                     var list1 = await _hoSoRepository.GetProfilesByStatusAsync("HoiDongDuyet");

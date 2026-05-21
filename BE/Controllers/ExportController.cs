@@ -166,11 +166,11 @@ public class ExportController : ControllerBase
                 ? $"Danh Sách Học Bổng KKHT Chính Thức{hkSuffix}"
                 : $"Danh Sách Học Bổng KKHT Đề Nghị{hkSuffix}";
             string fileName = !string.IsNullOrEmpty(hocKy)
-                ? $"DanhSachHBKK_HK{hocKy}_{namHoc}_{loai}.html"
-                : $"DanhSachHBKK_{loai}_{DateTime.Now:yyyyMMdd}.html";
+                ? $"DanhSachHBKK_HK{hocKy}_{namHoc}_{loai}.pdf"
+                : $"DanhSachHBKK_{loai}_{DateTime.Now:yyyyMMdd}.pdf";
 
-            var bytes = _export.ToHtml(MapHoSo(data), HoSoHeaders, pageTitle);
-            return File(bytes, "text/html; charset=utf-8", fileName);
+            var bytes = _export.ToPdf(MapHoSo(data), HoSoHeaders, pageTitle);
+            return File(bytes, "application/pdf", fileName);
         }
         catch (Exception ex)
         {
@@ -305,12 +305,12 @@ public class ExportController : ControllerBase
             string pageTitle = (loai == "ChinhThuc")
                 ? $"Danh Sách Học Bổng KKHT Chính Thức — Khoa{hkSuffix}"
                 : $"Danh Sách Học Bổng KKHT Khoa Đề Nghị{hkSuffix}";
-            string htmlFileName = !string.IsNullOrEmpty(hocKy)
-                ? $"DanhSachHBKK_HK{hocKy}_{namHoc}_Khoa{loai}.html"
-                : $"DanhSachHBKK_Khoa{loai}_{DateTime.Now:yyyyMMdd}.html";
+            string pdfFileName = !string.IsNullOrEmpty(hocKy)
+                ? $"DanhSachHBKK_HK{hocKy}_{namHoc}_Khoa{loai}.pdf"
+                : $"DanhSachHBKK_Khoa{loai}_{DateTime.Now:yyyyMMdd}.pdf";
 
-            var bytes = _export.ToHtml(rows, headers, pageTitle);
-            return File(bytes, "text/html; charset=utf-8", htmlFileName);
+            var bytes = _export.ToPdf(rows, headers, pageTitle);
+            return File(bytes, "application/pdf", pdfFileName);
         }
         catch (Exception ex)
         {
@@ -384,8 +384,8 @@ public class ExportController : ControllerBase
             });
             
             var headers = new List<string> { "Mã Phân Bổ", "Mã Đợt", "Mã Khoa", "Kinh Phí", "Mức HB Loại Khá" };
-            var bytes = _export.ToHtml(rows, headers, $"Phân Bổ Kinh Phí — Đợt {maDot}");
-            return File(bytes, "text/html; charset=utf-8", $"TaiChinh_KinhPhi_{maDot}_{DateTime.Now:yyyyMMdd}.html");
+            var bytes = _export.ToPdf(rows, headers, $"Phân Bổ Kinh Phí — Đợt {maDot}");
+            return File(bytes, "application/pdf", $"TaiChinh_KinhPhi_{maDot}_{DateTime.Now:yyyyMMdd}.pdf");
         }
         catch (Exception ex)
         {
