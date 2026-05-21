@@ -56,13 +56,13 @@ const khoaService = {
         }
     },
 
-    // Task 2.2: Xếp hạng và phân bổ học bổng
-    xepHangVaPhanBo: async (maDot, nganSach) => {
+    // Task 2.2: Xếp hạng và phân bổ học bổng (Hybrid Flow)
+    xepHangVaPhanBo: async (maDot, tongNganSach, mucHocBongKha, thongKeKhoaHoc) => {
         try {
             const token = sessionStorage.getItem('token');
             const response = await axiosInstance.post(
                 '/khoa/xephang',
-                { maDot, nganSach },
+                { maDot, tongNganSach, mucHocBongKha, thongKeKhoaHoc },
                 {
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -83,12 +83,12 @@ const khoaService = {
     },
 
     // Task 2.3: Chốt danh sách đề xuất
-    chotDanhSachDeXuat: async (maDot, danhSachMaHoSo) => {
+    chotDanhSachDeXuat: async (maDot, danhSachDeXuat) => {
         try {
             const token = sessionStorage.getItem('token');
             const response = await axiosInstance.put(
                 '/khoa/dexuat',
-                { maDot, danhSachMaHoSo },
+                { maDot, danhSachDeXuat },
                 {
                     headers: {
                         'Authorization': `Bearer ${token}`

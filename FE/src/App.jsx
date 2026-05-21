@@ -8,6 +8,7 @@ import {
   Login,
   StudentDashboard,
   StudentProfile,
+  ThongBaoSinhVien,
   CTSVDashboard,
   DaoTaoDashboard,
   HDXDDashboard,
@@ -37,6 +38,7 @@ function App() {
           {/* Trang Dashboard chính của từng Role */}
           <Route path="sinh-vien" element={<StudentDashboard />} />
           <Route path="sinh-vien/ho-so" element={<StudentProfile />} />
+          <Route path="sinh-vien/thong-bao" element={<ThongBaoSinhVien />} />
           <Route path="ctsv" element={<CTSVDashboard />} />
           <Route path="dao-tao" element={<DaoTaoDashboard />} />
           <Route path="hdxd" element={<HDXDDashboard />} />

@@ -60,7 +60,13 @@ public class KhoaService : IKhoaService
         }
         else
         {
-            hoSos = await _hoSoRepository.LayDanhSachChoXetTheoKhoaVaDotAsync(canBo.MaKhoa.Value, maDot);
+            // Lấy TẤT CẢ hồ sơ (kể cả Loai) để Frontend đếm đúng tổng quân số auto-fill
+            // Frontend sẽ tự lọc chỉ hiển thị ChoXet trong bảng ứng viên
+            hoSos = await _context.HoSoXetHocBongs
+                .Include(h => h.SinhVien)
+                    .ThenInclude(sv => sv.Lop)
+                .Where(h => h.MaDot == maDot && h.SinhVien.Lop.MaKhoa == canBo.MaKhoa.Value)
+                .ToListAsync();
         }
 
         // Lấy thông tin phân bổ kinh phí để tính mức học bổng
@@ -103,7 +109,7 @@ public class KhoaService : IKhoaService
                     GPA = h.GPA,
                     DiemRenLuyen = h.DiemRenLuyen,
                     XepLoaiHB = h.XepLoaiHB,
-                    MucHocBong = mucHocBong ?? h.MucHocBong,
+                    MucHocBong = h.MucHocBong ?? mucHocBong,
                     NgayNop = h.NgayNop,
                     TrangThai = h.TrangThai ?? "ChoXet"
                 };
@@ -117,14 +123,18 @@ public class KhoaService : IKhoaService
         if (canBo == null || canBo.MaKhoa == null)
             throw new Exception("Không tìm thấy thông tin cán bộ hoặc khoa");
 
-        var phanBoKinhPhi = await _phanBoKinhPhiRepository.LayTheoMaDotVaMaKhoaAsync(request.MaDot, canBo.MaKhoa.Value);
-        if (phanBoKinhPhi == null)
-            throw new Exception("Khoa chưa được cấp kinh phí cho đợt này");
+        // ── Hybrid Flow: Dùng ngân sách & mức chuẩn từ payload, KHÔNG query KHTC ──
+        var tongNganSach = request.TongNganSach;
+        var mucHBLoaiKha = request.MucHocBongKha;
 
-        var tongNganSach = phanBoKinhPhi.KinhPhi;
-        var mucHBLoaiKha = phanBoKinhPhi.MucHBLoaiKha;
+        if (tongNganSach <= 0)
+            throw new Exception("Tổng ngân sách phải lớn hơn 0");
+        if (mucHBLoaiKha <= 0)
+            throw new Exception("Mức học bổng loại Khá phải lớn hơn 0");
+        if (request.ThongKeKhoaHoc == null || !request.ThongKeKhoaHoc.Any())
+            throw new Exception("Danh sách thống kê khóa học không được rỗng");
 
-        // ── Bước 1: Truy xuất TOÀN BỘ hồ sơ (kể cả Loai) để tính quân số thực tế ──
+        // ── Bước 1: Truy xuất TOÀN BỘ hồ sơ của Khoa trong đợt ──
         var hoSos = await _context.HoSoXetHocBongs
             .Include(h => h.SinhVien)
                 .ThenInclude(sv => sv.Lop)
@@ -141,10 +151,16 @@ public class KhoaService : IKhoaService
             };
         }
 
-        // Tổng quân số thực tế (bao gồm cả hồ sơ bị Loai)
-        int tongSoHoSo = hoSos.Count;
+        // ── Bước 2: Tính tổng mẫu số từ payload (Trưởng Khoa đã hiệu chỉnh) ──
+        int tongMauSo = request.ThongKeKhoaHoc.Sum(x => x.SoLuongSinhVien);
+        if (tongMauSo <= 0)
+            throw new Exception("Tổng quân số trong thống kê khóa học phải lớn hơn 0");
 
-        // ── Bước 2: Nhóm TOÀN BỘ hồ sơ theo Khóa học để tính tỷ lệ ngân sách ──
+        // Tạo lookup: TenKhoa (2 ký tự) -> SoLuongSinhVien
+        var khoaHocLookup = request.ThongKeKhoaHoc
+            .ToDictionary(x => x.TenKhoa.Trim(), x => x.SoLuongSinhVien);
+
+        // ── Bước 3: Nhóm hồ sơ theo Khóa học (2 ký tự đầu TenLop) ──
         var nhomTheoKhoa = hoSos
             .GroupBy(h =>
             {
@@ -157,33 +173,36 @@ public class KhoaService : IKhoaService
         decimal tongChiTieu = 0;
         int soLuongDuocNhan = 0;
 
-        // ── Bước 2 & 3: Duyệt từng nhóm Khóa ────────────────────────────────────
         foreach (var nhomKhoa in nhomTheoKhoa)
         {
             string maKhoaHoc = nhomKhoa.Key;
 
-            // Bước 2: Tính ngân sách dựa trên quân số THỰC TẾ của Khóa (kể cả Loai)
-            decimal tyLe = (decimal)nhomKhoa.Count() / (decimal)tongSoHoSo;
+            // Lấy quân số từ payload (ưu tiên), fallback về số thực tế trong DB
+            int soLuongKhoaNay = khoaHocLookup.TryGetValue(maKhoaHoc, out var soLuong)
+                ? soLuong
+                : nhomKhoa.Count();
+
+            // Tính ngân sách theo tỷ lệ quân số từ payload
+            decimal tyLe = (decimal)soLuongKhoaNay / (decimal)tongMauSo;
             decimal nganSachCuaKhoa = Math.Round(tongNganSach * tyLe, 0);
 
-            // Bước 3 — The Pivot: Chỉ lấy hồ sơ ChoXet để rải tiền
+            // Chỉ rải tiền cho hồ sơ ChoXet
             var danhSachChoXet = nhomKhoa
                 .Where(h => h.TrangThai == TrangThaiHocBong.ChoXet)
                 .ToList();
 
             if (!danhSachChoXet.Any())
-                continue; // Không có ai ChoXet trong Khóa này → bỏ qua
+                continue;
 
-            // Bước 3a: Phân loại từng hồ sơ ChoXet
-            var danhSachPhanLoai = new List<(HoSoXetHocBong HoSo, string XepLoai, decimal MucHocBong)>();
+            // Phân loại từng hồ sơ ChoXet
+            var danhSachPhanLoai = danhSachChoXet
+                .Select(hoSo =>
+                {
+                    var phanLoai = PhanLoaiHocBong(hoSo.GPA, hoSo.DiemRenLuyen, mucHBLoaiKha);
+                    return (HoSo: hoSo, XepLoai: phanLoai.XepLoai, MucHocBong: phanLoai.MucHocBong);
+                })
+                .ToList();
 
-            foreach (var hoSo in danhSachChoXet)
-            {
-                var phanLoai = PhanLoaiHocBong(hoSo.GPA, hoSo.DiemRenLuyen, mucHBLoaiKha);
-                danhSachPhanLoai.Add((HoSo: hoSo, XepLoai: phanLoai.XepLoai, MucHocBong: phanLoai.MucHocBong));
-            }
-
-            // Bước 3b: Sắp xếp theo Điểm học tập hệ 10 → Điểm rèn luyện
             var duDieuKien = danhSachPhanLoai
                 .Where(x => x.XepLoai != "KhongDuDieuKien")
                 .OrderByDescending(x => x.HoSo.DiemHocTap)
@@ -196,7 +215,7 @@ public class KhoaService : IKhoaService
                 .ThenByDescending(x => x.HoSo.DiemRenLuyen)
                 .ToList();
 
-            // Bước 3c: Rải tiền nội bộ Khóa — chỉ dùng nganSachCuaKhoa
+            // Rải tiền nội bộ Khóa
             decimal conLaiCuaKhoa = nganSachCuaKhoa;
             int thuHangTrongKhoa = 1;
 
@@ -214,32 +233,46 @@ public class KhoaService : IKhoaService
 
                 ketQuaChung.Add(new SinhVienXepHangDTO
                 {
-                    ThuHang = thuHangTrongKhoa++, MaHoSo = item.HoSo.MaHoSo, MaSV = item.HoSo.MaSV,
-                    HoTen = item.HoSo.SinhVien.HoTen, TenLop = item.HoSo.SinhVien.Lop.TenLop, KhoaHoc = maKhoaHoc,
-                    DiemHocTap = item.HoSo.DiemHocTap, GPA = item.HoSo.GPA, DiemRenLuyen = item.HoSo.DiemRenLuyen,
-                    XepLoai = item.XepLoai, MucHocBong = item.MucHocBong, DuocNhan = duocNhan
+                    ThuHang = thuHangTrongKhoa++,
+                    MaHoSo = item.HoSo.MaHoSo,
+                    MaSV = item.HoSo.MaSV,
+                    HoTen = item.HoSo.SinhVien.HoTen,
+                    TenLop = item.HoSo.SinhVien.Lop.TenLop,
+                    KhoaHoc = maKhoaHoc,
+                    DiemHocTap = item.HoSo.DiemHocTap,
+                    GPA = item.HoSo.GPA,
+                    DiemRenLuyen = item.HoSo.DiemRenLuyen,
+                    XepLoai = item.XepLoai,
+                    MucHocBong = item.MucHocBong,
+                    DuocNhan = duocNhan
                 });
             }
 
-            // Bước 4: Thêm hồ sơ ChoXet không đủ điều kiện (GPA/DRL thấp)
-            // TUYỆT ĐỐI không thêm hồ sơ TrangThai == "Loai" vào đây
             foreach (var item in khongDuDieuKien)
             {
                 ketQuaChung.Add(new SinhVienXepHangDTO
                 {
-                    ThuHang = 0, MaHoSo = item.HoSo.MaHoSo, MaSV = item.HoSo.MaSV,
-                    HoTen = item.HoSo.SinhVien.HoTen, TenLop = item.HoSo.SinhVien.Lop.TenLop, KhoaHoc = maKhoaHoc,
-                    DiemHocTap = item.HoSo.DiemHocTap, GPA = item.HoSo.GPA, DiemRenLuyen = item.HoSo.DiemRenLuyen,
-                    XepLoai = item.XepLoai, MucHocBong = 0, DuocNhan = false
+                    ThuHang = 0,
+                    MaHoSo = item.HoSo.MaHoSo,
+                    MaSV = item.HoSo.MaSV,
+                    HoTen = item.HoSo.SinhVien.HoTen,
+                    TenLop = item.HoSo.SinhVien.Lop.TenLop,
+                    KhoaHoc = maKhoaHoc,
+                    DiemHocTap = item.HoSo.DiemHocTap,
+                    GPA = item.HoSo.GPA,
+                    DiemRenLuyen = item.HoSo.DiemRenLuyen,
+                    XepLoai = item.XepLoai,
+                    MucHocBong = 0,
+                    DuocNhan = false
                 });
             }
         }
 
-        // ── Bước 4: Sắp xếp kết quả chung để hiển thị đẹp trên UI ──────────────
+        // ── Bước 4: Sắp xếp 3 tầng: DuocNhan ↓ → KhoaHoc ↑ → MaSV ↑ ──
         var danhSachFinal = ketQuaChung
             .OrderByDescending(x => x.DuocNhan)
-            .ThenByDescending(x => x.DiemHocTap)
-            .ThenByDescending(x => x.DiemRenLuyen)
+            .ThenBy(x => x.KhoaHoc)
+            .ThenBy(x => x.MaSV)
             .ToList();
 
         return new XepHangResponseDTO
@@ -247,7 +280,7 @@ public class KhoaService : IKhoaService
             TongNganSach = tongNganSach,
             TongChiTieu = tongChiTieu,
             SoLuongDuocNhan = soLuongDuocNhan,
-            TongSoHoSo = ketQuaChung.Count,  // Số hồ sơ ChoXet được xét (không tính Loai)
+            TongSoHoSo = ketQuaChung.Count,
             DanhSachXepHang = danhSachFinal
         };
     }
@@ -297,20 +330,20 @@ public class KhoaService : IKhoaService
         if (canBo == null || canBo.MaKhoa == null)
             throw new Exception("Khong tim thay thong tin can bo hoac khoa");
 
-        if (request.DanhSachMaHoSo == null || !request.DanhSachMaHoSo.Any())
+        if (request.DanhSachDeXuat == null || !request.DanhSachDeXuat.Any())
             throw new Exception("Danh sach ho so khong duoc rong");
 
         var soLuongDaChot = await _hoSoRepository.ChotDanhSachDeXuatAsync(
             canBo.MaKhoa.Value,
             request.MaDot,
-            request.DanhSachMaHoSo,
+            request.DanhSachDeXuat,
             canBo.MaCB
         );
 
         return new ChotDeXuatResponseDTO
         {
             SoLuongDaChot = soLuongDaChot,
-            DanhSachMaHoSo = request.DanhSachMaHoSo
+            DanhSachMaHoSo = request.DanhSachDeXuat.Select(x => x.MaHoSo).ToList()
         };
     }
 
@@ -346,6 +379,7 @@ public class KhoaService : IKhoaService
                 GPA = h.GPA,
                 DiemRenLuyen = h.DiemRenLuyen,
                 XepLoaiHB = h.XepLoaiHB,
+                MucHocBong = h.MucHocBong,
                 NgayNop = h.NgayNop,
                 TrangThai = h.TrangThai ?? "KhoaDeXuat"
             })

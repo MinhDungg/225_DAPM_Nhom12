@@ -145,4 +145,39 @@ public class DiemService : IDiemService
             throw;
         }
     }
+
+    public async Task<IEnumerable<DuLieuHocVuResponseDTO>> GetDanhSachHocVuAsync(int? hocKy, string? namHoc)
+    {
+        _logger.LogInformation("GetDanhSachHocVuAsync start. HocKy={HocKy}, NamHoc={NamHoc}", hocKy, namHoc);
+
+        var query = _context.KetQuaHocTaps
+            .Include(k => k.SinhVien)
+            .ThenInclude(s => s.Lop)
+            .AsQueryable();
+
+        if (hocKy.HasValue)
+        {
+            query = query.Where(k => k.HocKy == hocKy.Value);
+        }
+
+        if (!string.IsNullOrEmpty(namHoc))
+        {
+            query = query.Where(k => k.NamHoc == namHoc);
+        }
+
+        var list = await query.ToListAsync();
+
+        return list.Select(k => new DuLieuHocVuResponseDTO
+        {
+            MaSV = k.MaSV,
+            HoTen = k.SinhVien?.HoTen ?? "N/A",
+            TenLop = k.SinhVien?.Lop?.TenLop ?? "N/A",
+            HocKy = k.HocKy,
+            NamHoc = k.NamHoc,
+            GPA = k.GPA,
+            DiemHocTap = k.DiemHocTap,
+            SoTC = k.SoTC,
+            CoDiemF = k.CoDiemF
+        });
+    }
 }

@@ -4,11 +4,12 @@ namespace BE.DTOs.Response
 {
     public class ThongTinDotDTO
     {
+        public int MaDot { get; set; }
         public string LoaiDot { get; set; } = null!;
         public int HocKy { get; set; }
         public string NamHoc { get; set; } = null!;
         public string? TrangThai { get; set; }
-        public string? LyDoTraVe { get; set; }
+        public string? LyDoTraVe { get; set; }      // Lý do HT trả về
     }
 
     public class TongHopHieuTruongResponseDTO

@@ -136,9 +136,25 @@ namespace BE.Services.Implementations
             var dot = await _dotHocBongRepository.LayTheoIdAsync(maDot);
             if (dot == null) return new BaseResponse<bool> { Success = false, Message = "Không tìm thấy đợt học bổng." };
 
+            // --- TRƯỜNG HỢP TRÌNH LẠI: Hiệu Trưởng đã trả về (DangXetDuyet) ---
+            if (dot.TrangThai == "DangXetDuyet")
+            {
+                // Kiểm tra còn hồ sơ hợp lệ không
+                var hoSosTrinhLai = await _hoSoRepository.GetProfilesByStatusAsync("HoiDongDuyet");
+                if (!hoSosTrinhLai.Any(h => h.MaDot == maDot))
+                {
+                    return new BaseResponse<bool> { Success = false, Message = "Không còn hồ sơ nào để trình lại. Vui lòng kiểm tra lại danh sách." };
+                }
+
+                // Xóa lý do trả về cũ và trình lại
+                dot.TrangThai = "ChoPheDuyet";
+                dot.LyDoTraVe = null;
+                await _dotHocBongRepository.UpdateAsync(dot);
+
+                return new BaseResponse<bool> { Success = true, Message = "Đã trình lại danh sách lên Ban Giám Hiệu thành công.", Data = true };
+            }
+
             // --- ĐOẠN CODE KIỂM TRA 10 NGÀY BẮT ĐẦU TỪ ĐÂY ---
-            // (Lưu ý: Bạn phải thêm thuộc tính public DateTime? NgayCongBo { get; set; } vào file BE/Models/DotHocBong.cs trước nhé)
-            
             bool isDemoMode = _configuration.GetValue<bool>("AppSettings:IsDemoMode");
 
             if (dot.TrangThai == "CongBoLayYKien" && dot.NgayCongBo.HasValue)
@@ -163,7 +179,7 @@ namespace BE.Services.Implementations
             }
             // --- KẾT THÚC ĐOẠN CODE KIỂM TRA ---
 
-            var hoSos = await _hoSoRepository.GetProfilesByStatusAsync("HoiDongDuyet"); // Hoặc Get theo CongBoLayYKien tuỳ logic của bạn
+            var hoSos = await _hoSoRepository.GetProfilesByStatusAsync("HoiDongDuyet");
             if (!hoSos.Any(h => h.MaDot == maDot))
             {
                 return new BaseResponse<bool> { Success = false, Message = "Chưa có hồ sơ nào được duyệt để trình lên." };
@@ -311,7 +327,12 @@ namespace BE.Services.Implementations
                 DiemRenLuyen = p.DiemRenLuyen,
                 XepLoaiHB = p.XepLoaiHB,
                 TrangThai = p.TrangThai,
-                MucHocBong = p.MucHocBong
+                MucHocBong = p.MucHocBong,
+                LoaiDot = p.DotHocBong?.LoaiDot,
+                HocKy = p.DotHocBong?.HocKy,
+                NamHoc = p.DotHocBong?.NamHoc,
+                NgayNop = p.NgayNop,
+                GhiChu = p.GhiChu
             });
         }
 

@@ -167,7 +167,6 @@ GO
 
 
 -- =================================================================================
--- BỔ SUNG: THÊM 9 TÀI KHOẢN & SINH VIÊN ĐỂ LÀM LỆCH TỶ LỆ QUÂN SỐ
 -- (Khóa 23: 4 SV | Khóa 24: 7 SV | Khóa 25: 10 SV)
 -- =================================================================================
 
@@ -191,3 +190,116 @@ INSERT INTO [SINHVIEN] (MaSV, HoTen, NgaySinh, Email, SDT, MaLop, MaTK) VALUES
 ('SV019', N'Khóa Hai Lăm - Lệch 4', '2007-08-08', 'sv019@ute.edu.vn', '0901000019', 3, (SELECT MaTK FROM TAIKHOAN WHERE TenDangNhap = 'SV019')),
 ('SV020', N'Khóa Hai Lăm - Lệch 5', '2007-09-09', 'sv020@ute.edu.vn', '0901000020', 3, (SELECT MaTK FROM TAIKHOAN WHERE TenDangNhap = 'SV020')),
 ('SV021', N'Khóa Hai Lăm - Lệch 6', '2007-10-10', 'sv021@ute.edu.vn', '0901000021', 3, (SELECT MaTK FROM TAIKHOAN WHERE TenDangNhap = 'SV021'));
+
+USE dbQLHocBong;
+GO
+
+-- =================================================================================
+-- BULK INSERT: THÊM 300 SINH VIÊN (100 SV MỖI KHÓA) ĐỂ STRESS TEST THUẬT TOÁN
+-- =================================================================================
+USE dbQLHocBong;
+GO
+
+-- =================================================================================
+-- BƯỚC 1: TẠO CÁC LỚP HỌC MỚI (NẾU CHƯA CÓ) CHO KHOA CÔNG NGHỆ SỐ (MaKhoa = 1)
+-- =================================================================================
+INSERT INTO [LOP] (TenLop, MaKhoa)
+SELECT TenLop, 1 
+FROM (VALUES 
+    ('22T1'), ('22T2'), ('22T3'),
+    ('23T1'), ('23T2'), ('23T3'),
+    ('24T1'), ('24T2'), ('24T3'),
+    ('25T1'), ('25T2'), ('25T3')
+) AS V(TenLop)
+WHERE NOT EXISTS (SELECT 1 FROM [LOP] L WHERE L.TenLop = V.TenLop);
+GO
+
+-- =================================================================================
+-- BƯỚC 2: BULK INSERT 400 SINH VIÊN (K22, K23, K24, K25 - MỖI KHÓA 100 SV)
+-- =================================================================================
+DECLARE @i INT = 22; -- Bắt đầu từ SV022 (tiếp nối 21 SV cũ)
+DECLARE @Max INT = 421; -- Tổng cộng 400 SV (100 SV x 4 Khóa)
+DECLARE @MaSV VARCHAR(20);
+DECLARE @MaLop INT;
+DECLARE @TenLop VARCHAR(10);
+DECLARE @GPA FLOAT;
+DECLARE @DiemHT FLOAT;
+DECLARE @DiemRL INT;
+DECLARE @CoF BIT;
+DECLARE @TrangThai VARCHAR(20);
+
+WHILE @i <= @Max
+BEGIN
+    SET @MaSV = 'SV' + RIGHT('000' + CAST(@i AS VARCHAR), 3);
+    
+    -- ==========================================
+    -- LOGIC CHIA LỚP (Mỗi lớp ~33-34 SV)
+    -- ==========================================
+    -- KHÓA 22 (100 SV: 22 -> 121)
+    IF @i <= 121 
+    BEGIN
+        IF @i <= 55 SET @TenLop = '22T1';       -- 34 SV
+        ELSE IF @i <= 88 SET @TenLop = '22T2';  -- 33 SV
+        ELSE SET @TenLop = '22T3';              -- 33 SV
+    END
+    -- KHÓA 23 (100 SV: 122 -> 221)
+    ELSE IF @i <= 221 
+    BEGIN
+        IF @i <= 155 SET @TenLop = '23T1';      -- 34 SV
+        ELSE IF @i <= 188 SET @TenLop = '23T2'; -- 33 SV
+        ELSE SET @TenLop = '23T3';              -- 33 SV
+    END
+    -- KHÓA 24 (100 SV: 222 -> 321)
+    ELSE IF @i <= 321 
+    BEGIN
+        IF @i <= 255 SET @TenLop = '24T1';      -- 34 SV
+        ELSE IF @i <= 288 SET @TenLop = '24T2'; -- 33 SV
+        ELSE SET @TenLop = '24T3';              -- 33 SV
+    END
+    -- KHÓA 25 (100 SV: 322 -> 421)
+    ELSE 
+    BEGIN
+        IF @i <= 355 SET @TenLop = '25T1';      -- 34 SV
+        ELSE IF @i <= 388 SET @TenLop = '25T2'; -- 33 SV
+        ELSE SET @TenLop = '25T3';              -- 33 SV
+    END
+
+    -- Lấy ID của lớp tương ứng
+    SELECT @MaLop = MaLop FROM LOP WHERE TenLop = @TenLop;
+
+    -- 1. Tạo Tài khoản
+    INSERT INTO [TAIKHOAN] (TenDangNhap, MatKhau, VaiTro, TrangThai) 
+    VALUES (@MaSV, '123', 'SinhVien', 1);
+
+    -- 2. Tạo Sinh viên
+    INSERT INTO [SINHVIEN] (MaSV, HoTen, NgaySinh, Email, SDT, MaLop, MaTK)
+    VALUES (@MaSV, N'Sinh Viên ' + @TenLop + ' - ' + CAST(@i AS NVARCHAR), '2005-01-01', LOWER(@MaSV) + '@ute.edu.vn', '090' + RIGHT('0000000' + CAST(@i AS VARCHAR), 7), @MaLop, SCOPE_IDENTITY());
+
+    -- 3. Random Điểm số (GPA: 2.5-4.0 | Điểm HT: 6.5-10.0 | ĐRL: 60-100)
+    SET @GPA = ROUND(2.5 + (RAND() * 1.5), 2); 
+    SET @DiemHT = ROUND(6.5 + (RAND() * 3.5), 2); 
+    SET @DiemRL = 60 + CAST(RAND() * 40 AS INT); 
+    
+    -- Giả lập 15% xác suất dính F
+    IF RAND() < 0.15 SET @CoF = 1 ELSE SET @CoF = 0;
+
+    INSERT INTO [KETQUAHOCTAP] (MaSV, HocKy, NamHoc, GPA, DiemHocTap, CoDiemF, SoTC, MaCB_Nhap)
+    VALUES (@MaSV, 1, '2025-2026', @GPA, @DiemHT, @CoF, 18, 1);
+
+    INSERT INTO [DIEMRENLUYEN] (MaSV, HocKy, NamHoc, DiemSo, MaCB_Nhap)
+    VALUES (@MaSV, 1, '2025-2026', @DiemRL, 2);
+
+    -- 4. Xác định trạng thái và đẩy vào Hồ sơ (Mã đợt = 1)
+    IF @CoF = 1 OR @DiemHT < 6.5 OR @DiemRL < 65 OR @GPA < 2.5
+        SET @TrangThai = 'Loai';
+    ELSE
+        SET @TrangThai = 'ChoXet';
+
+    INSERT INTO [HOSOXETHOCBONG] (MaSV, MaDot, DiemHocTap, GPA, DiemRenLuyen, TrangThai)
+    VALUES (@MaSV, 1, @DiemHT, @GPA, @DiemRL, @TrangThai);
+
+    SET @i = @i + 1;
+END
+GO
+
+SELECT * FROM HOSOXETHOCBONG
