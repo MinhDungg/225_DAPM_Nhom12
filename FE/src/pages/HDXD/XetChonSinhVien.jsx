@@ -145,22 +145,26 @@ const XetChonSinhVien = () => {
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="border-2 border-gray-200 rounded-xl px-4 py-2 text-sm focus:border-blue-500 outline-none"
                     />
-
-                    {!isReadOnly() && (
-                        <button onClick={handleApproveAll} className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-xl font-bold shadow-lg transition-all flex items-center gap-2">
-                            <ShieldCheck size={20} /> Hoàn tất Duyệt Toàn trường
-                        </button>
-                    )}
                 </div>
             </div>
-            <button onClick={() => handleExport(() => exportHoiDongExcel(selectedMaDot))} disabled={exporting}
-                style={{ background: '#1D6F42', color: '#fff', padding: '7px 16px', borderRadius: 6, border: 'none', cursor: 'pointer', fontWeight: 600 }}>
-                📊 Xuất Excel
-            </button>
-            <button onClick={() => handleExport(() => exportHoiDongPdf(selectedMaDot))} disabled={exporting}
-                style={{ background: '#C00', color: '#fff', padding: '7px 16px', borderRadius: 6, border: 'none', cursor: 'pointer', fontWeight: 600 }}>
-                📄 Xuất PDF
-            </button>
+
+            <div className="flex flex-wrap items-center gap-3">
+                <button onClick={() => handleExport(() => exportHoiDongExcel(selectedMaDot))} disabled={exporting}
+                    className="text-white px-4 py-2 rounded-xl font-semibold shadow-sm transition-all flex items-center gap-2 text-sm border-none cursor-pointer hover:opacity-90 disabled:opacity-50"
+                    style={{ background: '#1D6F42' }}>
+                    📊 Xuất Excel
+                </button>
+                <button onClick={() => handleExport(() => exportHoiDongPdf(selectedMaDot))} disabled={exporting}
+                    className="text-white px-4 py-2 rounded-xl font-semibold shadow-sm transition-all flex items-center gap-2 text-sm border-none cursor-pointer hover:opacity-90 disabled:opacity-50"
+                    style={{ background: '#C00' }}>
+                    📄 Xuất PDF
+                </button>
+                {!isReadOnly() && (
+                    <button onClick={handleApproveAll} className="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-xl font-bold shadow-md transition-all flex items-center gap-2 text-sm border-none cursor-pointer">
+                        <ShieldCheck size={18} /> Hoàn tất Duyệt Toàn trường
+                    </button>
+                )}
+            </div>
 
 
             {/* BẢNG DANH SÁCH CHỜ RÀ SOÁT */}

@@ -75,14 +75,16 @@ export const exportHoiDongExcel = (maDot) =>
         `HoiDong_${new Date().toISOString().slice(0, 10)}.xlsx`);
 
 export const exportHoiDongPdf = (maDot) =>
-    openHtml(`${API_BASE}/api/export/hoidong/pdf${maDot ? `?maDot=${maDot}` : ''}`);
+    downloadFile(`${API_BASE}/api/export/hoidong/pdf${maDot ? `?maDot=${maDot}` : ''}`,
+        `HoiDong_${new Date().toISOString().slice(0, 10)}.pdf`);
 
 // ── Khoa ──────────────────────────────────────────────────────────
 export const exportKhoaExcel = (maDot) =>
     downloadFile(`${API_BASE}/api/export/khoa/excel${maDot ? `?maDot=${maDot}` : ''}`,
         `Khoa_${new Date().toISOString().slice(0, 10)}.xlsx`);
 export const exportKhoaPdf = (maDot) =>
-    openHtml(`${API_BASE}/api/export/khoa/pdf${maDot ? `?maDot=${maDot}` : ''}`);
+    downloadFile(`${API_BASE}/api/export/khoa/pdf${maDot ? `?maDot=${maDot}` : ''}`,
+        `Khoa_${new Date().toISOString().slice(0, 10)}.pdf`);
 
 // ── Tài chính ─────────────────────────────────────────────────────
 export const exportTaiChinhExcel = (maDot) =>
@@ -90,7 +92,8 @@ export const exportTaiChinhExcel = (maDot) =>
         `TaiChinh_${maDot}_${new Date().toISOString().slice(0, 10)}.xlsx`);
 
 export const exportTaiChinhPdf = (maDot) =>
-    openHtml(`${API_BASE}/api/export/taichinh/pdf/${maDot}`);
+    downloadFile(`${API_BASE}/api/export/taichinh/pdf/${maDot}`,
+        `TaiChinh_${maDot}_${new Date().toISOString().slice(0, 10)}.pdf`);
 
 // ── CTSV (cùng endpoint HoiDong, tên file khác) ───────────────────
 export const exportCTSVExcel = (maDot) =>
@@ -98,4 +101,5 @@ export const exportCTSVExcel = (maDot) =>
         `CTSV_DanhSach_${new Date().toISOString().slice(0, 10)}.xlsx`);
 
 export const exportCTSVPdf = (maDot) =>
-    openHtml(`${API_BASE}/api/export/hoidong/pdf${maDot ? `?maDot=${maDot}` : ''}`);
+    downloadFile(`${API_BASE}/api/export/hoidong/pdf${maDot ? `?maDot=${maDot}` : ''}`,
+        `CTSV_DanhSach_${new Date().toISOString().slice(0, 10)}.pdf`);

@@ -54,4 +54,30 @@ public class DiemController : ControllerBase
             });
         }
     }
+
+    [HttpGet("danh-sach-hoc-vu")]
+    [Authorize(Roles = "DaoTao")]
+    public async Task<IActionResult> GetDanhSachHocVu([FromQuery] int? hocKy, [FromQuery] string? namHoc)
+    {
+        try
+        {
+            var result = await _diemService.GetDanhSachHocVuAsync(hocKy, namHoc);
+            return Ok(new BaseResponse<IEnumerable<DuLieuHocVuResponseDTO>>
+            {
+                Success = true,
+                Message = "Lay danh sach du lieu hoc vu thanh cong",
+                Data = result
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "GetDanhSachHocVu failed.");
+            return StatusCode(500, new BaseResponse<IEnumerable<DuLieuHocVuResponseDTO>>
+            {
+                Success = false,
+                Message = "Loi he thong",
+                Data = null
+            });
+        }
+    }
 }
