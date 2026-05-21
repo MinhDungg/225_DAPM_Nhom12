@@ -254,7 +254,12 @@ namespace BE.Services.Implementations
                 DiemRenLuyen = p.DiemRenLuyen,
                 XepLoaiHB = p.XepLoaiHB,
                 TrangThai = p.TrangThai,
-                MucHocBong = p.MucHocBong
+                MucHocBong = p.MucHocBong,
+                LoaiDot = p.DotHocBong?.LoaiDot,
+                HocKy = p.DotHocBong?.HocKy,
+                NamHoc = p.DotHocBong?.NamHoc,
+                NgayNop = p.NgayNop,
+                GhiChu = p.GhiChu
             });
         }
 
