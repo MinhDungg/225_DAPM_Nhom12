@@ -227,7 +227,7 @@ const KhoaDashboard = () => {
         {!isReadOnly && (
           <button onClick={handleChotDanhSach} disabled={loading || danhSachChon.length === 0}
             className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-xl font-bold disabled:opacity-50">
-            <Send size={18} /> Chot danh sach de xuat
+            <Send size={18} /> Chốt danh sách đề xuất
           </button>
         )}
       </div>
@@ -298,7 +298,7 @@ const KhoaDashboard = () => {
               className="mt-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl font-bold disabled:opacity-50 transition-colors w-full"
             >
               {loading ? <Loader className="animate-spin" size={18} /> : <Calculator size={18} />}
-              Chay thuat toan Xep hang
+              Duyệt nhanh
             </button>
           </div>
 
