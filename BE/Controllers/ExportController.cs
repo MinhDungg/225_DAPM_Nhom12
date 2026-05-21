@@ -232,8 +232,10 @@ public class ExportController : ControllerBase
             string fileName = !string.IsNullOrEmpty(hocKy)
                 ? $"DanhSachHBKK_HK{hocKy}_{namHoc}.xlsx"
                 : $"DanhSachHBKK_Khoa_{DateTime.Now:yyyyMMdd}.xlsx";
+            string hkSuffix = !string.IsNullOrEmpty(hocKy) ? $" | Học Kỳ {hocKy} - {namHoc}" : "";
+            string pageTitle = $"Danh Sách Học Bổng KKHT{hkSuffix}";
 
-            var stream = _export.ToExcel(rows, headers, sheetTitle);
+            var stream = _export.ToExcel(rows, headers, sheetTitle, pageTitle);
             return File(stream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
         }
         catch (Exception ex)
@@ -294,7 +296,7 @@ public class ExportController : ControllerBase
             
             var headers = new List<string> { "STT", "Mã SV", "Họ Tên", "Lớp", "GPA", "Điểm HT", "Điểm RL", "Xếp Loại HB", "Mức Học Bổng" };
             string hkSuffix = !string.IsNullOrEmpty(hocKy) ? $" | Học Kỳ {hocKy} - {namHoc}" : "";
-            string pageTitle = $"Danh Sách Học Bổng KKHT — Khoa Đề Nghị{hkSuffix}";
+            string pageTitle = $"Danh Sách Học Bổng KKHT{hkSuffix}";
             string fileName = !string.IsNullOrEmpty(hocKy)
                 ? $"DanhSachHBKK_HK{hocKy}_{namHoc}.pdf"
                 : $"DanhSachHBKK_Khoa_{DateTime.Now:yyyyMMdd}.pdf";

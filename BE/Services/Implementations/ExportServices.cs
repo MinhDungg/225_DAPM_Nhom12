@@ -11,7 +11,8 @@ namespace BE.Services.Implementations;
 public class ExportService
 {
     // ── EXCEL: ClosedXML hỗ trợ định dạng nâng cao (Merge & Auto-fit) ──
-    public Stream ToExcel(List<Dictionary<string, string>> rows, List<string> headers, string sheetName = "Sheet1")
+    // Cập nhật thêm tham số "string title = """
+    public Stream ToExcel(List<Dictionary<string, string>> rows, List<string> headers, string sheetName = "Sheet1", string title = "")
     {
         var safeSheet = Regex.Replace(sheetName, @"[\\/?*\[\]:]", "-");
         if (safeSheet.Length > 31) safeSheet = safeSheet[..31];
@@ -19,42 +20,58 @@ public class ExportService
         using var workbook = new XLWorkbook();
         var worksheet = workbook.Worksheets.Add(safeSheet);
 
-        // 1. Tạo thanh tiêu đề (Header row) sắc nét
+        int startRow = 1; // Đánh dấu dòng bắt đầu vẽ bảng
+
+        // 1. TẠO TIÊU ĐỀ CHÍNH CHO FILE EXCEL (MERGE TOÀN BỘ CỘT TẠI DÒNG 1)
+        if (!string.IsNullOrEmpty(title))
+        {
+            var titleCell = worksheet.Cell(1, 1);
+            titleCell.Value = title;
+            titleCell.Style.Font.Bold = true;
+            titleCell.Style.Font.FontSize = 15;
+            titleCell.Style.Font.FontColor = XLColor.FromHtml("#1A56DB");
+            titleCell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            
+            // Gộp ô (Merge) theo đúng số lượng cột của bảng (Headers)
+            var titleRange = worksheet.Range(1, 1, 1, headers.Count);
+            titleRange.Merge();
+            
+            startRow = 2; // Nếu có tiêu đề, đẩy bảng dữ liệu bắt đầu từ dòng 2
+        }
+
+        // 2. TẠO THANH TIÊU ĐỀ CỘT (HEADERS)
         for (int i = 0; i < headers.Count; i++)
         {
-            var cell = worksheet.Cell(1, i + 1);
+            var cell = worksheet.Cell(startRow, i + 1);
             cell.Value = headers[i];
             cell.Style.Font.Bold = true;
-            cell.Style.Fill.BackgroundColor = XLColor.FromHtml("#1A56DB"); // Màu xanh thương hiệu
+            cell.Style.Fill.BackgroundColor = XLColor.FromHtml("#1A56DB");
             cell.Style.Font.FontColor = XLColor.White;
             cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
             cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
         }
 
-        // 2. Điền dữ liệu các dòng
+        // 3. ĐỔ DỮ LIỆU CÁC DÒNG
         for (int r = 0; r < rows.Count; r++)
         {
             var rowDict = rows[r];
-            int currentRowNum = r + 2;
+            // Cộng thêm startRow để đẩy bảng xuống tương ứng
+            int currentRowNum = r + startRow + 1; 
 
-            // Kiểm tra xem dòng hiện tại có chứa từ khóa TỔNG CỘNG không
             bool isTotalRow = rowDict.Values.Any(v => v != null && v.Contains("TỔNG CỘNG:"));
 
             if (isTotalRow)
             {
-                // Tìm vị trí của cột chứa số tiền giải ngân để làm mốc giới hạn gộp ô
                 int moneyColIndex = headers.IndexOf("Mức Học Bổng") + 1;
                 
                 if (moneyColIndex > 1)
                 {
-                    // Thực hiện MERGE tất cả các ô tính từ cột 1 (STT) đến sát trước cột Tiền
                     var mergeRange = worksheet.Range(currentRowNum, 1, currentRowNum, moneyColIndex - 1);
                     mergeRange.Merge();
                     mergeRange.Value = "TỔNG CỘNG:";
                     mergeRange.Style.Font.Bold = true;
-                    mergeRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right; // Đẩy chữ dính sát lề phải giống mẫu kế toán
+                    mergeRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right; 
                     
-                    // Đổ dữ liệu riêng cho ô số tiền tổng nằm kế bên ô gộp
                     var moneyCell = worksheet.Cell(currentRowNum, moneyColIndex);
                     rowDict.TryGetValue("Mức Học Bổng", out var moneyVal);
                     moneyCell.Value = moneyVal ?? "";
@@ -62,7 +79,6 @@ public class ExportService
                     moneyCell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
                 }
 
-                // Trang trí màu nền xám nhạt và kẻ viền cho toàn bộ dòng tổng cộng
                 var totalRow = worksheet.Row(currentRowNum);
                 totalRow.Style.Fill.BackgroundColor = XLColor.FromHtml("#F3F4F6");
                 for (int c = 1; c <= headers.Count; c++)
@@ -72,7 +88,6 @@ public class ExportService
             }
             else
             {
-                // Điền dữ liệu cho các dòng sinh viên bình thường
                 for (int c = 0; c < headers.Count; c++)
                 {
                     var cell = worksheet.Cell(currentRowNum, c + 1);
@@ -80,7 +95,7 @@ public class ExportService
                     cell.Value = val ?? "";
                     cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
                     
-                    // Căn lề giữa cho các trường mã, lớp, điểm để bảng cân đối
+                    // Căn giữa các cột mã số và phân loại
                     if (headers[c] == "STT" || headers[c] == "Mã SV" || headers[c] == "Lớp" || headers[c] == "Xếp Loại HB")
                     {
                         cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
@@ -89,10 +104,8 @@ public class ExportService
             }
         }
 
-        // BẮT BUỘC YÊU CẦU: Tự động co giãn độ rộng toàn bộ các cột dựa trên độ dài nội dung chữ
         worksheet.Columns().AdjustToContents();
 
-        // Đẩy toàn bộ dữ liệu workbook vào Stream để chuẩn bị tải về
         var ms = new MemoryStream();
         workbook.SaveAs(ms);
         ms.Position = 0;
