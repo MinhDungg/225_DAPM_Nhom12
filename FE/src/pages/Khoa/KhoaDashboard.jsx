@@ -19,6 +19,9 @@ const KhoaDashboard = () => {
   const [exporting, setExporting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
+  // ── Checkbox export state ───────────────────────────────────────────────────
+  const [selectedExportRows, setSelectedExportRows] = useState([]);
+
   // ── Hybrid Panel State ──────────────────────────────────────────────────────
   const [tongNganSach, setTongNganSach] = useState("");
   const [mucHocBongKha, setMucHocBongKha] = useState("");
@@ -53,6 +56,22 @@ const KhoaDashboard = () => {
     finally { setExporting(false); }
   };
 
+  // Checkbox handlers
+  const handleSelectAllExport = (list) => {
+    const validIds = list.filter(hs => hs.maHoSo).map(hs => hs.maHoSo);
+    if (selectedExportRows.length === validIds.length && validIds.length > 0) {
+      setSelectedExportRows([]);
+    } else {
+      setSelectedExportRows(validIds);
+    }
+  };
+
+  const handleSelectRowExport = (maHoSo) => {
+    setSelectedExportRows(prev =>
+      prev.includes(maHoSo) ? prev.filter(id => id !== maHoSo) : [...prev, maHoSo]
+    );
+  };
+
   const removeAccents = (str) => {
     if (!str) return "";
     return String(str).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -68,6 +87,7 @@ const KhoaDashboard = () => {
     setTongNganSach("");
     setMucHocBongKha("");
     setThongKeKhoaHoc({});
+    setSelectedExportRows([]);
   }, [selectedDot]);
 
   // Auto-fill quan so khi danh sach ho so duoc tai
@@ -445,13 +465,13 @@ const KhoaDashboard = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full md:w-80 px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:border-blue-500" />
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <button onClick={() => handleExport(() => exportKhoaExcel(selectedDot?.maDot))} disabled={exporting}
+              <button onClick={() => handleExport(() => exportKhoaExcel(selectedDot?.maDot, selectedExportRows.length > 0 ? selectedExportRows.join(',') : undefined))} disabled={exporting}
                 style={{ background: "#1D6F42", color: "#fff", padding: "6px 14px", borderRadius: 6, border: "none", cursor: "pointer", fontWeight: 600, fontSize: 13, minWidth: "110px" }}>
-                Xuat Excel
+                Xuat Excel{selectedExportRows.length > 0 ? ` (${selectedExportRows.length})` : ""}
               </button>
-              <button onClick={() => handleExport(() => exportKhoaPdf(selectedDot?.maDot))} disabled={exporting}
+              <button onClick={() => handleExport(() => exportKhoaPdf(selectedDot?.maDot, selectedExportRows.length > 0 ? selectedExportRows.join(',') : undefined))} disabled={exporting}
                 style={{ background: "#C00", color: "#fff", padding: "6px 14px", borderRadius: 6, border: "none", cursor: "pointer", fontWeight: 600, fontSize: 13, minWidth: "100px" }}>
-                Xuat PDF
+                Xuat PDF{selectedExportRows.length > 0 ? ` (${selectedExportRows.length})` : ""}
               </button>
             </div>
           </div>
@@ -463,6 +483,15 @@ const KhoaDashboard = () => {
             <table className="w-full text-left text-sm text-gray-600">
               <thead className="bg-white border-b border-gray-200">
                 <tr>
+                  <th className="p-4 w-10 text-center">
+                    <input
+                      type="checkbox"
+                      checked={filteredList.length > 0 && selectedExportRows.length === filteredList.filter(hs => hs.maHoSo).length}
+                      onChange={() => handleSelectAllExport(filteredList)}
+                      className="w-4 h-4 cursor-pointer"
+                      title="Chon tat ca de xuat"
+                    />
+                  </th>
                   <th className="p-4 text-center">STT</th>
                   <th className="p-4">MSSV</th>
                   <th className="p-4">Ho va Ten</th>
@@ -479,6 +508,11 @@ const KhoaDashboard = () => {
                 {filteredList.map((hs, index) =>
                   ketQuaXepHang ? (
                     <tr key={hs.maHoSo} className={hs.duocNhan ? "" : "opacity-60"}>
+                      <td className="p-4 text-center">
+                        <input type="checkbox" className="w-4 h-4 cursor-pointer"
+                          checked={selectedExportRows.includes(hs.maHoSo)}
+                          onChange={() => handleSelectRowExport(hs.maHoSo)} />
+                      </td>
                       <td className="p-4 text-center font-semibold text-gray-800">{index + 1}</td>
                       <td className="p-4">{hs.maSV}</td>
                       <td className="p-4">{hs.hoTen}</td>
@@ -496,6 +530,11 @@ const KhoaDashboard = () => {
                     </tr>
                   ) : (
                     <tr key={hs.maHoSo}>
+                      <td className="p-4 text-center">
+                        <input type="checkbox" className="w-4 h-4 cursor-pointer"
+                          checked={selectedExportRows.includes(hs.maHoSo)}
+                          onChange={() => handleSelectRowExport(hs.maHoSo)} />
+                      </td>
                       <td className="p-4 text-center font-semibold text-gray-800">{index + 1}</td>
                       <td className="p-4">{hs.maSV}</td>
                       <td className="p-4">{hs.hoTenSinhVien}</td>

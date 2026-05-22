@@ -129,12 +129,22 @@ public class ExportController : ControllerBase
     // ── HỘI ĐỒNG ─────────────────────────────────────────────────
     [HttpGet("hoidong/excel")]
     [Authorize(Roles = "CTSV,HoiDong")]
-    public async Task<IActionResult> HoiDongExcel([FromQuery] int? maDot)
+    public async Task<IActionResult> HoiDongExcel([FromQuery] int? maDot, [FromQuery] string? ids = null)
     {
         try
         {
             bool isHoiDong = User.IsInRole("HoiDong");
-            var data = await _finalDecisionService.GetRecommendedProfilesAsync(isHoiDong, maDot);
+            var allData = await _finalDecisionService.GetRecommendedProfilesAsync(isHoiDong, maDot);
+
+            // Lọc theo ids TRƯỚC KHI tính tổng
+            IEnumerable<HoSoResponseDTO> data = allData;
+            if (!string.IsNullOrWhiteSpace(ids))
+            {
+                var idSet = ids.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                               .Select(s => int.TryParse(s.Trim(), out int n) ? n : -1)
+                               .Where(n => n > 0).ToHashSet();
+                data = allData.Where(x => idSet.Contains(x.MaHoSo));
+            }
 
             string hocKy = ""; string namHoc = "";
             BE.Models.DotHocBong? dot = null;
@@ -164,12 +174,22 @@ public class ExportController : ControllerBase
 
     [HttpGet("hoidong/pdf")]
     [Authorize(Roles = "CTSV,HoiDong")]
-    public async Task<IActionResult> HoiDongPdf([FromQuery] int? maDot)
+    public async Task<IActionResult> HoiDongPdf([FromQuery] int? maDot, [FromQuery] string? ids = null)
     {
         try
         {
             bool isHoiDong = User.IsInRole("HoiDong");
-            var data = await _finalDecisionService.GetRecommendedProfilesAsync(isHoiDong, maDot);
+            var allData = await _finalDecisionService.GetRecommendedProfilesAsync(isHoiDong, maDot);
+
+            // Lọc theo ids TRƯỚC KHI tính tổng
+            IEnumerable<HoSoResponseDTO> data = allData;
+            if (!string.IsNullOrWhiteSpace(ids))
+            {
+                var idSet = ids.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                               .Select(s => int.TryParse(s.Trim(), out int n) ? n : -1)
+                               .Where(n => n > 0).ToHashSet();
+                data = allData.Where(x => idSet.Contains(x.MaHoSo));
+            }
 
             string hocKy = ""; string namHoc = "";
             BE.Models.DotHocBong? dot = null;
@@ -186,7 +206,7 @@ public class ExportController : ControllerBase
                 ? $"Danh Sách Học Bổng KKHT Chính Thức{hkSuffix}"
                 : $"Danh Sách Học Bổng KKHT Đề Nghị{hkSuffix}";
             string fileName = !string.IsNullOrEmpty(hocKy)
-                ? $"DanhSachHBKK_HK{hocKy}_{namHoc}_{loai}.pdf"
+                ? $"DanhSachHBKK_HK{hocKy}_{namHoc}.pdf"
                 : $"DanhSachHBKK_{loai}_{DateTime.Now:yyyyMMdd}.pdf";
 
             var bytes = _export.ToPdf(MapHoSo(data), HoSoHeaders, pageTitle);
@@ -200,16 +220,26 @@ public class ExportController : ControllerBase
 
     // ── KHOA ─────────────────────────────────────────────────────
     [HttpGet("khoa/excel")]
-    public async Task<IActionResult> KhoaExcel([FromQuery] int? maDot)
+    public async Task<IActionResult> KhoaExcel([FromQuery] int? maDot, [FromQuery] string? ids = null)
     {
         try
         {
             var userId = GetUserId();
             if (userId == null) return Unauthorized();
             
-            var data = maDot.HasValue ?
+            var allData = maDot.HasValue ?
                 await _khoaService.LayDanhSachChoXetTheoDotAsync(userId.Value, maDot.Value):
                 await _khoaService.LayDanhSachChoDuyetAsync(userId.Value);
+
+            // Lọc theo ids TRƯỚC KHI tính tổng
+            var data = allData.Where(x => !string.IsNullOrWhiteSpace(x.XepLoaiHB)).ToList();
+            if (!string.IsNullOrWhiteSpace(ids))
+            {
+                var idSet = ids.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                               .Select(s => int.TryParse(s.Trim(), out int n) ? n : -1)
+                               .Where(n => n > 0).ToHashSet();
+                data = data.Where(x => idSet.Contains(x.MaHoSo)).ToList();
+            }
 
             string hocKy = ""; string namHoc = "";
             BE.Models.DotHocBong? dot = null;
@@ -220,10 +250,9 @@ public class ExportController : ControllerBase
                 namHoc = dot?.NamHoc ?? "";
             }
 
-            var filtered = data.Where(x => !string.IsNullOrWhiteSpace(x.XepLoaiHB)).ToList();
             int stt = 1;
             decimal tongTien = 0;
-            var rows = filtered.Select(x =>
+            var rows = data.Select(x =>
             {
                 if (x.MucHocBong.HasValue) tongTien += x.MucHocBong.Value;
                 return new Dictionary<string, string>
@@ -270,16 +299,26 @@ public class ExportController : ControllerBase
     }
 
     [HttpGet("khoa/pdf")]
-    public async Task<IActionResult> KhoaPdf([FromQuery] int? maDot)
+    public async Task<IActionResult> KhoaPdf([FromQuery] int? maDot, [FromQuery] string? ids = null)
     {
         try
         {
             var userId = GetUserId();
             if (userId == null) return Unauthorized();
             
-            var data = maDot.HasValue ?
+            var allData = maDot.HasValue ?
                 await _khoaService.LayDanhSachChoXetTheoDotAsync(userId.Value, maDot.Value):
                 await _khoaService.LayDanhSachChoDuyetAsync(userId.Value);
+
+            // Lọc theo ids TRƯỚC KHI tính tổng
+            var data = allData.Where(x => !string.IsNullOrWhiteSpace(x.XepLoaiHB)).ToList();
+            if (!string.IsNullOrWhiteSpace(ids))
+            {
+                var idSet = ids.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                               .Select(s => int.TryParse(s.Trim(), out int n) ? n : -1)
+                               .Where(n => n > 0).ToHashSet();
+                data = data.Where(x => idSet.Contains(x.MaHoSo)).ToList();
+            }
 
             string hocKy = ""; string namHoc = "";
             BE.Models.DotHocBong? dot = null;
@@ -290,45 +329,39 @@ public class ExportController : ControllerBase
                 namHoc = dot?.NamHoc ?? "";
             }
 
-            var filtered = data.Where(x => !string.IsNullOrWhiteSpace(x.XepLoaiHB)).ToList();
             int stt = 1;
-            var rows = filtered.Select(x => new Dictionary<string, string>
+            decimal tongTien = 0;
+            var rows = data.Select(x =>
             {
-                ["STT"]         = (stt++).ToString(),
-                ["Mã SV"]       = x.MaSV ?? "",
-                ["Họ Tên"]      = x.HoTenSinhVien ?? "",
-                ["Lớp"]         = x.TenLop ?? "",
-                ["GPA"]         = x.GPA.ToString("F2"),
-                ["Điểm HT"]     = x.DiemHocTap.ToString("F2"),
-                ["Điểm RL"]     = x.DiemRenLuyen.ToString("F2"),
-                ["Xếp Loại HB"] = x.XepLoaiHB ?? "",
-                ["Mức Học Bổng"]= x.MucHocBong.HasValue ? x.MucHocBong.Value.ToString("N0") + " đ" : "",
-                // ["Trạng Thái"]  = x.TrangThai ?? ""
+                if (x.MucHocBong.HasValue) tongTien += x.MucHocBong.Value;
+                return new Dictionary<string, string>
+                {
+                    ["STT"]         = (stt++).ToString(),
+                    ["Mã SV"]       = x.MaSV ?? "",
+                    ["Họ Tên"]      = x.HoTenSinhVien ?? "",
+                    ["Lớp"]         = x.TenLop ?? "",
+                    ["GPA"]         = x.GPA.ToString("F2"),
+                    ["Điểm HT"]     = x.DiemHocTap.ToString("F2"),
+                    ["Điểm RL"]     = x.DiemRenLuyen.ToString("F2"),
+                    ["Xếp Loại HB"] = x.XepLoaiHB ?? "",
+                    ["Mức Học Bổng"]= x.MucHocBong.HasValue ? x.MucHocBong.Value.ToString("N0") + " đ" : "",
+                };
             }).ToList();
 
-            decimal totalSum = filtered.Sum(x => x.MucHocBong ?? 0);
             rows.Add(new Dictionary<string, string>
             {
-                ["STT"]         = "Tổng cộng",
-                ["Mã SV"]       = "",
-                ["Họ Tên"]      = "",
-                ["Lớp"]         = "",
-                ["GPA"]         = "",
-                ["Điểm HT"]     = "",
-                ["Điểm RL"]     = "",
-                ["Xếp Loại HB"] = "",
-                ["Mức Học Bổng"]= totalSum.ToString("N0") + " đ"
+                ["STT"] = "", ["Mã SV"] = "", ["Họ Tên"] = "", ["Lớp"] = "",
+                ["GPA"] = "", ["Điểm HT"] = "", ["Điểm RL"] = "",
+                ["Xếp Loại HB"] = "TỔNG CỘNG:",
+                ["Mức Học Bổng"] = tongTien.ToString("N0") + " đ"
             });
             
             var headers = new List<string> { "STT", "Mã SV", "Họ Tên", "Lớp", "GPA", "Điểm HT", "Điểm RL", "Xếp Loại HB", "Mức Học Bổng" };
-            string loai = (dot?.TrangThai == "ChinhThuc") ? "ChinhThuc" : "DeNghi";
             string hkSuffix = !string.IsNullOrEmpty(hocKy) ? $" | Học Kỳ {hocKy} - {namHoc}" : "";
-            string pageTitle = (loai == "ChinhThuc")
-                ? $"Danh Sách Học Bổng KKHT Chính Thức — Khoa{hkSuffix}"
-                : $"Danh Sách Học Bổng KKHT Khoa Đề Nghị{hkSuffix}";
+            string pageTitle = $"Danh Sách Học Bổng KKHT — Khoa Đề Nghị{hkSuffix}";
             string pdfFileName = !string.IsNullOrEmpty(hocKy)
-                ? $"DanhSachHBKK_HK{hocKy}_{namHoc}_Khoa{loai}.pdf"
-                : $"DanhSachHBKK_Khoa{loai}_{DateTime.Now:yyyyMMdd}.pdf";
+                ? $"DanhSachHBKK_HK{hocKy}_{namHoc}.pdf"
+                : $"DanhSachHBKK_Khoa_{DateTime.Now:yyyyMMdd}.pdf";
 
             var bytes = _export.ToPdf(rows, headers, pageTitle);
             return File(bytes, "application/pdf", pdfFileName);
