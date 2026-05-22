@@ -1,4 +1,6 @@
 using System.Security.Claims;
+using System.IO;
+using Microsoft.AspNetCore.Http;
 using BE.DTOs.Request;
 using BE.DTOs.Response;
 using BE.Services.Interfaces;
@@ -17,6 +19,57 @@ public class KhieuNaiController : ControllerBase
     public KhieuNaiController(IKhieuNaiService khieuNaiService)
     {
         _khieuNaiService = khieuNaiService;
+    }
+
+    [HttpPost("upload-minh-chung")]
+    [Authorize]
+    public async Task<IActionResult> UploadMinhChung(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return BadRequest(new BaseResponse<object> { Success = false, Message = "Không nhận được tệp tải lên." });
+        }
+
+        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".pdf", ".doc", ".docx" };
+        var extension = Path.GetExtension(file.FileName).ToLower();
+        if (!allowedExtensions.Contains(extension))
+        {
+            return BadRequest(new BaseResponse<object> { Success = false, Message = "Định dạng tệp không được hỗ trợ. Chỉ nhận JPG, JPEG, PNG, PDF, DOC, DOCX." });
+        }
+
+        if (file.Length > 5 * 1024 * 1024)
+        {
+            return BadRequest(new BaseResponse<object> { Success = false, Message = "Dung lượng tệp vượt quá giới hạn cho phép (Tối đa 5MB)." });
+        }
+
+        try
+        {
+            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+            if (!Directory.Exists(uploadsFolder))
+            {
+                Directory.CreateDirectory(uploadsFolder);
+            }
+
+            var uniqueFileName = $"{Guid.NewGuid()}{extension}";
+            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            var relativePath = $"/uploads/{uniqueFileName}";
+            return Ok(new BaseResponse<string>
+            {
+                Success = true,
+                Message = "Tải minh chứng lên thành công.",
+                Data = relativePath
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new BaseResponse<object> { Success = false, Message = $"Lỗi hệ thống khi lưu tệp: {ex.Message}" });
+        }
     }
 
     // ==========================================
@@ -51,7 +104,7 @@ public class KhieuNaiController : ControllerBase
     // ==========================================
 
     [HttpGet("tat-ca")]
-    [Authorize(Roles = "CTSV,Khoa,Admin")]
+    [Authorize(Roles = "CTSV,Khoa,HoiDong,Admin")]
     public async Task<IActionResult> GetAllKhieuNai()
     {
         var response = await _khieuNaiService.LayTatCaKhieuNaiAsync();

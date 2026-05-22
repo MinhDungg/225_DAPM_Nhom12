@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BookOpen, Activity, CheckCircle, Bell, FileWarning, Search, Send, AlertCircle, Clock, Loader2, LogOut } from 'lucide-react';
 import api from '../../utils/api';
+import KhieuNaiSinhVien from './KhieuNaiSinhVien';
 
 const StudentDashboard = () => {
     const [activeTab, setActiveTab] = useState('thongbao'); // 'thongbao' hoặc 'khieunai'
@@ -217,15 +218,7 @@ const StudentDashboard = () => {
                     )}
 
                     {activeTab === 'khieunai' && (
-                        <div className="text-center py-16 px-4">
-                            <div className="bg-gray-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-100">
-                                <FileWarning className="w-8 h-8 text-gray-400" />
-                            </div>
-                            <h3 className="text-lg font-medium text-gray-900">Tính năng đang phát triển</h3>
-                            <p className="text-sm text-gray-500 mt-2 max-w-sm mx-auto">
-                                Chức năng gửi khiếu nại hiện đang được cập nhật phía Backend. Vui lòng quay lại sau.
-                            </p>
-                        </div>
+                        <KhieuNaiSinhVien />
                     )}
                 </div>
             </div>

@@ -1,4 +1,4 @@
-﻿using BE.Data;
+using BE.Data;
 using BE.Models;
 using BE.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -17,14 +17,23 @@ public class KhieuNaiRepository : IKhieuNaiRepository
     public async Task<KhieuNai?> GetByIdAsync(int id)
     {
         return await _context.KhieuNais
+            .AsNoTracking()
             .Include(k => k.HoSoXetHocBong)
             .Include(k => k.CanBoDuyet)
+            .FirstOrDefaultAsync(k => k.MaKhieuNai == id);
+    }
+
+    // Dùng cho update - CÓ tracking để EF biết entity nào cần SaveChanges
+    public async Task<KhieuNai?> GetByIdForUpdateAsync(int id)
+    {
+        return await _context.KhieuNais
             .FirstOrDefaultAsync(k => k.MaKhieuNai == id);
     }
 
     public async Task<IEnumerable<KhieuNai>> GetAllAsync()
     {
         return await _context.KhieuNais
+            .AsNoTracking()
             .Include(k => k.HoSoXetHocBong)
             .Include(k => k.CanBoDuyet)
             .OrderByDescending(k => k.NgayGui)
@@ -34,6 +43,7 @@ public class KhieuNaiRepository : IKhieuNaiRepository
     public async Task<IEnumerable<KhieuNai>> GetByMaSVAsync(string maSV)
     {
         return await _context.KhieuNais
+            .AsNoTracking()
             .Include(k => k.HoSoXetHocBong)
             .Include(k => k.CanBoDuyet)
             .Where(k => k.HoSoXetHocBong.MaSV == maSV)

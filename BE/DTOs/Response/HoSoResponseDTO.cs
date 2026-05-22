@@ -1,3 +1,5 @@
+using System;
+
 namespace BE.DTOs.Response
 {
     public class HoSoResponseDTO
@@ -13,5 +15,10 @@ namespace BE.DTOs.Response
         public string? XepLoaiHB { get; set; }
         public string? TrangThai { get; set; }
         public decimal? MucHocBong { get; set; }
+        public string? LoaiDot { get; set; }
+        public int? HocKy { get; set; }
+        public string? NamHoc { get; set; }
+        public DateTime? NgayNop { get; set; }
+        public string? GhiChu { get; set; }
     }
 }

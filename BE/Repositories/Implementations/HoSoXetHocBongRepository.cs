@@ -1,4 +1,5 @@
 using BE.Data;
+using BE.DTOs.Request;
 using BE.DTOs.Response;
 using BE.Models;
 using BE.Repositories.Interfaces;
@@ -88,12 +89,16 @@ public class HoSoXetHocBongRepository : IHoSoXetHocBongRepository
         await _context.SaveChangesAsync();
     }
 
-    public async Task<int> ChotDanhSachDeXuatAsync(int maKhoa, int maDot, List<int> danhSachMaHoSo, int maCB)
+    public async Task<int> ChotDanhSachDeXuatAsync(int maKhoa, int maDot, List<HoSoDeXuatItemDTO> danhSachDeXuat, int maCB)
     {
         using var transaction = await _context.Database.BeginTransactionAsync();
 
         try
         {
+            // Tạo lookup nhanh: MaHoSo -> MucHocBong
+            var mucHocBongLookup = danhSachDeXuat.ToDictionary(x => x.MaHoSo, x => x.MucHocBong);
+            var danhSachMaHoSo = danhSachDeXuat.Select(x => x.MaHoSo).ToList();
+
             var hoSosDuocChon = await _context.HoSoXetHocBongs
                 .Include(h => h.SinhVien)
                     .ThenInclude(sv => sv.Lop)
@@ -109,6 +114,9 @@ public class HoSoXetHocBongRepository : IHoSoXetHocBongRepository
                 hoSo.TrangThai = "KhoaDeXuat";
                 hoSo.MaCB_Duyet = maCB;
                 hoSo.XepLoaiHB = PhanLoaiHocBong(hoSo.GPA, hoSo.DiemRenLuyen);
+                // Lưu số tiền học bổng dự kiến vào database
+                if (mucHocBongLookup.TryGetValue(hoSo.MaHoSo, out var mucHB))
+                    hoSo.MucHocBong = mucHB;
                 _context.HoSoXetHocBongs.Update(hoSo);
             }
 
@@ -233,20 +241,48 @@ public class HoSoXetHocBongRepository : IHoSoXetHocBongRepository
             dot.TrangThai = "ChinhThuc";
 
             var confirmedProfiles = await _context.HoSoXetHocBongs
+                .Include(h => h.SinhVien)
+                    .ThenInclude(sv => sv.Lop)
                 .Where(h => h.MaDot == maDot && h.TrangThai == "HoiDongDuyet")
                 .ToListAsync();
 
             if (confirmedProfiles.Any())
             {
-                var dsChinhThuc = confirmedProfiles.Select(h => new DSHocBong
+                var phanBoList = await _context.PhanBoKinhPhis
+                    .Where(p => p.MaDot == maDot)
+                    .ToListAsync();
+
+                var phanBoLookup = phanBoList.ToDictionary(p => p.MaKhoa, p => p.MucHBLoaiKha);
+
+                var dsChinhThuc = confirmedProfiles.Select(h =>
                 {
-                    MaDot = h.MaDot,
-                    MaSV = h.MaSV,
-                    XepLoai = h.XepLoaiHB,
-                    SoTien = 0,
-                    NgayPheDuyet = DateTime.Now,
-                    MaCB_PheDuyet = maCB_PheDuyet
-                });
+                    decimal soTien = h.MucHocBong ?? 0;
+                    if (soTien == 0 && h.SinhVien?.Lop != null)
+                    {
+                        if (phanBoLookup.TryGetValue(h.SinhVien.Lop.MaKhoa, out var mucKha))
+                        {
+                            soTien = h.XepLoaiHB switch
+                            {
+                                "XuatSac" => mucKha * 1.4m,
+                                "Gioi" => mucKha * 1.2m,
+                                "Kha" => mucKha,
+                                _ => 0
+                            };
+                        }
+                    }
+
+                    h.MucHocBong = soTien;
+
+                    return new DSHocBong
+                    {
+                        MaDot = h.MaDot,
+                        MaSV = h.MaSV,
+                        XepLoai = h.XepLoaiHB,
+                        SoTien = soTien,
+                        NgayPheDuyet = DateTime.Now,
+                        MaCB_PheDuyet = maCB_PheDuyet
+                    };
+                }).ToList();
 
                 await _context.DSHocBongs.AddRangeAsync(dsChinhThuc);
 
