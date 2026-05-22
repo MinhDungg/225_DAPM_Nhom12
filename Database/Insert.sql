@@ -111,7 +111,8 @@ INSERT INTO [DOTHOCBONG] (LoaiDot, HocKy, NamHoc, TrangThai) VALUES
 
 -- KHTC rót tiền cho Đợt 1 (Mã Khoa CNS = 1)
 INSERT INTO [PHANBOKINHPHI] (MaDot, MaKhoa, KinhPhi, MucHBLoaiKha) VALUES 
-(1, 1, 50000000, 5000000); -- Khoa CNS được cấp 50 triệu, mức sàn 5 triệu.
+(1, 1, 500000000, 15000000),
+(2, 1, 500000000, 18000000); -- Khoa CNS được cấp 50 triệu, mức sàn 5 triệu.
 
 -- =================================================================================
 -- 5. BƠM ĐIỂM HỌC VỤ & RÈN LUYỆN (MAP CHÍNH XÁC VỚI HỒ SƠ)
