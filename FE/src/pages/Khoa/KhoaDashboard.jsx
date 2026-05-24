@@ -2,7 +2,7 @@
 import { toast } from "react-toastify";
 import {
   ArrowLeft, BookOpen, Calculator, RefreshCw,
-  AlertCircle, Loader, Send, Award, Settings, TrendingUp,
+  AlertCircle, Loader, Send, Award, Settings, TrendingUp, Filter,
 } from "lucide-react";
 import khoaService from "../../services/khoaService";
 import FinalDecisionService from "../../services/finalDecisionService";
@@ -21,6 +21,10 @@ const KhoaDashboard = () => {
 
   // ── Checkbox export state ───────────────────────────────────────────────────
   const [selectedExportRows, setSelectedExportRows] = useState([]);
+
+  // ── Multi-select Khoa filter state ─────────────────────────────────────────
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [selectedKhoas, setSelectedKhoas] = useState([]);
 
   // ── Hybrid Panel State ──────────────────────────────────────────────────────
   const [tongNganSach, setTongNganSach] = useState("");
@@ -88,6 +92,8 @@ const KhoaDashboard = () => {
     setMucHocBongKha("");
     setThongKeKhoaHoc({});
     setSelectedExportRows([]);
+    setSelectedKhoas([]);
+    setIsFilterOpen(false);
   }, [selectedDot]);
 
   // Auto-fill quan so khi danh sach ho so duoc tai
@@ -154,6 +160,20 @@ const KhoaDashboard = () => {
 
   const selectedResults = useMemo(() => ketQuaXepHang ? ketQuaXepHang.danhSachXepHang : [], [ketQuaXepHang]);
 
+  // ── useMemo: Danh sach Khoa co trong du lieu (de render dropdown) ───────────
+  const availableKhoas = useMemo(() => {
+    const source = ketQuaXepHang ? selectedResults : hoSoChoDuyet;
+    const khoaSet = new Set(
+      source
+        .map(hs => {
+          const tenLop = hs.tenLop || "";
+          return tenLop.length >= 2 ? tenLop.substring(0, 2) : tenLop;
+        })
+        .filter(Boolean)
+    );
+    return Array.from(khoaSet).sort();
+  }, [hoSoChoDuyet, selectedResults, ketQuaXepHang]);
+
   // ── useMemo: Thong ke thuc te sau khi chay thuat toan ──────────────────────
   // { [tenKhoa]: { count: number, spent: number } }
   const thongKeThucTe = useMemo(() => {
@@ -181,6 +201,26 @@ const KhoaDashboard = () => {
     if (!isReadOnly || !hoSoChoDuyet.length) return 0;
     return hoSoChoDuyet.filter((hs) => hs.trangThai !== "Loai" && hs.mucHocBong).reduce((s, hs) => s + (Number(hs.mucHocBong) || 0), 0);
   }, [hoSoChoDuyet, isReadOnly]);
+
+  // ── useMemo: Compound filter: Search AND Khoa (must be BEFORE conditional return) ──
+  const filteredList = useMemo(() => {
+    const q = removeAccents(searchQuery);
+    return (pendingList || []).filter((hs) => {
+      // Dieu kien 1: Text search
+      const matchSearch = !q ||
+        (hs.maSV && removeAccents(hs.maSV).includes(q)) ||
+        (hs.hoTen && removeAccents(hs.hoTen).includes(q)) ||
+        (hs.hoTenSinhVien && removeAccents(hs.hoTenSinhVien).includes(q)) ||
+        (hs.tenLop && removeAccents(hs.tenLop).includes(q));
+
+      // Dieu kien 2: Khoa filter (neu co chon)
+      const tenLop = hs.tenLop || "";
+      const khoaOfHs = tenLop.length >= 2 ? tenLop.substring(0, 2) : tenLop;
+      const matchKhoa = selectedKhoas.length === 0 || selectedKhoas.includes(khoaOfHs);
+
+      return matchSearch && matchKhoa;
+    });
+  }, [pendingList, searchQuery, selectedKhoas]);
 
   // ── Dot selection screen ────────────────────────────────────────────────────
   if (!selectedDot) {
@@ -227,11 +267,6 @@ const KhoaDashboard = () => {
       </div>
     );
   }
-
-  const filteredList = (pendingList || []).filter((hs) => {
-    const q = removeAccents(searchQuery);
-    return (hs.maSV && removeAccents(hs.maSV).includes(q)) || (hs.hoTen && removeAccents(hs.hoTen).includes(q)) || (hs.hoTenSinhVien && removeAccents(hs.hoTenSinhVien).includes(q)) || (hs.tenLop && removeAccents(hs.tenLop).includes(q));
-  });
 
   return (
     <div className="space-y-6 pb-10">
@@ -464,6 +499,61 @@ const KhoaDashboard = () => {
             <input type="text" placeholder="Tim theo MSSV, Ten, Lop..." value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full md:w-80 px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:border-blue-500" />
+
+            {/* Nut loc Khoa */}
+            <div className="relative">
+              <button
+                onClick={() => setIsFilterOpen(prev => !prev)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-semibold transition-colors ${
+                  selectedKhoas.length > 0
+                    ? "bg-blue-600 text-white border-blue-600"
+                    : "bg-white text-gray-700 border-gray-300 hover:border-blue-400"
+                }`}
+              >
+                <Filter size={15} />
+                Lọc
+                {selectedKhoas.length > 0 && (
+                  <span className="bg-white text-blue-600 rounded-full px-1.5 py-0.5 text-xs font-bold ml-1">
+                    {selectedKhoas.length}
+                  </span>
+                )}
+              </button>
+
+              {/* Dropdown menu */}
+              {isFilterOpen && (
+                <div className="absolute right-0 top-full mt-2 z-50 bg-white shadow-lg rounded-xl border border-gray-200 min-w-[160px] py-2">
+                  <div className="flex items-center justify-between px-3 pb-2 border-b border-gray-100">
+                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Chọn khóa</span>
+                    {selectedKhoas.length > 0 && (
+                      <button
+                        onClick={() => setSelectedKhoas([])}
+                        className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                      >
+                        Xoa loc
+                      </button>
+                    )}
+                  </div>
+                  {availableKhoas.length === 0 ? (
+                    <p className="px-3 py-2 text-xs text-gray-400">Chua co du lieu</p>
+                  ) : (
+                    availableKhoas.map(khoa => (
+                      <label key={khoa} className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedKhoas.includes(khoa)}
+                          onChange={() => setSelectedKhoas(prev =>
+                            prev.includes(khoa) ? prev.filter(k => k !== khoa) : [...prev, khoa]
+                          )}
+                          className="w-4 h-4 cursor-pointer"
+                        />
+                        <span className="text-sm font-medium text-gray-700">Khóa {khoa}</span>
+                      </label>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <button onClick={() => handleExport(() => exportKhoaExcel(selectedDot?.maDot, selectedExportRows.length > 0 ? selectedExportRows.join(',') : undefined))} disabled={exporting}
                 style={{ background: "#1D6F42", color: "#fff", padding: "6px 14px", borderRadius: 6, border: "none", cursor: "pointer", fontWeight: 600, fontSize: 13, minWidth: "110px" }}>
